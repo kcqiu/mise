@@ -1,4 +1,4 @@
-# mise.
+# MISE
 
 Personal recipe library built with React, Vite, and Supabase. System recipes are
 available to everyone; signed-in cooks can create a private collection and sync
@@ -15,12 +15,17 @@ Create `.env.local` from `.env.example` when Supabase authentication is enabled.
 
 ## Supabase setup
 
-1. Run `supabase/migrations/202609140001_initial_schema.sql` in the Supabase SQL Editor.
+1. Apply the SQL files in `supabase/migrations` in filename order.
 2. Run `npm run seed:generate` after changing the system recipe JSON.
 3. Run `supabase/seed.sql` in the SQL Editor to publish the system collection.
 4. Enable Google in Authentication > Providers.
-5. Set the Auth Site URL to `https://mise.kecheng.dev` and allow
-   `http://localhost:5173/**` for local development.
+5. Configure `private.hook_restrict_signup_by_email` as the Postgres
+   `before-user-created` Auth hook. Approved accounts live in
+   `private.signup_allowlist`.
+6. Add approved email addresses to `private.signup_allowlist` using the
+   dashboard SQL Editor. This list is intentionally not included in source control.
+7. Set the Auth Site URL to your deployed application URL. Add local development
+   URLs to the redirect allowlist only when needed.
 
 The browser receives only the Supabase project URL and publishable key. Never
 place a secret key, service-role key, Google client secret, or database password
@@ -43,3 +48,12 @@ Recipes, favorites, and cooking progress are account-owned and protected by RLS.
 Any existing browser-saved library is imported once after the first successful
 sign-in. Without cloud configuration, the app retains its original local-only
 behavior for development and recovery.
+
+## Checks
+
+```bash
+npm test
+npm run build
+```
+
+Run `supabase/verify.sql` to check the schema, account policies, and signup hook.

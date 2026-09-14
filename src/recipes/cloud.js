@@ -3,7 +3,8 @@ import { createClient } from "@supabase/supabase-js";
 const url = import.meta.env.VITE_SUPABASE_URL?.trim();
 const publishableKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY?.trim();
 
-export const cloudEnabled = Boolean(url && publishableKey);
+export const cloudEnabled =
+  import.meta.env.MODE !== "test" && Boolean(url && publishableKey);
 export const supabase = cloudEnabled
   ? createClient(url, publishableKey, {
       auth: {
