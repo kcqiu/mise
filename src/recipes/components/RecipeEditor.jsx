@@ -13,7 +13,7 @@ import { ARTWORKS, validateRecipe } from "../library";
 import { uploadRecipeCover } from "../cloud";
 import {
   enhanceRecipeWithGemini,
-  generateRecipeCoverWithGemini,
+  generateRecipeCover,
 } from "../ai";
 import RecipeArtwork from "./RecipeArtwork";
 
@@ -229,18 +229,18 @@ export default function RecipeEditor({
   if (!hasSteps) coverMissingReasons.push("at least 1 cooking step");
 
   const coverTooltip = canGenerateCover
-    ? "Generate realistic culinary photography for this dish with Gemini AI"
+    ? "Generate a realistic food photo with AI"
     : `Fill in most recipe info to enable AI photography (still needs: ${coverMissingReasons.join(", ")})`;
 
-  const handleGeminiGenerate = async () => {
+  const handleGenerateCover = async () => {
     if (!canGenerateCover) {
       setCoverNotice(`Please fill in most recipe info before generating: ${coverMissingReasons.join(", ")}.`);
       return;
     }
     setProcessingCover(true);
-    setCoverNotice("Generating photorealistic culinary photograph with Gemini AI...");
+    setCoverNotice("Generating photorealistic food photo with AI...");
     try {
-      const generatedUrl = await generateRecipeCoverWithGemini(draft, {
+      const generatedUrl = await generateRecipeCover(draft, {
         userId: isCloud ? userId : null,
         recipeId: draft.id || (isLocal ? recipe.id : `recipe-${crypto.randomUUID()}`),
       });
@@ -250,7 +250,7 @@ export default function RecipeEditor({
         setTimeout(() => setCoverNotice(""), 4000);
       }
     } catch (err) {
-      setCoverNotice(err.message || "Failed to generate photo with Gemini AI.");
+      setCoverNotice(err.message || "Failed to generate photo.");
       setTimeout(() => setCoverNotice(""), 6000);
     } finally {
       setProcessingCover(false);
@@ -269,6 +269,8 @@ export default function RecipeEditor({
       if (polished) {
         setDraft({
           ...polished,
+          artwork: draft.artwork || polished.artwork || "",
+          sourceVideo: draft.sourceVideo || polished.sourceVideo || "",
           ingredients: (polished.ingredients || []).map((item) => ({
             ...item,
             quantity: item.quantity ?? "",
@@ -288,41 +290,17 @@ export default function RecipeEditor({
   const submit = async (event) => {
     event.preventDefault();
     setError("");
-    let draftToSave = draft;
-
-    // Run AI polish on save if title exists
-    if (draft.title.trim()) {
-      try {
-        setPolishing(true);
-        const polished = await enhanceRecipeWithGemini(draft);
-        if (polished) {
-          draftToSave = polished;
-          setDraft({
-            ...polished,
-            ingredients: (polished.ingredients || []).map((item) => ({
-              ...item,
-              quantity: item.quantity ?? "",
-            })),
-          });
-        }
-      } catch (aiErr) {
-        // Non-blocking fallback to manual draft if offline or API key absent
-        console.info("AI polish skipped or failed, saving manual entry:", aiErr.message);
-      } finally {
-        setPolishing(false);
-      }
-    }
 
     try {
       const saved = validateRecipe({
-        ...draftToSave,
-        id: isLocal ? recipe.id : (draftToSave.id && draftToSave.id.startsWith("recipe-") ? draftToSave.id : `recipe-${crypto.randomUUID()}`),
+        ...draft,
+        id: isLocal ? recipe.id : (draft.id && draft.id.startsWith("recipe-") ? draft.id : `recipe-${crypto.randomUUID()}`),
         example: false,
-        servings: Number(draftToSave.servings),
-        prepMinutes: Number(draftToSave.prepMinutes),
-        cookMinutes: Number(draftToSave.cookMinutes),
-        restMinutes: Number(draftToSave.restMinutes),
-        ingredients: draftToSave.ingredients.map((item) => ({
+        servings: Number(draft.servings),
+        prepMinutes: Number(draft.prepMinutes),
+        cookMinutes: Number(draft.cookMinutes),
+        restMinutes: Number(draft.restMinutes),
+        ingredients: draft.ingredients.map((item) => ({
           ...item,
           quantity: item.quantity === "" || item.quantity == null ? null : Number(item.quantity),
         })),
@@ -498,7 +476,7 @@ export default function RecipeEditor({
                   <button
                     type="button"
                     className="button ai-sparkle-button editor-cover-btn"
-                    onClick={handleGeminiGenerate}
+                    onClick={handleGenerateCover}
                     disabled={processingCover || !canGenerateCover}
                     title={coverTooltip}
                   >
@@ -510,7 +488,7 @@ export default function RecipeEditor({
                     ) : (
                       <>
                         <Sparkles size={15} />
-                        <span>Generate with Gemini</span>
+                        <span>Generate with AI</span>
                         <span className="ai-badge">AI</span>
                       </>
                     )}

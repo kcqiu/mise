@@ -300,8 +300,8 @@ export default function AddRecipeModal({
                 <div className="add-recipe-card__info">
                   <strong>Manual entry</strong>
                   <p>
-                    Write from scratch with your own measurements. MISE AI will
-                    automatically polish and organize steps on save.
+                    Write from scratch with your own measurements. Refine and
+                    organize steps with AI on demand.
                   </p>
                 </div>
               </button>

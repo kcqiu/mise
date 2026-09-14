@@ -1,8 +1,8 @@
 import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
 import {
-  buildGeminiCoverPrompt,
+  buildCoverPrompt,
   enhanceRecipeWithGemini,
-  generateRecipeCoverWithGemini,
+  generateRecipeCover,
   parseRecipeFromPhoto,
   parseRecipeFromSocial,
   parseRecipeFromText,
@@ -20,7 +20,7 @@ describe("src/recipes/ai.js AI client bridge", () => {
   });
 
   it("builds an appetizing food photography prompt from recipe details", () => {
-    const prompt = buildGeminiCoverPrompt({
+    const prompt = buildCoverPrompt({
       title: "Crispy Duck Confit",
       cuisine: "French",
       description: "Tender cured duck legs cooked slowly in duck fat.",
@@ -177,7 +177,7 @@ describe("src/recipes/ai.js AI client bridge", () => {
       "https://supabase.co/storage/v1/object/public/recipe-covers/user-123/recipe-1-12345.jpg"
     );
 
-    const cdnUrl = await generateRecipeCoverWithGemini(
+    const cdnUrl = await generateRecipeCover(
       { title: "Pan-seared Salmon" },
       { userId: "user-123", recipeId: "recipe-1" }
     );

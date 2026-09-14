@@ -202,6 +202,21 @@ export function quantityLabel(quantity, multiplier = 1) {
     : Number(value.toFixed(2)).toString();
 }
 
+export function isValidArtwork(value) {
+  if (typeof value !== "string" || !value.trim()) return false;
+  const trimmed = value.trim();
+  if (ARTWORKS.includes(trimmed)) return true;
+  if (trimmed in RECIPE_IMAGES) return true;
+  if (trimmed.startsWith("/") && !trimmed.startsWith("//")) return true;
+  if (trimmed.startsWith("data:image/")) return true;
+  try {
+    const parsed = new URL(trimmed);
+    return parsed.protocol === "https:" || parsed.protocol === "http:";
+  } catch {
+    return false;
+  }
+}
+
 export function validateRecipe(recipe) {
   const string = (value, max = 1000) =>
     typeof value === "string" && value.length <= max;
@@ -303,7 +318,7 @@ export function validateRecipe(recipe) {
     notes: recipe.notes ?? [],
     substitutions: recipe.substitutions ?? [],
     equipment: recipe.equipment ?? [],
-    artwork: ARTWORKS.includes(recipe.artwork) ? recipe.artwork : "",
+    artwork: isValidArtwork(recipe.artwork) ? recipe.artwork.trim() : "",
     example: recipe.example === true,
     ingredients: recipe.ingredients.map((item, index) => ({
       id: `ingredient-${index}`,

@@ -1,16 +1,24 @@
+import { useEffect, useState } from "react";
 import { Sprout } from "lucide-react";
 import { ARTWORKS, RECIPE_IMAGES } from "../library";
 
 export default function RecipeArtwork({ artwork, title, className = "" }) {
+  const [hasError, setHasError] = useState(false);
   const index = ARTWORKS.indexOf(artwork);
   const isCustomImage = Boolean(
     artwork &&
+      !hasError &&
       (artwork.startsWith("http://") ||
         artwork.startsWith("https://") ||
         artwork.startsWith("data:image/") ||
         artwork.startsWith("/")),
   );
   const image = RECIPE_IMAGES[artwork] || (isCustomImage ? artwork : null);
+
+  useEffect(() => {
+    setHasError(false);
+  }, [artwork]);
+
   return (
     <div
       className={`recipe-art ${index < 0 && !image ? "recipe-art--type" : ""} ${className}`}
@@ -25,6 +33,8 @@ export default function RecipeArtwork({ artwork, title, className = "" }) {
           height="1000"
           loading="lazy"
           decoding="async"
+          referrerPolicy="no-referrer"
+          onError={() => setHasError(true)}
         />
       ) : index >= 0 ? (
         <div
@@ -45,3 +55,4 @@ export default function RecipeArtwork({ artwork, title, className = "" }) {
     </div>
   );
 }
+

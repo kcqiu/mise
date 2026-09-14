@@ -80,14 +80,20 @@ describe("recipe search and content", () => {
       }),
     ).toThrow(/ingredient/);
   });
-  it("ignores unsupported imported properties and arbitrary art URLs", () => {
+  it("preserves valid image URLs and ignores unsupported/dangerous imported properties", () => {
     const recipe = validateRecipe({
       ...recipes[0],
-      artwork: "https://elsewhere.test/track.png",
+      artwork: "https://images.unsplash.com/photo-example.jpg",
       dangerous: "ignore me",
     });
-    expect(recipe.artwork).toBe("");
+    expect(recipe.artwork).toBe("https://images.unsplash.com/photo-example.jpg");
     expect(recipe.dangerous).toBeUndefined();
+
+    const unsafeRecipe = validateRecipe({
+      ...recipes[0],
+      artwork: "javascript:alert(1)",
+    });
+    expect(unsafeRecipe.artwork).toBe("");
   });
   it("keeps grouped ingredients and resting time in a saved recipe", () => {
     const recipe = validateRecipe(

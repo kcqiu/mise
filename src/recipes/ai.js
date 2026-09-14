@@ -14,7 +14,7 @@ import { uploadRecipeCover } from "./cloud";
  * @param {Object} recipe
  * @returns {string}
  */
-export function buildGeminiCoverPrompt(recipe) {
+export function buildCoverPrompt(recipe) {
   const keyIngredients = (recipe.ingredients || [])
     .map((i) => (typeof i === "string" ? i : i.name))
     .filter(Boolean)
@@ -140,23 +140,23 @@ export async function enhanceRecipeWithGemini(recipe) {
 }
 
 /**
- * Generates a realistic editorial food photograph for a dish using Gemini Imagen 3.
+ * Generates a realistic editorial food photograph for a dish using Cloudflare FLUX AI.
  * If userId is provided, uploads the image to Supabase Storage CDN and returns the public CDN URL.
  * Otherwise returns a base64 data URL.
  * @param {Object} recipe
  * @param {{ userId?: string, recipeId?: string }} [options={}]
  * @returns {Promise<string>} Cover photo URL
  */
-export async function generateRecipeCoverWithGemini(recipe, options = {}) {
+export async function generateRecipeCover(recipe, options = {}) {
   const data = await callAiEndpoint("/api/ai/generate-cover", {
     recipe,
   });
 
   if (!data?.base64) {
-    throw new Error("No image data received from Gemini Imagen.");
+    throw new Error("No image data received from AI image generation.");
   }
 
-  const mimeType = data.mimeType || "image/jpeg";
+  const mimeType = data.mimeType || "image/png";
   const dataUrl = `data:${mimeType};base64,${data.base64}`;
 
   // If user is authenticated and cloud-enabled, upload to Supabase Storage CDN

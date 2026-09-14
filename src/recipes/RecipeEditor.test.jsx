@@ -3,7 +3,7 @@ import { cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import RecipeEditor from './components/RecipeEditor';
 import * as aiModule from './ai';
-import { buildGeminiCoverPrompt } from './ai';
+import { buildCoverPrompt } from './ai';
 
 beforeEach(() => {
   HTMLDialogElement.prototype.showModal = function () {
@@ -13,7 +13,10 @@ beforeEach(() => {
     this.removeAttribute('open');
   };
 });
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  vi.restoreAllMocks();
+});
 
 describe('RecipeEditor component', () => {
   const defaultRecipe = {
@@ -103,7 +106,7 @@ describe('RecipeEditor component', () => {
     ).toBeInTheDocument();
   });
 
-  it('provides cover photo controls including upload, URL and Gemini AI placeholder', async () => {
+  it('provides cover photo controls including upload, URL and AI generation', async () => {
     const user = userEvent.setup();
     render(
       <RecipeEditor
@@ -118,22 +121,22 @@ describe('RecipeEditor component', () => {
     );
 
     expect(screen.getByRole('button', { name: /Upload photo/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Generate with Gemini/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Generate with AI/i })).toBeInTheDocument();
     expect(
       screen.getByPlaceholderText(/paste an image URL/i)
     ).toBeInTheDocument();
 
-    vi.spyOn(aiModule, 'generateRecipeCoverWithGemini').mockResolvedValueOnce(
+    vi.spyOn(aiModule, 'generateRecipeCover').mockResolvedValueOnce(
       'https://supabase.co/storage/v1/object/public/recipe-covers/user/cake.jpg'
     );
 
-    await user.click(screen.getByRole('button', { name: /Generate with Gemini/i }));
+    await user.click(screen.getByRole('button', { name: /Generate with AI/i }));
     expect(
       await screen.findByText(/Photo generated/i)
     ).toBeInTheDocument();
   });
 
-  it('disables Generate with Gemini button until user fills in most recipe info to save tokens', () => {
+  it('disables Generate with AI button until user fills in most recipe info to save tokens', () => {
     render(
       <RecipeEditor
         recipe={null}
@@ -146,7 +149,7 @@ describe('RecipeEditor component', () => {
       />
     );
 
-    const generateBtn = screen.getByRole('button', { name: /Generate with Gemini/i });
+    const generateBtn = screen.getByRole('button', { name: /Generate with AI/i });
     expect(generateBtn).toBeDisabled();
     expect(screen.getByText(/To save on API tokens, fill in title, category, 2\+ ingredients, and 1\+ step/i)).toBeInTheDocument();
   });
@@ -203,17 +206,66 @@ describe('RecipeEditor component', () => {
 
     expect(handleClose).not.toHaveBeenCalled();
   });
+
+  it('preserves pasted image URL in saved recipe without clearing artwork', async () => {
+    const user = userEvent.setup();
+    const handleSave = vi.fn().mockResolvedValue('');
+    render(
+      <RecipeEditor
+        recipe={defaultRecipe}
+        categories={['Baking', 'Dinner']}
+        onSave={handleSave}
+        onClose={vi.fn()}
+        onDelete={vi.fn()}
+        isLocal={true}
+        isCloud={true}
+      />
+    );
+
+    const urlInput = screen.getByPlaceholderText(/paste an image URL/i);
+    await user.clear(urlInput);
+    await user.type(urlInput, 'https://images.unsplash.com/photo-matcha-cake.jpg');
+
+    await user.click(screen.getByRole('button', { name: /Save recipe/i }));
+    expect(handleSave).toHaveBeenCalled();
+    const saved = handleSave.mock.calls[0][0];
+    expect(saved.artwork).toBe('https://images.unsplash.com/photo-matcha-cake.jpg');
+  });
+
+  it('never calls AI refine automatically when saving a recipe', async () => {
+    const user = userEvent.setup();
+    const enhanceSpy = vi.spyOn(aiModule, 'enhanceRecipeWithGemini');
+    const handleSave = vi.fn().mockResolvedValue('');
+
+    render(
+      <RecipeEditor
+        recipe={defaultRecipe}
+        categories={['Baking', 'Dinner']}
+        onSave={handleSave}
+        onClose={vi.fn()}
+        onDelete={vi.fn()}
+        isLocal={true}
+        isCloud={true}
+      />
+    );
+
+    // Save recipe directly without clicking Refine with AI
+    await user.click(screen.getByRole('button', { name: /Save recipe/i }));
+    expect(handleSave).toHaveBeenCalled();
+    // enhanceRecipeWithGemini should NEVER be called on save
+    expect(enhanceSpy).not.toHaveBeenCalled();
+  });
 });
 
-describe('Gemini AI module', () => {
-  it('buildGeminiCoverPrompt creates descriptive photography prompt', () => {
+describe('AI cover prompt builder', () => {
+  it('buildCoverPrompt creates descriptive photography prompt', () => {
     const recipe = {
       title: 'Lobster Risotto',
       description: 'Creamy arborio rice with butter poached lobster.',
       cuisine: 'Italian',
       ingredients: [{ name: 'Arborio rice' }, { name: 'Lobster tails' }, { name: 'Parmigiano' }],
     };
-    const prompt = buildGeminiCoverPrompt(recipe);
+    const prompt = buildCoverPrompt(recipe);
     expect(prompt).toContain('Lobster Risotto');
     expect(prompt).toContain('Italian style');
     expect(prompt).toContain('Arborio rice, Lobster tails, Parmigiano');

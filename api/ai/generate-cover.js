@@ -1,15 +1,14 @@
-import { GoogleGenAI } from "@google/genai";
-
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     res.setHeader("Allow", "POST");
     return res.status(405).json({ error: "Method not allowed. Use POST." });
   }
 
-  const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
-  if (!apiKey) {
+  const cfToken = process.env.CLOUDFLARE_API_TOKEN;
+  const cfAccountId = process.env.CLOUDFLARE_ACCOUNT_ID;
+  if (!cfToken || !cfAccountId) {
     return res.status(503).json({
-      error: "Gemini API key is not configured. Please add GEMINI_API_KEY in your Vercel Project Environment Variables.",
+      error: "Cloudflare API credentials are not configured. Please add CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID in your Vercel Project Environment Variables.",
       missingKey: true
     });
   }
@@ -33,52 +32,47 @@ export default async function handler(req, res) {
   } Featuring: ${keyIngredients || "fresh ingredients"}. Plated appetizingly on rustic ceramic dish, warm soft natural side lighting, steam gently rising, symmetrical composition, shallow depth of field, 8k resolution, food magazine cover style, photorealistic.`;
 
   try {
-    const ai = new GoogleGenAI({ apiKey });
+    const cfUrl = `https://api.cloudflare.com/client/v4/accounts/${cfAccountId}/ai/run/@cf/black-forest-labs/flux-1-schnell`;
 
-    // Use the most cost-efficient image model: gemini-3.1-flash-lite-image
-    let imageBytes = null;
-    let mimeType = "image/jpeg";
+    const cfRes = await fetch(cfUrl, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${cfToken}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ prompt })
+    });
 
-    try {
-      const response = await ai.models.generateContent({
-        model: "gemini-3.1-flash-lite-image",
-        contents: prompt
-      });
-      const part = response.candidates?.[0]?.content?.parts?.find((p) => p.inlineData);
-      if (part?.inlineData?.data) {
-        imageBytes = part.inlineData.data;
-        mimeType = part.inlineData.mimeType || "image/jpeg";
-      }
-    } catch (modelErr) {
-      if (
-        modelErr.message?.includes("limit: 0") ||
-        modelErr.message?.includes("RESOURCE_EXHAUSTED") ||
-        modelErr.message?.includes("429")
-      ) {
+    if (!cfRes.ok) {
+      const errBody = await cfRes.text();
+      console.error("Cloudflare AI error:", cfRes.status, errBody);
+
+      if (cfRes.status === 429) {
         return res.status(429).json({
-          error:
-            "Gemini image generation requires a Google Cloud / AI Studio project with pay-as-you-go billing enabled. (Google offers free tier for recipe text & photo parsing, but restricts image generation models to billing-enabled accounts). You can upload a photo or paste an image URL for free!",
-          billingRequired: true,
+          error: "Cloudflare free tier daily limit reached. Try again tomorrow or upload a photo instead!",
           prompt
         });
       }
-      throw modelErr;
+      throw new Error(`Cloudflare AI returned ${cfRes.status}: ${errBody}`);
     }
 
-    if (!imageBytes) {
-      throw new Error("No image data was returned from the Gemini image model.");
+    const data = await cfRes.json();
+    const imageBase64 = data?.result?.image;
+
+    if (!imageBase64) {
+      throw new Error("No image data was returned from Cloudflare FLUX.");
     }
 
     return res.status(200).json({
       success: true,
-      base64: imageBytes,
-      mimeType,
+      base64: imageBase64,
+      mimeType: "image/png",
       prompt
     });
   } catch (err) {
     console.error("AI Image Generation Error:", err);
     return res.status(500).json({
-      error: err.message || "Failed to generate realistic food photo with Gemini.",
+      error: err.message || "Failed to generate food photo.",
       prompt,
       details: err.toString()
     });
