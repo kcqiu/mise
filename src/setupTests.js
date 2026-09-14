@@ -15,3 +15,18 @@ if (typeof Blob !== "undefined" && !Blob.prototype.text) {
     });
   };
 }
+
+// Global safety guard: block any unmocked external network requests in tests
+// to guarantee 0 tokens or API quota are ever consumed during development/testing.
+const originalFetch = globalThis.fetch;
+if (originalFetch) {
+  globalThis.fetch = async (input, init) => {
+    const urlStr = typeof input === "string" ? input : input?.url || "";
+    if (urlStr.startsWith("http://") || urlStr.startsWith("https://")) {
+      throw new Error(
+        `External network call to ${urlStr} was blocked in test suite to prevent API token consumption. Mock the endpoint before testing.`
+      );
+    }
+    return originalFetch(input, init);
+  };
+}
