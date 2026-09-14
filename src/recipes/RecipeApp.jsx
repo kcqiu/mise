@@ -225,17 +225,20 @@ export default function RecipeApp() {
     }
   };
   const favorite = async (id) => {
+    if (cloudEnabled && !account.session) {
+      setAuthModal({
+        open: true,
+        intent: "favorite",
+        error: "",
+      });
+      return;
+    }
     const wasFavorite = activeLibrary.favorites.includes(id);
     const favorites = wasFavorite
       ? activeLibrary.favorites.filter((value) => value !== id)
       : [...activeLibrary.favorites, id];
     if (!account.session) {
       commitLocal({ ...library, favorites });
-      if (cloudEnabled) {
-        const msg = "Sign in to keep favorites synced across your devices.";
-        setNotice(msg);
-        addToast(msg, "cloud");
-      }
       return;
     }
     setAccount((current) => ({

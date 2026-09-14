@@ -86,6 +86,26 @@ describe("AuthModal component", () => {
       screen.getByText("This account is not approved for MISE."),
     ).toBeInTheDocument();
   });
+
+  it("renders with favorite intent copy when initialIntent is favorite", () => {
+    render(
+      <AuthModal
+        isOpen={true}
+        onClose={vi.fn()}
+        onSignIn={vi.fn()}
+        initialIntent="favorite"
+      />,
+    );
+
+    expect(
+      screen.getByRole("heading", { name: "Sign in to sync your favorites" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Keep your favorite keepers ready to cook whether you're at your computer or in the kitchen on your phone.",
+      ),
+    ).toBeInTheDocument();
+  });
 });
 
 describe("ToastStack component", () => {
