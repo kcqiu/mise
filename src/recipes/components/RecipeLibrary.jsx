@@ -30,9 +30,20 @@ export default function RecipeLibrary({
         (!category || recipe.category === category) &&
         (collection !== "favorites" || favorites.includes(recipe.id)),
     );
-    if (sort === "time")
+    if (sort === "time") {
       selected.sort((a, b) => totalMinutes(a) - totalMinutes(b));
-    if (sort === "az") selected.sort((a, b) => a.title.localeCompare(b.title));
+    } else if (sort === "az") {
+      selected.sort((a, b) => a.title.localeCompare(b.title));
+    } else if (sort === "collection" && !query) {
+      selected.sort((a, b) => {
+        const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        if (timeA && timeB && timeA !== timeB) return timeB - timeA;
+        if (timeA && !timeB) return -1;
+        if (!timeA && timeB) return 1;
+        return 0;
+      });
+    }
     return selected;
   }, [search, query, category, collection, favorites, sort]);
   const set = (patch) => onState({ ...state, ...patch });
@@ -173,7 +184,7 @@ export default function RecipeLibrary({
                 value={sort}
                 onChange={(event) => set({ sort: event.target.value })}
               >
-                <option value="collection">Collection order</option>
+                <option value="collection">Latest added</option>
                 <option value="time">Quickest first</option>
                 <option value="az">Name, A to Z</option>
               </select>

@@ -255,6 +255,22 @@ describe('RecipeEditor component', () => {
     // enhanceRecipeWithGemini should NEVER be called on save
     expect(enhanceSpy).not.toHaveBeenCalled();
   });
+
+  it('does not render an illustration picker dropdown', () => {
+    render(
+      <RecipeEditor
+        recipe={defaultRecipe}
+        categories={['Baking', 'Dinner']}
+        onSave={vi.fn()}
+        onClose={vi.fn()}
+        onDelete={vi.fn()}
+        isLocal={true}
+        isCloud={true}
+      />
+    );
+
+    expect(screen.queryByLabelText(/Illustration/i)).not.toBeInTheDocument();
+  });
 });
 
 describe('AI cover prompt builder', () => {

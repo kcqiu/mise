@@ -155,4 +155,70 @@ describe("personal recipe workflows", () => {
       "Imported Skillet Eggs",
     );
   });
+
+  it("sorts recipes by latest added by default on the shelf", () => {
+    const olderRecipe = {
+      id: "recipe-older",
+      title: "Older Added Recipe",
+      category: "Breakfast",
+      description: "",
+      cuisine: "",
+      method: "",
+      sourceVideo: "",
+      servings: 1,
+      prepMinutes: 5,
+      cookMinutes: 5,
+      restMinutes: 0,
+      tags: [],
+      keywords: [],
+      notes: [],
+      substitutions: [],
+      equipment: [],
+      artwork: "",
+      example: false,
+      createdAt: "2026-09-10T10:00:00.000Z",
+      ingredients: [{ id: "ing-1", name: "Toast", quantity: 1, unit: "", note: "", group: "" }],
+      steps: [{ id: "step-1", title: "Toast", instruction: "Toast bread." }],
+    };
+    const newerRecipe = {
+      id: "recipe-newer",
+      title: "Newer Added Recipe",
+      category: "Dinner",
+      description: "",
+      cuisine: "",
+      method: "",
+      sourceVideo: "",
+      servings: 2,
+      prepMinutes: 10,
+      cookMinutes: 10,
+      restMinutes: 0,
+      tags: [],
+      keywords: [],
+      notes: [],
+      substitutions: [],
+      equipment: [],
+      artwork: "",
+      example: false,
+      createdAt: "2026-09-14T12:00:00.000Z",
+      ingredients: [{ id: "ing-1", name: "Pasta", quantity: 200, unit: "g", note: "", group: "" }],
+      steps: [{ id: "step-1", title: "Boil", instruction: "Boil pasta." }],
+    };
+
+    window.localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        version: 1,
+        recipes: [olderRecipe, newerRecipe],
+        favorites: [],
+        progress: {},
+      })
+    );
+
+    render(<RecipeApp />);
+
+    const articles = screen.getAllByRole("article");
+    // Newest recipe should be the very first article on the shelf
+    expect(within(articles[0]).getByText("Newer Added Recipe")).toBeInTheDocument();
+    expect(within(articles[1]).getByText("Older Added Recipe")).toBeInTheDocument();
+  });
 });

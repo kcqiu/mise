@@ -9,7 +9,7 @@ import {
   Upload,
   X,
 } from "lucide-react";
-import { ARTWORKS, validateRecipe } from "../library";
+import { validateRecipe } from "../library";
 import { uploadRecipeCover } from "../cloud";
 import {
   enhanceRecipeWithGemini,
@@ -296,6 +296,8 @@ export default function RecipeEditor({
         ...draft,
         id: isLocal ? recipe.id : (draft.id && draft.id.startsWith("recipe-") ? draft.id : `recipe-${crypto.randomUUID()}`),
         example: false,
+        createdAt: draft.createdAt || recipe?.createdAt || new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
         servings: Number(draft.servings),
         prepMinutes: Number(draft.prepMinutes),
         cookMinutes: Number(draft.cookMinutes),
@@ -598,20 +600,6 @@ export default function RecipeEditor({
                 value={draft.servings}
                 onChange={(event) => set("servings", event.target.value)}
               />
-            </label>
-            <label>
-              Illustration
-              <select
-                value={draft.artwork}
-                onChange={(event) => set("artwork", event.target.value)}
-              >
-                <option value="">Lettering</option>
-                {ARTWORKS.map((artwork) => (
-                  <option key={artwork} value={artwork}>
-                    {artwork[0].toUpperCase() + artwork.slice(1)}
-                  </option>
-                ))}
-              </select>
             </label>
             <label>
               Cuisine

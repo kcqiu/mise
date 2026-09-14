@@ -320,6 +320,14 @@ export function validateRecipe(recipe) {
     equipment: recipe.equipment ?? [],
     artwork: isValidArtwork(recipe.artwork) ? recipe.artwork.trim() : "",
     example: recipe.example === true,
+    createdAt:
+      typeof recipe.createdAt === "string" && recipe.createdAt
+        ? recipe.createdAt
+        : "",
+    updatedAt:
+      typeof recipe.updatedAt === "string" && recipe.updatedAt
+        ? recipe.updatedAt
+        : "",
     ingredients: recipe.ingredients.map((item, index) => ({
       id: `ingredient-${index}`,
       name: item.name,

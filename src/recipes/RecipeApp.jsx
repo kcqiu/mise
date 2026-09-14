@@ -83,17 +83,21 @@ export default function RecipeApp() {
   const personalRecipes = account.session
     ? account.library.recipes
     : library.recipes;
-  const recipes = useMemo(
-    () => [
-      ...new Map(
-        [...publishedRecipes, ...personalRecipes].map((recipe) => [
-          recipe.id,
-          recipe,
-        ]),
-      ).values(),
-    ],
-    [personalRecipes],
-  );
+  const recipes = useMemo(() => {
+    const personalIds = new Set(personalRecipes.map((r) => r.id));
+    const remainingPublished = publishedRecipes.filter(
+      (r) => !personalIds.has(r.id),
+    );
+
+    const sortedPersonal = [...personalRecipes].sort((a, b) => {
+      const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      if (timeA && timeB && timeA !== timeB) return timeB - timeA;
+      return 0;
+    });
+
+    return [...sortedPersonal, ...remainingPublished];
+  }, [personalRecipes]);
   const current = recipes.find((recipe) => recipe.id === route);
 
   const addToast = (message, type = "info", title = "") => {
@@ -270,8 +274,8 @@ export default function RecipeApp() {
     const progress = { ...activeLibrary.progress };
     delete progress[recipe.id];
     const nextRecipes = [
-      ...personalRecipes.filter((item) => item.id !== recipe.id),
       recipe,
+      ...personalRecipes.filter((item) => item.id !== recipe.id),
     ];
     if (account.session) {
       try {
