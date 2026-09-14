@@ -49,6 +49,13 @@ Any existing browser-saved library is imported once after the first successful
 sign-in. Without cloud configuration, the app retains its original local-only
 behavior for development and recovery.
 
+## Instagram recipe imports
+
+Automatic imports from other creators' public Instagram posts use the server-only
+`CHOCODATA_API_KEY`, alongside `GEMINI_API_KEY`. Meta account IDs and app secrets
+do not enable arbitrary post caption lookup. Pasted captions skip ChocoData.
+See [setup, architecture and limitations](docs/instagram-import.md).
+
 ## Checks
 
 ```bash

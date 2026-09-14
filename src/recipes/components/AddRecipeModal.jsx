@@ -640,7 +640,7 @@ export default function AddRecipeModal({
                 />
                 <p className="add-recipe-modal__caption-hint">
                   {/instagram\.com/i.test(socialInput)
-                    ? "Meta restricts automated caption scraping from cloud servers. Pasting the caption ensures 100% accurate recipe extraction while MISE embeds your playable Reel!"
+                    ? "Try the link on its own, or paste the caption to skip automatic lookup. If the caption is unavailable, open the post and copy its recipe text here. Review the extracted recipe before saving."
                     : "If the video doesn't have a public text description, paste the recipe notes or ingredient list here."}
                 </p>
               </div>
