@@ -2,20 +2,38 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowLeft,
   BookOpen,
+  Cloud,
   Download,
+  LogIn,
+  LogOut,
   MoreHorizontal,
   Plus,
   Sprout,
   Upload,
+  UserRound,
   X,
 } from "lucide-react";
 import publishedRecipes from "./data/recipes.json";
 import {
   getCategories,
+  EMPTY_LIBRARY,
   parseBackup,
   readLibrary,
   STORAGE_KEY,
 } from "./library";
+import {
+  cloudEnabled,
+  deleteAccountRecipe,
+  getSession,
+  importAccountLibrary,
+  loadAccountLibrary,
+  saveAccountRecipe,
+  setAccountFavorite,
+  setAccountProgress,
+  signInWithGoogle,
+  signOut,
+  watchSession,
+} from "./cloud";
 import RecipeLibrary from "./components/RecipeLibrary";
 import RecipeDetail from "./components/RecipeDetail";
 import RecipeEditor from "./components/RecipeEditor";
@@ -29,6 +47,12 @@ function readRoute() {
 export default function RecipeApp() {
   const [initial] = useState(readLibrary);
   const [library, setLibrary] = useState(initial.library);
+  const libraryRef = useRef(initial.library);
+  const [account, setAccount] = useState({
+    session: null,
+    library: EMPTY_LIBRARY,
+    loading: cloudEnabled,
+  });
   const [notice, setNotice] = useState(initial.error);
   const [route, setRoute] = useState(readRoute);
   const [shelfState, setShelfState] = useState({
@@ -40,16 +64,21 @@ export default function RecipeApp() {
   const [editor, setEditor] = useState(null);
   const importInput = useRef(null);
   const toolsMenu = useRef(null);
+  const accountMenu = useRef(null);
+  const activeLibrary = account.session ? account.library : library;
+  const personalRecipes = account.session
+    ? account.library.recipes
+    : library.recipes;
   const recipes = useMemo(
     () => [
       ...new Map(
-        [...publishedRecipes, ...library.recipes].map((recipe) => [
+        [...publishedRecipes, ...personalRecipes].map((recipe) => [
           recipe.id,
           recipe,
         ]),
       ).values(),
     ],
-    [library.recipes],
+    [personalRecipes],
   );
   const current = recipes.find((recipe) => recipe.id === route);
 
@@ -67,6 +96,9 @@ export default function RecipeApp() {
       : "mise. | The recipe shelf";
   }, [current]);
   useEffect(() => {
+    libraryRef.current = library;
+  }, [library]);
+  useEffect(() => {
     const sync = (event) => {
       if (event.key === STORAGE_KEY) {
         const latest = readLibrary();
@@ -78,7 +110,58 @@ export default function RecipeApp() {
     return () => window.removeEventListener("storage", sync);
   }, []);
 
-  const commit = (next) => {
+  useEffect(() => {
+    if (!cloudEnabled) return undefined;
+    let active = true;
+    const hydrate = async (session) => {
+      if (!active) return;
+      if (!session) {
+        setAccount({ session: null, library: EMPTY_LIBRARY, loading: false });
+        return;
+      }
+      setAccount((current) => ({ ...current, session, loading: true }));
+      try {
+        const pending = libraryRef.current;
+        const hasLocalData =
+          pending.recipes.length > 0 ||
+          pending.favorites.length > 0 ||
+          Object.keys(pending.progress).length > 0;
+        if (hasLocalData) {
+          await importAccountLibrary(session.user.id, pending);
+          window.localStorage.removeItem(STORAGE_KEY);
+          libraryRef.current = EMPTY_LIBRARY;
+          if (active) {
+            setLibrary(EMPTY_LIBRARY);
+            setNotice("Your browser recipes are now synced to this account.");
+          }
+        }
+        const remote = await loadAccountLibrary(session.user.id);
+        if (active) setAccount({ session, library: remote, loading: false });
+      } catch (error) {
+        if (active) {
+          setAccount((current) => ({ ...current, loading: false }));
+          setNotice(
+            `Your account connected, but recipes could not sync: ${error.message}`,
+          );
+        }
+      }
+    };
+    getSession()
+      .then(hydrate)
+      .catch((error) => {
+        if (active) {
+          setAccount({ session: null, library: EMPTY_LIBRARY, loading: false });
+          setNotice(`Sign-in could not be restored: ${error.message}`);
+        }
+      });
+    const stopWatching = watchSession(hydrate);
+    return () => {
+      active = false;
+      stopWatching();
+    };
+  }, []);
+
+  const commitLocal = (next) => {
     try {
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
       setLibrary(next);
@@ -90,14 +173,32 @@ export default function RecipeApp() {
       return message;
     }
   };
-  const favorite = (id) =>
-    commit({
-      ...library,
-      favorites: library.favorites.includes(id)
-        ? library.favorites.filter((value) => value !== id)
-        : [...library.favorites, id],
-    });
-  const save = (recipe) => {
+  const favorite = async (id) => {
+    const wasFavorite = activeLibrary.favorites.includes(id);
+    const favorites = wasFavorite
+      ? activeLibrary.favorites.filter((value) => value !== id)
+      : [...activeLibrary.favorites, id];
+    if (!account.session) {
+      commitLocal({ ...library, favorites });
+      if (cloudEnabled)
+        setNotice("Sign in to keep favorites synced across your devices.");
+      return;
+    }
+    setAccount((current) => ({
+      ...current,
+      library: { ...current.library, favorites },
+    }));
+    try {
+      await setAccountFavorite(account.session.user.id, id, !wasFavorite);
+    } catch (error) {
+      setAccount((current) => ({
+        ...current,
+        library: { ...current.library, favorites: activeLibrary.favorites },
+      }));
+      setNotice(`Favorite could not sync: ${error.message}`);
+    }
+  };
+  const save = async (recipe) => {
     for (const key of [
       "tags",
       "keywords",
@@ -106,16 +207,30 @@ export default function RecipeApp() {
       "equipment",
     ])
       recipe[key] = recipe[key].map((item) => item.trim()).filter(Boolean);
-    const progress = { ...library.progress };
+    const progress = { ...activeLibrary.progress };
     delete progress[recipe.id];
-    const error = commit({
-      ...library,
-      recipes: [
-        ...library.recipes.filter((item) => item.id !== recipe.id),
-        recipe,
-      ],
-      progress,
-    });
+    const nextRecipes = [
+      ...personalRecipes.filter((item) => item.id !== recipe.id),
+      recipe,
+    ];
+    if (account.session) {
+      try {
+        await saveAccountRecipe(account.session.user.id, recipe);
+        setAccount((current) => ({
+          ...current,
+          library: { ...current.library, recipes: nextRecipes, progress },
+        }));
+        setEditor(null);
+        setNotice("Recipe saved to your account.");
+        window.location.hash = `/recipe/${recipe.id}`;
+        return "";
+      } catch (error) {
+        const message = `Recipe could not sync: ${error.message}`;
+        setNotice(message);
+        return message;
+      }
+    }
+    const error = commitLocal({ ...library, recipes: nextRecipes, progress });
     if (!error) {
       setEditor(null);
       setNotice("Recipe saved on this browser.");
@@ -123,15 +238,30 @@ export default function RecipeApp() {
     }
     return error;
   };
-  const remove = (id) => {
-    const progress = { ...library.progress };
+  const remove = async (id) => {
+    const progress = { ...activeLibrary.progress };
     delete progress[id];
-    const error = commit({
-      ...library,
-      recipes: library.recipes.filter((recipe) => recipe.id !== id),
-      favorites: library.favorites.filter((value) => value !== id),
+    const next = {
+      ...activeLibrary,
+      recipes: personalRecipes.filter((recipe) => recipe.id !== id),
+      favorites: activeLibrary.favorites.filter((value) => value !== id),
       progress,
-    });
+    };
+    if (account.session) {
+      try {
+        await deleteAccountRecipe(account.session.user.id, id);
+        setAccount((current) => ({ ...current, library: next }));
+        setEditor(null);
+        window.location.hash = "/";
+        setNotice("Recipe removed from your account.");
+        return "";
+      } catch (error) {
+        const message = `Recipe could not be removed: ${error.message}`;
+        setNotice(message);
+        return message;
+      }
+    }
+    const error = commitLocal(next);
     if (!error) {
       setEditor(null);
       window.location.hash = "/";
@@ -143,7 +273,11 @@ export default function RecipeApp() {
       new Blob(
         [
           JSON.stringify(
-            { version: 1, recipes, favorites: library.favorites },
+            {
+              version: 1,
+              recipes: personalRecipes,
+              favorites: activeLibrary.favorites,
+            },
             null,
             2,
           ),
@@ -166,6 +300,23 @@ export default function RecipeApp() {
       if (file.size > 2 * 1024 * 1024)
         throw new Error("Please choose a JSON backup smaller than 2 MB.");
       const backup = parseBackup(await file.text());
+      if (account.session) {
+        const systemIds = new Set(publishedRecipes.map(({ id }) => id));
+        const personalBackup = {
+          ...backup,
+          recipes: backup.recipes.filter(({ id }) => !systemIds.has(id)),
+        };
+        await importAccountLibrary(account.session.user.id, {
+          ...personalBackup,
+          progress: {},
+        });
+        const remote = await loadAccountLibrary(account.session.user.id);
+        setAccount((current) => ({ ...current, library: remote }));
+        setNotice(
+          `Imported ${personalBackup.recipes.length} personal recipes to your account.`,
+        );
+        return;
+      }
       const merged = [
         ...new Map(
           [...library.recipes, ...backup.recipes].map((recipe) => [
@@ -176,7 +327,7 @@ export default function RecipeApp() {
       ];
       const progress = { ...library.progress };
       backup.recipes.forEach((recipe) => delete progress[recipe.id]);
-      const error = commit({
+      const error = commitLocal({
         ...library,
         recipes: merged,
         favorites: [...new Set([...library.favorites, ...backup.favorites])],
@@ -193,6 +344,48 @@ export default function RecipeApp() {
           : error.message,
       );
     }
+  };
+  const openEditor = (recipe = null) => {
+    if (cloudEnabled && !account.session) {
+      setNotice("Sign in with Google to create and manage your recipes.");
+      return;
+    }
+    setEditor({ recipe });
+  };
+  const beginSignIn = async () => {
+    try {
+      await signInWithGoogle();
+    } catch (error) {
+      setNotice(`Google sign-in could not start: ${error.message}`);
+    }
+  };
+  const endSession = async () => {
+    try {
+      await signOut();
+      accountMenu.current?.removeAttribute("open");
+      setNotice("Signed out. System recipes are still available.");
+    } catch (error) {
+      setNotice(`Sign-out failed: ${error.message}`);
+    }
+  };
+  const updateProgress = (recipeId, progress) => {
+    if (!account.session) {
+      commitLocal({
+        ...library,
+        progress: { ...library.progress, [recipeId]: progress },
+      });
+      return;
+    }
+    setAccount((current) => ({
+      ...current,
+      library: {
+        ...current.library,
+        progress: { ...current.library.progress, [recipeId]: progress },
+      },
+    }));
+    setAccountProgress(account.session.user.id, recipeId, progress).catch(
+      (error) => setNotice(`Cooking progress could not sync: ${error.message}`),
+    );
   };
   return (
     <div className="recipe-app">
@@ -254,10 +447,50 @@ export default function RecipeApp() {
               </p>
             </div>
           </details>
+          {cloudEnabled &&
+            (account.session ? (
+              <details ref={accountMenu} className="account-menu">
+                <summary
+                  className="account-chip"
+                  aria-label="Open account menu"
+                  title={account.session.user.email}
+                >
+                  {account.session.user.user_metadata?.avatar_url ? (
+                    <img
+                      src={account.session.user.user_metadata.avatar_url}
+                      alt=""
+                      referrerPolicy="no-referrer"
+                    />
+                  ) : (
+                    <UserRound size={19} />
+                  )}
+                  <span>{account.session.user.user_metadata?.name || "My account"}</span>
+                </summary>
+                <div className="tools-menu account-menu__panel">
+                  <span className="eyebrow">
+                    <Cloud size={13} /> Synced library
+                  </span>
+                  <strong>{account.session.user.user_metadata?.name || "Cook"}</strong>
+                  <small>{account.session.user.email}</small>
+                  <button onClick={endSession}>
+                    <LogOut size={17} /> Sign out
+                  </button>
+                </div>
+              </details>
+            ) : (
+              <button
+                className="button button--light account-sign-in"
+                onClick={beginSignIn}
+                disabled={account.loading}
+              >
+                <LogIn size={17} />
+                <span>{account.loading ? "Connecting" : "Sign in"}</span>
+              </button>
+            ))}
           <button
             className="button add-recipe-button"
             aria-label="Add recipe"
-            onClick={() => setEditor({ recipe: null })}
+            onClick={() => openEditor()}
           >
             <Plus size={17} />
             <span>Add recipe</span>
@@ -290,17 +523,12 @@ export default function RecipeApp() {
           <RecipeDetail
             key={current.id}
             recipe={current}
-            favorite={library.favorites.includes(current.id)}
+            favorite={activeLibrary.favorites.includes(current.id)}
             onFavorite={favorite}
-            progress={library.progress[current.id]}
-            onProgress={(progress) =>
-              commit({
-                ...library,
-                progress: { ...library.progress, [current.id]: progress },
-              })
-            }
-            onEdit={(recipe) => setEditor({ recipe })}
-            isLocal={library.recipes.some((recipe) => recipe.id === current.id)}
+            progress={activeLibrary.progress[current.id]}
+            onProgress={(progress) => updateProgress(current.id, progress)}
+            onEdit={(recipe) => openEditor(recipe)}
+            isLocal={personalRecipes.some((recipe) => recipe.id === current.id)}
           />
         ) : (
           <main
@@ -323,11 +551,11 @@ export default function RecipeApp() {
       ) : (
         <RecipeLibrary
           recipes={recipes}
-          favorites={library.favorites}
+          favorites={activeLibrary.favorites}
           onFavorite={favorite}
           state={shelfState}
           onState={setShelfState}
-          onAdd={() => setEditor({ recipe: null })}
+          onAdd={() => openEditor()}
         />
       )}
       <footer className="app-footer">
@@ -343,7 +571,7 @@ export default function RecipeApp() {
           categories={getCategories(recipes).map(([name]) => name)}
           isLocal={
             !!editor.recipe &&
-            library.recipes.some((recipe) => recipe.id === editor.recipe.id)
+            personalRecipes.some((recipe) => recipe.id === editor.recipe.id)
           }
           onSave={save}
           onDelete={remove}

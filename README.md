@@ -1,6 +1,8 @@
 # mise.
 
-Personal recipe library built with React, Vite, and Supabase.
+Personal recipe library built with React, Vite, and Supabase. System recipes are
+available to everyone; signed-in cooks can create a private collection and sync
+favorites and cooking progress across devices.
 
 ## Local development
 
@@ -11,6 +13,19 @@ npm run dev
 
 Create `.env.local` from `.env.example` when Supabase authentication is enabled.
 
+## Supabase setup
+
+1. Run `supabase/migrations/202609140001_initial_schema.sql` in the Supabase SQL Editor.
+2. Run `npm run seed:generate` after changing the system recipe JSON.
+3. Run `supabase/seed.sql` in the SQL Editor to publish the system collection.
+4. Enable Google in Authentication > Providers.
+5. Set the Auth Site URL to `https://mise.kecheng.dev` and allow
+   `http://localhost:5173/**` for local development.
+
+The browser receives only the Supabase project URL and publishable key. Never
+place a secret key, service-role key, Google client secret, or database password
+in a `VITE_` variable.
+
 ## Production
 
 The Vercel project should use:
@@ -20,3 +35,11 @@ The Vercel project should use:
 - Output directory: `dist`
 
 The public deployment is intended to be unlisted and uses `noindex, nofollow`.
+
+## Persistence
+
+When cloud configuration is present, Google sign-in unlocks recipe creation.
+Recipes, favorites, and cooking progress are account-owned and protected by RLS.
+Any existing browser-saved library is imported once after the first successful
+sign-in. Without cloud configuration, the app retains its original local-only
+behavior for development and recovery.

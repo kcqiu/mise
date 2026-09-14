@@ -72,7 +72,7 @@ export default function RecipeEditor({
       document.body.style.overflow = overflow;
     };
   }, []);
-  const submit = (event) => {
+  const submit = async (event) => {
     event.preventDefault();
     try {
       const saved = validateRecipe({
@@ -88,7 +88,7 @@ export default function RecipeEditor({
           quantity: item.quantity === "" ? null : Number(item.quantity),
         })),
       });
-      const problem = onSave(saved);
+      const problem = await onSave(saved);
       if (problem) setError(problem);
     } catch (problem) {
       setError(problem.message);

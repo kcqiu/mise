@@ -224,11 +224,61 @@ svg {
 .library-tools {
   position: relative;
 }
+.account-menu {
+  position: relative;
+}
+.account-menu summary,
 .library-tools summary {
   list-style: none;
 }
+.account-menu summary::-webkit-details-marker,
 .library-tools summary::-webkit-details-marker {
   display: none;
+}
+.account-chip {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 5px 11px 5px 5px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  max-width: 180px;
+}
+.account-chip:hover {
+  background: #e9eee7;
+}
+.account-chip img {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+.account-chip > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.account-menu__panel {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.account-menu__panel > strong {
+  margin-top: 8px;
+  font: 500 20px/1.2 var(--serif);
+}
+.account-menu__panel > small {
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+.account-menu__panel > button {
+  border-top: 1px solid var(--line);
+  margin-top: 10px;
+  padding-top: 14px;
 }
 .tools-menu {
   position: absolute;
@@ -1682,6 +1732,26 @@ svg {
   }
   .header-actions {
     gap: 5px;
+  }
+  .account-sign-in {
+    width: 40px;
+    min-height: 40px;
+    padding: 0;
+  }
+  .account-sign-in span,
+  .account-chip > span {
+    display: none;
+  }
+  .account-chip {
+    width: 40px;
+    height: 40px;
+    min-height: 40px;
+    padding: 3px;
+    justify-content: center;
+  }
+  .account-chip img {
+    width: 32px;
+    height: 32px;
   }
   .add-recipe-button {
     min-height: 40px;
