@@ -269,9 +269,9 @@ If the caption does not list every step explicitly, use your culinary knowledge 
       return res.status(400).json({ error: `Unsupported mode: '${mode}'. Use 'text', 'photo', 'url', or 'social'.` });
     }
 
-    // Call Gemini API
+    // Call Gemini API with the most cost-efficient model (gemini-3.5-flash-lite)
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-3.5-flash-lite",
       contents,
       config: {
         responseMimeType: "application/json",

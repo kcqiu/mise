@@ -35,34 +35,50 @@ export default async function handler(req, res) {
   try {
     const ai = new GoogleGenAI({ apiKey });
 
-    // Attempt Imagen 3 Generation
-    const response = await ai.models.generateImages({
-      model: "imagen-3.0-generate-002",
-      prompt,
-      config: {
-        numberOfImages: 1,
-        aspectRatio: "1:1",
-        outputMimeType: "image/jpeg"
-      }
-    });
+    // Use the most cost-efficient image model: gemini-3.1-flash-lite-image
+    let imageBytes = null;
+    let mimeType = "image/jpeg";
 
-    const generatedImage = response.generatedImages?.[0];
-    const imageBytes = generatedImage?.image?.imageBytes;
+    try {
+      const response = await ai.models.generateContent({
+        model: "gemini-3.1-flash-lite-image",
+        contents: prompt
+      });
+      const part = response.candidates?.[0]?.content?.parts?.find((p) => p.inlineData);
+      if (part?.inlineData?.data) {
+        imageBytes = part.inlineData.data;
+        mimeType = part.inlineData.mimeType || "image/jpeg";
+      }
+    } catch (modelErr) {
+      if (
+        modelErr.message?.includes("limit: 0") ||
+        modelErr.message?.includes("RESOURCE_EXHAUSTED") ||
+        modelErr.message?.includes("429")
+      ) {
+        return res.status(429).json({
+          error:
+            "Gemini image generation requires a Google Cloud / AI Studio project with pay-as-you-go billing enabled. (Google offers free tier for recipe text & photo parsing, but restricts image generation models to billing-enabled accounts). You can upload a photo or paste an image URL for free!",
+          billingRequired: true,
+          prompt
+        });
+      }
+      throw modelErr;
+    }
 
     if (!imageBytes) {
-      throw new Error("No image data was returned from the image generation model.");
+      throw new Error("No image data was returned from the Gemini image model.");
     }
 
     return res.status(200).json({
       success: true,
       base64: imageBytes,
-      mimeType: "image/jpeg",
+      mimeType,
       prompt
     });
   } catch (err) {
     console.error("AI Image Generation Error:", err);
     return res.status(500).json({
-      error: err.message || "Failed to generate realistic food photo with Gemini Imagen.",
+      error: err.message || "Failed to generate realistic food photo with Gemini.",
       prompt,
       details: err.toString()
     });

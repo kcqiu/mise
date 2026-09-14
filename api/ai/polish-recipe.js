@@ -95,8 +95,9 @@ export default async function handler(req, res) {
   try {
     const ai = new GoogleGenAI({ apiKey });
 
+    // Call Gemini API with the most cost-efficient model (gemini-3.5-flash-lite)
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-3.5-flash-lite",
       contents: [
         POLISH_SYSTEM_PROMPT,
         `Here is the recipe to review and polish:\n\n${JSON.stringify(recipe, null, 2)}`

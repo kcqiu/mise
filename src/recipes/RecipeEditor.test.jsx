@@ -31,7 +31,10 @@ describe('RecipeEditor component', () => {
     servings: 8,
     artwork: '',
     sourceVideo: '',
-    ingredients: [{ quantity: 2, unit: 'cups', name: 'Flour', group: '', note: '' }],
+    ingredients: [
+      { quantity: 2, unit: 'cups', name: 'Flour', group: '', note: '' },
+      { quantity: 2, unit: 'tbsp', name: 'Matcha powder', group: '', note: '' },
+    ],
     steps: [{ title: 'Mix', instruction: 'Whisk matcha with flour.' }],
     notes: [],
     substitutions: [],
@@ -128,6 +131,24 @@ describe('RecipeEditor component', () => {
     expect(
       await screen.findByText(/Photo generated/i)
     ).toBeInTheDocument();
+  });
+
+  it('disables Generate with Gemini button until user fills in most recipe info to save tokens', () => {
+    render(
+      <RecipeEditor
+        recipe={null}
+        categories={['Baking', 'Dinner']}
+        onSave={vi.fn()}
+        onClose={vi.fn()}
+        onDelete={vi.fn()}
+        isLocal={false}
+        isCloud={true}
+      />
+    );
+
+    const generateBtn = screen.getByRole('button', { name: /Generate with Gemini/i });
+    expect(generateBtn).toBeDisabled();
+    expect(screen.getByText(/To save on API tokens, fill in title, category, 2\+ ingredients, and 1\+ step/i)).toBeInTheDocument();
   });
 
   it('provides Refine with AI button and polishes recipe draft', async () => {

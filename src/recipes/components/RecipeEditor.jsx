@@ -213,13 +213,32 @@ export default function RecipeEditor({
     }
   };
 
+  const validIngredients = (draft.ingredients || []).filter((i) => i.name?.trim());
+  const validSteps = (draft.steps || []).filter((s) => s.instruction?.trim());
+  const hasTitle = Boolean(draft.title?.trim() && draft.title.trim().length >= 3);
+  const hasCategory = Boolean(draft.category?.trim());
+  const hasIngredients = validIngredients.length >= 2;
+  const hasSteps = validSteps.length >= 1;
+
+  const canGenerateCover = hasTitle && hasCategory && hasIngredients && hasSteps;
+
+  const coverMissingReasons = [];
+  if (!hasTitle) coverMissingReasons.push("title (3+ chars)");
+  if (!hasCategory) coverMissingReasons.push("category");
+  if (!hasIngredients) coverMissingReasons.push(`${2 - validIngredients.length} more ingredient${validIngredients.length === 1 ? "" : "s"}`);
+  if (!hasSteps) coverMissingReasons.push("at least 1 cooking step");
+
+  const coverTooltip = canGenerateCover
+    ? "Generate realistic culinary photography for this dish with Gemini AI"
+    : `Fill in most recipe info to enable AI photography (still needs: ${coverMissingReasons.join(", ")})`;
+
   const handleGeminiGenerate = async () => {
-    if (!draft.title.trim()) {
-      setCoverNotice("Please give your recipe a name first so Gemini knows what dish to photograph.");
+    if (!canGenerateCover) {
+      setCoverNotice(`Please fill in most recipe info before generating: ${coverMissingReasons.join(", ")}.`);
       return;
     }
     setProcessingCover(true);
-    setCoverNotice("Generating photorealistic culinary photograph with Gemini Imagen...");
+    setCoverNotice("Generating photorealistic culinary photograph with Gemini AI...");
     try {
       const generatedUrl = await generateRecipeCoverWithGemini(draft, {
         userId: isCloud ? userId : null,
@@ -231,7 +250,7 @@ export default function RecipeEditor({
         setTimeout(() => setCoverNotice(""), 4000);
       }
     } catch (err) {
-      setCoverNotice(err.message || "Failed to generate photo with Gemini Imagen.");
+      setCoverNotice(err.message || "Failed to generate photo with Gemini AI.");
       setTimeout(() => setCoverNotice(""), 6000);
     } finally {
       setProcessingCover(false);
@@ -480,8 +499,8 @@ export default function RecipeEditor({
                     type="button"
                     className="button ai-sparkle-button editor-cover-btn"
                     onClick={handleGeminiGenerate}
-                    disabled={processingCover}
-                    title="Generate realistic dish photography with Gemini Imagen 3"
+                    disabled={processingCover || !canGenerateCover}
+                    title={coverTooltip}
                   >
                     {processingCover ? (
                       <>
@@ -492,11 +511,25 @@ export default function RecipeEditor({
                       <>
                         <Sparkles size={15} />
                         <span>Generate with Gemini</span>
-                        <span className="ai-badge">Imagen 3</span>
+                        <span className="ai-badge">AI</span>
                       </>
                     )}
                   </button>
                 </div>
+
+                {!canGenerateCover && (
+                  <p
+                    className="editor-cover-hint"
+                    style={{
+                      fontSize: "11px",
+                      color: "var(--muted)",
+                      margin: "4px 0 0 0",
+                      lineHeight: "1.4",
+                    }}
+                  >
+                    ℹ️ To save on API tokens, fill in title, category, 2+ ingredients, and 1+ step to unlock AI photo generation.
+                  </p>
+                )}
 
                 <div className="editor-cover-url-wrap">
                   <input
