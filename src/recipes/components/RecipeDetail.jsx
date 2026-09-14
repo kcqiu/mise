@@ -1,0 +1,401 @@
+import { useEffect, useRef, useState } from "react";
+import {
+  ArrowLeft,
+  Bookmark,
+  Check,
+  Clock3,
+  CookingPot,
+  Minus,
+  Pencil,
+  Plus,
+  RotateCcw,
+  Sun,
+  UsersRound,
+} from "lucide-react";
+import { groupIngredients, quantityLabel, totalMinutes } from "../library";
+import RecipeArtwork from "./RecipeArtwork";
+import RecipeVideo from "./RecipeVideo";
+
+function IngredientList({
+  ingredients,
+  checkedIngredients,
+  multiplier,
+  onToggle,
+}) {
+  return (
+    <ul className="ingredient-list">
+      {ingredients.map((ingredient) => (
+        <li key={ingredient.id}>
+          <label
+            className={
+              checkedIngredients.includes(ingredient.id) ? "checked" : ""
+            }
+          >
+            <input
+              type="checkbox"
+              checked={checkedIngredients.includes(ingredient.id)}
+              onChange={() => onToggle(ingredient.id)}
+            />
+            <span className="check-square">
+              <Check size={13} />
+            </span>
+            <span>
+              <strong>
+                {quantityLabel(ingredient.quantity, multiplier)}
+                {ingredient.unit ? ` ${ingredient.unit}` : ""}
+              </strong>{" "}
+              {ingredient.name}
+              {ingredient.note && <small>{ingredient.note}</small>}
+            </span>
+          </label>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function useKeepAwake() {
+  const [enabled, setEnabled] = useState(false);
+  const [error, setError] = useState("");
+  useEffect(() => {
+    if (!enabled) return;
+    let active = true;
+    let lock;
+    const request = async () => {
+      if (document.visibilityState !== "visible") return;
+      if (lock && !lock.released) return;
+      try {
+        const next = await navigator.wakeLock.request("screen");
+        if (!active) {
+          await next.release();
+          return;
+        }
+        lock = next;
+        next.addEventListener("release", () => {
+          if (active && document.visibilityState === "visible")
+            setEnabled(false);
+        });
+      } catch {
+        if (active) {
+          setEnabled(false);
+          setError(
+            "Your device couldn't keep the screen awake. Check its auto-lock setting instead.",
+          );
+        }
+      }
+    };
+    request();
+    document.addEventListener("visibilitychange", request);
+    return () => {
+      active = false;
+      lock?.release();
+      document.removeEventListener("visibilitychange", request);
+    };
+  }, [enabled]);
+  return {
+    supported: "wakeLock" in navigator,
+    enabled,
+    toggle: () => {
+      setError("");
+      setEnabled(!enabled);
+    },
+    error,
+  };
+}
+
+export default function RecipeDetail({
+  recipe,
+  favorite,
+  onFavorite,
+  progress = {},
+  onProgress,
+  onEdit,
+  isLocal,
+}) {
+  const [servings, setServings] = useState(recipe.servings);
+  useEffect(() => setServings(recipe.servings), [recipe.servings]);
+  const awake = useKeepAwake();
+  const titleRef = useRef(null);
+  const jumpTo = (event, section) => {
+    event.preventDefault();
+    const target = document.getElementById(section);
+    target?.focus({ preventScroll: true });
+    target?.scrollIntoView({
+      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+        ? "instant"
+        : "smooth",
+    });
+  };
+  const checkedIngredients = Array.isArray(progress.ingredients)
+    ? progress.ingredients
+    : [];
+  const checkedSteps = Array.isArray(progress.steps) ? progress.steps : [];
+  const ingredientGroups = groupIngredients(recipe.ingredients);
+  const toggle = (kind, id) => {
+    const values = kind === "ingredients" ? checkedIngredients : checkedSteps;
+    onProgress({
+      ...progress,
+      [kind]: values.includes(id)
+        ? values.filter((value) => value !== id)
+        : [...values, id],
+    });
+  };
+  useEffect(() => {
+    window.scrollTo(0, 0);
+    titleRef.current?.focus({ preventScroll: true });
+  }, [recipe.id]);
+  return (
+    <main id="recipe-main" className="recipe-detail" tabIndex={-1}>
+      <div className="detail-toolbar">
+        <a className="back-link" href="#/">
+          <ArrowLeft size={17} />
+          Back to the shelf
+        </a>
+        <button className="text-button" onClick={() => onEdit(recipe)}>
+          <Pencil size={15} />
+          {isLocal ? "Edit recipe" : "Make it your own"}
+        </button>
+      </div>
+      <header className="detail-header">
+        <div className="detail-heading">
+          <div className="eyebrow">
+            {recipe.category}
+            {recipe.cuisine && (
+              <>
+                <span className="dot-separator" />
+                {recipe.cuisine}
+              </>
+            )}
+          </div>
+          <h1 ref={titleRef} tabIndex={-1}>
+            {recipe.title}
+          </h1>
+          <p className="detail-description">{recipe.description}</p>
+          <div className="recipe-tags">
+            {recipe.tags.map((tag) => (
+              <span key={tag}>{tag}</span>
+            ))}
+          </div>
+          <div className="detail-stats">
+            <div>
+              <Clock3 size={18} />
+              <span>
+                Prep<strong>{recipe.prepMinutes} min</strong>
+              </span>
+            </div>
+            <div>
+              <CookingPot size={18} />
+              <span>
+                Cook<strong>{recipe.cookMinutes} min</strong>
+              </span>
+            </div>
+            <div>
+              <Clock3 size={18} />
+              <span>
+                Total
+                <strong>{totalMinutes(recipe)} min</strong>
+              </span>
+            </div>
+            <div>
+              <UsersRound size={18} />
+              <span>
+                Serves<strong>{recipe.servings}</strong>
+              </span>
+            </div>
+          </div>
+          {recipe.restMinutes > 0 && (
+            <p className="timing-note">
+              Includes {recipe.restMinutes} min resting
+            </p>
+          )}
+        </div>
+        <div className="detail-illustration">
+          <RecipeArtwork artwork={recipe.artwork} title={recipe.title} />
+          <button
+            className={`icon-button detail-bookmark ${favorite ? "is-saved" : ""}`}
+            onClick={() => onFavorite(recipe.id)}
+            aria-label={
+              favorite ? "Remove from favorites" : "Save to favorites"
+            }
+            aria-pressed={favorite}
+            title={favorite ? "Remove from favorites" : "Save to favorites"}
+          >
+            <Bookmark size={20} fill={favorite ? "currentColor" : "none"} />
+          </button>
+          <span className="detail-art-caption">
+            {recipe.example ? "From the starter collection" : "From my kitchen"}
+          </span>
+        </div>
+      </header>
+      <div className="cooking-bar">
+        <nav aria-label="Recipe sections">
+          <a
+            href="#ingredients"
+            onClick={(event) => jumpTo(event, "ingredients")}
+          >
+            Ingredients
+          </a>
+          <a href="#method" onClick={(event) => jumpTo(event, "method")}>
+            Method
+          </a>
+          {recipe.sourceVideo && (
+            <a href="#video" onClick={(event) => jumpTo(event, "video")}>
+              Video
+            </a>
+          )}
+        </nav>
+        {awake.supported && (
+          <button
+            className={`awake-toggle ${awake.enabled ? "active" : ""}`}
+            aria-pressed={awake.enabled}
+            onClick={awake.toggle}
+          >
+            <Sun size={17} />
+            <span>
+              {awake.enabled ? "Screen stays awake" : "Keep screen awake"}
+            </span>
+            <span className="switch-track" />
+          </button>
+        )}
+      </div>
+      {awake.error && (
+        <p className="inline-notice" role="status">
+          {awake.error}
+        </p>
+      )}
+      <div className="cooking-layout">
+        <section className="ingredients-panel" id="ingredients" tabIndex={-1}>
+          <div className="section-heading">
+            <h2>Ingredients</h2>
+            <span>{recipe.ingredients.length} items</span>
+          </div>
+          <div className="servings-control">
+            <span>Servings</span>
+            <div>
+              <button
+                className="icon-button"
+                onClick={() => setServings(Math.max(1, servings - 1))}
+                disabled={servings <= 1}
+                aria-label="Fewer servings"
+              >
+                <Minus size={15} />
+              </button>
+              <output aria-label="Adjusted servings">{servings}</output>
+              <button
+                className="icon-button"
+                onClick={() => setServings(Math.min(100, servings + 1))}
+                disabled={servings >= 100}
+                aria-label="More servings"
+              >
+                <Plus size={15} />
+              </button>
+            </div>
+          </div>
+          <div className="ingredient-groups">
+            {ingredientGroups.map(([group, ingredients]) => (
+              <section
+                className="ingredient-group"
+                key={group || "ingredients"}
+              >
+                {group && <h3>{group}</h3>}
+                <IngredientList
+                  ingredients={ingredients}
+                  checkedIngredients={checkedIngredients}
+                  multiplier={servings / recipe.servings}
+                  onToggle={(id) => toggle("ingredients", id)}
+                />
+              </section>
+            ))}
+          </div>
+          {recipe.equipment.length > 0 && (
+            <div className="equipment">
+              <h3 className="eyebrow">On the counter</h3>
+              <p>{recipe.equipment.join(" / ")}</p>
+            </div>
+          )}
+        </section>
+        <section className="method-panel" id="method" tabIndex={-1}>
+          <div className="section-heading">
+            <h2>Let's make it.</h2>
+            <span aria-live="polite">
+              {
+                checkedSteps.filter((id) =>
+                  recipe.steps.some((step) => step.id === id),
+                ).length
+              }{" "}
+              / {recipe.steps.length} done
+            </span>
+          </div>
+          <ol className="step-list">
+            {recipe.steps.map((step, index) => (
+              <li
+                key={step.id}
+                className={checkedSteps.includes(step.id) ? "completed" : ""}
+              >
+                <button
+                  className="step-number"
+                  aria-label={`Mark step ${index + 1} ${checkedSteps.includes(step.id) ? "incomplete" : "complete"}`}
+                  aria-pressed={checkedSteps.includes(step.id)}
+                  onClick={() => toggle("steps", step.id)}
+                >
+                  {checkedSteps.includes(step.id) ? (
+                    <Check size={20} />
+                  ) : (
+                    String(index + 1).padStart(2, "0")
+                  )}
+                </button>
+                <div>
+                  {step.title && <h3>{step.title}</h3>}
+                  <p>{step.instruction}</p>
+                </div>
+              </li>
+            ))}
+          </ol>
+          {checkedSteps.length === recipe.steps.length && (
+            <p className="done-note">
+              <Check size={19} />
+              All done. Enjoy every bite.
+            </p>
+          )}
+          {(checkedSteps.length > 0 || checkedIngredients.length > 0) && (
+            <button
+              className="text-button reset-progress"
+              onClick={() => onProgress({ ingredients: [], steps: [] })}
+            >
+              <RotateCcw size={14} />
+              Reset cooking checklist
+            </button>
+          )}
+          {(recipe.notes.length > 0 || recipe.substitutions.length > 0) && (
+            <aside className="kitchen-notes">
+              <span className="eyebrow">The small things</span>
+              <h2>Kitchen notes</h2>
+              {recipe.notes.map((note, index) => (
+                <p key={index}>{note}</p>
+              ))}
+              {recipe.substitutions.length > 0 && (
+                <>
+                  <h3>Make it work with what you have</h3>
+                  {recipe.substitutions.map((note, index) => (
+                    <p key={index}>{note}</p>
+                  ))}
+                </>
+              )}
+            </aside>
+          )}
+          <RecipeVideo
+            sourceVideo={recipe.sourceVideo}
+            recipeTitle={recipe.title}
+          />
+        </section>
+      </div>
+      <div className="detail-bottom">
+        <a className="back-link" href="#/">
+          <ArrowLeft size={17} />
+          Back to the shelf
+        </a>
+        <span className="eyebrow">A recipe worth keeping.</span>
+      </div>
+    </main>
+  );
+}

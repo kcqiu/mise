@@ -1,0 +1,1044 @@
+[
+  {
+    "id": "air-fryer-butter-lobster",
+    "title": "Air fryer butter lobster",
+    "description": "A quick lobster tail finished with lemony garlic-parsley butter, made for dipping and sharing.",
+    "category": "Dinner",
+    "tags": ["Seafood", "Air fryer", "Quick meals", "Garlic butter"],
+    "cuisine": "American-inspired",
+    "method": "Air fryer",
+    "keywords": [
+      "lobster tail",
+      "shellfish",
+      "lemon",
+      "garlic",
+      "parsley",
+      "butter",
+      "380 F"
+    ],
+    "prepMinutes": 10,
+    "cookMinutes": 8,
+    "restMinutes": 0,
+    "servings": 1,
+    "artwork": "lobster-butter",
+    "example": false,
+    "sourceVideo": "https://www.tiktok.com/@younghummy/video/7276566593939787014",
+    "ingredients": [
+      {
+        "id": "lobster-tail",
+        "group": "Lobster",
+        "quantity": 1,
+        "unit": "",
+        "name": "headless lobster tail",
+        "note": "cleaned; usually sold without head or claws"
+      },
+      {
+        "id": "lobster-salt",
+        "group": "Lobster",
+        "quantity": null,
+        "unit": "",
+        "name": "fine salt",
+        "note": "lightly, to taste"
+      },
+      {
+        "id": "lobster-butter",
+        "group": "Lemon garlic butter",
+        "quantity": 4,
+        "unit": "tbsp",
+        "name": "butter",
+        "note": "plenty for basting and dipping"
+      },
+      {
+        "id": "lobster-garlic",
+        "group": "Lemon garlic butter",
+        "quantity": 2,
+        "unit": "cloves",
+        "name": "garlic",
+        "note": "finely minced"
+      },
+      {
+        "id": "lobster-parsley",
+        "group": "Lemon garlic butter",
+        "quantity": 1,
+        "unit": "tbsp",
+        "name": "fresh parsley",
+        "note": "finely chopped"
+      },
+      {
+        "id": "lobster-lemon",
+        "group": "Lemon garlic butter",
+        "quantity": 0.5,
+        "unit": "",
+        "name": "lemon",
+        "note": "juice only"
+      }
+    ],
+    "steps": [
+      {
+        "id": "clean-lobster",
+        "title": "Prepare the shell",
+        "instruction": "Rinse and clean the headless lobster tail, then pat it dry. Using kitchen scissors, cut lengthwise down the center of the top shell toward the tail, stopping before cutting through the tail fan. Gently press along the grooves of the underside shell to loosen the meat."
+      },
+      {
+        "id": "lift-lobster",
+        "title": "Lift the meat",
+        "instruction": "Carefully pull the lobster meat out of the shell while keeping the tail end attached. Lay the meat over the top of the shell so it sits above the shell during cooking. Lightly season the meat with salt."
+      },
+      {
+        "id": "make-butter",
+        "title": "Make the dipping butter",
+        "instruction": "Melt the butter in a small saucepan or sauce container over low heat. Stir in the minced garlic, parsley, and lemon juice. Keep some aside for dipping later."
+      },
+      {
+        "id": "air-fry-lobster",
+        "title": "Air fry",
+        "instruction": "Brush the lobster generously with the lemon garlic butter, reserving the rest. Place it meat-side up in the air fryer basket. Cook at 380 F for about 8 minutes, checking early if the tail is small. The meat should be opaque, firm, and cooked through; use an instant-read thermometer and follow your local food-safety guidance."
+      },
+      {
+        "id": "serve-lobster",
+        "title": "Finish and dip",
+        "instruction": "Transfer the lobster to a plate, spoon over any remaining butter from the basket, and serve immediately with the reserved lemon garlic butter for dipping."
+      }
+    ],
+    "notes": [
+      "The quantity for butter is a practical estimate because the original note says 'plenty.' Add more if you want extra for dipping.",
+      "Shells can be sharp. Cut slowly with kitchen scissors and use a towel to hold the tail if it is difficult to handle.",
+      "Air-fryer timing depends on tail size and starting temperature. Use the clock as a starting point, not a guarantee, and avoid overcooking the meat."
+    ],
+    "substitutions": [
+      "Use dried parsley in a pinch, but fresh parsley gives the butter brighter flavor.",
+      "A small pinch of chili flakes adds gentle heat to the butter."
+    ],
+    "equipment": [
+      "Kitchen scissors",
+      "Air fryer",
+      "Small saucepan",
+      "Pastry brush",
+      "Instant-read thermometer"
+    ]
+  },
+  {
+    "id": "mango-matcha-coconut-water",
+    "title": "Mango matcha coconut water",
+    "description": "Chunky ripe mango, cold coconut water, and a creamy matcha cap layered into one bright, refreshing glass.",
+    "category": "Drinks",
+    "tags": ["Matcha", "Mango", "Coconut water", "Cold foam", "Fruit drinks"],
+    "cuisine": "Modern tea",
+    "method": "Layered drink",
+    "keywords": [
+      "fruit tea",
+      "mango puree",
+      "matcha latte",
+      "summer drink",
+      "iced",
+      "cafe drink"
+    ],
+    "prepMinutes": 8,
+    "cookMinutes": 0,
+    "restMinutes": 0,
+    "servings": 1,
+    "artwork": "mango-matcha",
+    "example": false,
+    "sourceVideo": "https://www.instagram.com/reel/DajgagET93B/?stkn=MXMxOXYycnIxZWwybA==",
+    "ingredients": [
+      {
+        "id": "mango",
+        "group": "Mango base",
+        "quantity": 1,
+        "unit": "ripe Palmer mango",
+        "name": "mango",
+        "note": "peeled and cut into pieces"
+      },
+      {
+        "id": "coconut-water",
+        "group": "Mango base",
+        "quantity": 180,
+        "unit": "ml",
+        "name": "coconut water",
+        "note": "about 3/4 cup; adjust to fill the glass"
+      },
+      {
+        "id": "matcha",
+        "group": "Matcha cream",
+        "quantity": 5,
+        "unit": "g",
+        "name": "matcha"
+      },
+      {
+        "id": "oat-milk",
+        "group": "Matcha cream",
+        "quantity": 10,
+        "unit": "ml",
+        "name": "oat milk"
+      },
+      {
+        "id": "heavy-cream",
+        "group": "Matcha cream",
+        "quantity": 60,
+        "unit": "ml",
+        "name": "heavy cream"
+      },
+      {
+        "id": "agave",
+        "group": "Matcha cream",
+        "quantity": 10,
+        "unit": "ml",
+        "name": "agave syrup",
+        "note": "adjust to taste"
+      },
+      {
+        "id": "drink-ice",
+        "group": "To finish",
+        "quantity": 1,
+        "unit": "cup",
+        "name": "ice",
+        "note": "enough to fill the glass"
+      },
+      {
+        "id": "coconut-garnish",
+        "group": "To finish",
+        "quantity": 1,
+        "unit": "tbsp",
+        "name": "shredded coconut",
+        "note": "optional garnish"
+      }
+    ],
+    "steps": [
+      {
+        "id": "mash-mango",
+        "title": "Make the mango base",
+        "instruction": "Peel and cut the mango into pieces. Mash it with a muddler for a chunky, pulpy texture. For a smoother drink, blend the mango instead. Spoon the puree into the bottom of a tall glass."
+      },
+      {
+        "id": "make-matcha",
+        "title": "Whip the matcha cream",
+        "instruction": "Add the matcha, heavy cream, oat milk, and agave syrup to a small container. Mix with a milk froth wand until smooth and thick. If the matcha is lumpy, sift it first or strain the mixture before frothing."
+      },
+      {
+        "id": "layer-drink",
+        "title": "Build the layers",
+        "instruction": "Add ice to the glass over the mango puree to create a clean separation. Pour in the coconut water, leaving room for the matcha cream."
+      },
+      {
+        "id": "finish-mango",
+        "title": "Top and garnish",
+        "instruction": "Slowly pour or spoon the matcha cream over the coconut water. Finish with shredded coconut if using, and serve cold."
+      }
+    ],
+    "notes": [
+      "The mango puree is intentionally chunky. A blender is a good alternative when you want a smoother base.",
+      "The coconut-water amount is an estimate for a tall glass; add enough to leave room for the foam.",
+      "The same layering method works with other ripe, juicy fruit such as peach, strawberry, or passion fruit."
+    ],
+    "substitutions": [
+      "Use dairy-free coconut cream or a plant-based whipping cream instead of heavy cream.",
+      "Swap coconut water for lightly sweetened sparkling water for a brighter, fizzy version."
+    ],
+    "equipment": [
+      "Tall glass",
+      "Muddler or blender",
+      "Milk froth wand",
+      "Small bowl",
+      "Fine-mesh strainer"
+    ]
+  },
+  {
+    "id": "jasmine-matcha-cloud-tea",
+    "title": "Jasmine matcha cloud tea",
+    "description": "A homemade Molly tea-inspired drink: jasmine iced tea, a milky splash, and a soft matcha foam cloud.",
+    "category": "Drinks",
+    "tags": ["Matcha", "Jasmine tea", "Cold foam", "Copycat", "Iced tea"],
+    "cuisine": "Tea shop-inspired",
+    "method": "Frothed and layered",
+    "keywords": [
+      "东方树叶茉莉花茶",
+      "Dongfang Shuye",
+      "Molly tea",
+      "premium jasmine",
+      "milk foam",
+      "iced drink"
+    ],
+    "prepMinutes": 7,
+    "cookMinutes": 0,
+    "restMinutes": 0,
+    "servings": 1,
+    "artwork": "jasmine-matcha",
+    "example": false,
+    "sourceVideo": "https://www.instagram.com/reel/DXw1xCsTZzk/?stkn=MWJxbHVsMThuMDU5eA==",
+    "ingredients": [
+      {
+        "id": "jasmine-tea",
+        "group": "Tea base",
+        "quantity": 240,
+        "unit": "ml",
+        "name": "东方树叶茉莉花茶 (jasmine tea)",
+        "note": "chilled; about one bottle or enough to fill the glass"
+      },
+      {
+        "id": "tea-ice",
+        "group": "Tea base",
+        "quantity": 1,
+        "unit": "cup",
+        "name": "ice",
+        "note": "enough to fill the glass"
+      },
+      {
+        "id": "foam-matcha",
+        "group": "Matcha foam",
+        "quantity": 3,
+        "unit": "g",
+        "name": "matcha",
+        "note": "sifted if lumpy"
+      },
+      {
+        "id": "foam-cream",
+        "group": "Matcha foam",
+        "quantity": 30,
+        "unit": "ml",
+        "name": "heavy cream"
+      },
+      {
+        "id": "foam-oat-milk",
+        "group": "Matcha foam",
+        "quantity": 15,
+        "unit": "ml",
+        "name": "oat milk",
+        "note": "or regular milk"
+      },
+      {
+        "id": "foam-agave",
+        "group": "Matcha foam",
+        "quantity": 10,
+        "unit": "ml",
+        "name": "agave syrup",
+        "note": "adjust to taste"
+      },
+      {
+        "id": "milk-splash",
+        "group": "To finish",
+        "quantity": 30,
+        "unit": "ml",
+        "name": "heavy whipping cream",
+        "note": "a splash for a milky-looking tea"
+      },
+      {
+        "id": "glass-agave",
+        "group": "To finish",
+        "quantity": 5,
+        "unit": "ml",
+        "name": "agave syrup",
+        "note": "optional extra sweetness in the glass"
+      }
+    ],
+    "steps": [
+      {
+        "id": "whip-jasmine-matcha",
+        "title": "Make the matcha foam",
+        "instruction": "Sift the matcha if it looks clumpy. Combine it with the heavy cream, oat milk, and agave syrup in a small container. Froth with a milk wand until the mixture is thick and creamy. If it is not smooth, pass it through a fine-mesh strainer, then froth again."
+      },
+      {
+        "id": "sweeten-glass",
+        "title": "Sweeten and chill",
+        "instruction": "Add the optional extra agave syrup to a tall glass, then fill the glass with ice."
+      },
+      {
+        "id": "add-tea",
+        "title": "Pour the jasmine tea",
+        "instruction": "Pour in the chilled 东方树叶茉莉花茶, leaving enough space for the milk and matcha foam. Add a small splash of heavy whipping cream and stir once for a softly milky appearance."
+      },
+      {
+        "id": "top-cloud",
+        "title": "Finish with the cloud",
+        "instruction": "Spoon or pour the matcha foam over the top of the jasmine tea. Serve immediately so the contrast between the tea and foam stays distinct."
+      }
+    ],
+    "notes": [
+      "The specific tea base is 东方树叶茉莉花茶, also known as Dongfang Shuye jasmine tea. This is the key flavor for the Molly tea-inspired version.",
+      "The cream, milk, and agave amounts are starting points because the original notes describe them as a bit, a splash, and to taste. Add more or less to control the foam thickness and sweetness.",
+      "For the smoothest foam, sift matcha before mixing. Strain after frothing only if you still see fine clumps."
+    ],
+    "substitutions": [
+      "Use another unsweetened jasmine green tea only if the specified tea is unavailable; the flavor will be different.",
+      "Use dairy milk in the foam instead of oat milk for a more classic milk-tea profile."
+    ],
+    "equipment": [
+      "Tall glass",
+      "Milk froth wand",
+      "Fine-mesh strainer",
+      "Small bowl",
+      "Matcha sifter"
+    ]
+  },
+  {
+    "id": "steak-sandwich-chimichurri-aioli",
+    "title": "Steak sandwich with chimichurri aioli",
+    "description": "Butter-basted steak, melted provolone, and peppery arugula on crisp ciabatta. A generous swipe of creamy parsley aioli brings it all together.",
+    "category": "Lunch",
+    "tags": ["Steak", "Sandwiches", "Dinner", "Date night"],
+    "cuisine": "American-inspired",
+    "method": "Pan seared and broiled",
+    "keywords": [
+      "beef",
+      "ribeye",
+      "rib eye",
+      "NY strip",
+      "New York strip",
+      "T-bone",
+      "ciabatta",
+      "chimichurri",
+      "mayo",
+      "garlic sauce",
+      "cast iron",
+      "skillet",
+      "oven",
+      "provolone"
+    ],
+    "prepMinutes": 20,
+    "cookMinutes": 15,
+    "restMinutes": 10,
+    "servings": 2,
+    "artwork": "steak-sandwich",
+    "example": false,
+    "sourceVideo": "https://www.instagram.com/reel/DXGElPMgHia/?stkn=ZnJmcTh4YWlkYTVy",
+    "ingredients": [
+      {
+        "id": "steak",
+        "group": "Steak",
+        "quantity": 1,
+        "unit": "",
+        "name": "ribeye or NY strip steak",
+        "note": "10-12 oz, about 1 inch thick"
+      },
+      {
+        "id": "searing-oil",
+        "group": "Steak",
+        "quantity": 1,
+        "unit": "tbsp",
+        "name": "avocado or olive oil"
+      },
+      {
+        "id": "steak-seasoning",
+        "group": "Steak",
+        "quantity": null,
+        "unit": "",
+        "name": "kosher salt and freshly cracked black pepper",
+        "note": "to season both sides"
+      },
+      {
+        "id": "basting-butter",
+        "group": "Steak",
+        "quantity": 2,
+        "unit": "tbsp",
+        "name": "butter"
+      },
+      {
+        "id": "basting-garlic",
+        "group": "Steak",
+        "quantity": 2,
+        "unit": "cloves",
+        "name": "garlic",
+        "note": "smashed"
+      },
+      {
+        "id": "thyme",
+        "group": "Steak",
+        "quantity": 3,
+        "unit": "sprigs",
+        "name": "fresh thyme",
+        "note": "2-3 sprigs is plenty"
+      },
+      {
+        "id": "mayonnaise",
+        "group": "Chimichurri aioli",
+        "quantity": 0.5,
+        "unit": "cup",
+        "name": "mayonnaise"
+      },
+      {
+        "id": "parsley",
+        "group": "Chimichurri aioli",
+        "quantity": 1,
+        "unit": "cup",
+        "name": "fresh parsley",
+        "note": "finely chopped"
+      },
+      {
+        "id": "aioli-garlic",
+        "group": "Chimichurri aioli",
+        "quantity": 3,
+        "unit": "cloves",
+        "name": "garlic",
+        "note": "finely minced or grated"
+      },
+      {
+        "id": "vinegar",
+        "group": "Chimichurri aioli",
+        "quantity": 2,
+        "unit": "tbsp",
+        "name": "red wine vinegar"
+      },
+      {
+        "id": "aioli-lemon",
+        "group": "Chimichurri aioli",
+        "quantity": 0.5,
+        "unit": "",
+        "name": "lemon",
+        "note": "juice only; adjust to taste"
+      },
+      {
+        "id": "aioli-oil",
+        "group": "Chimichurri aioli",
+        "quantity": 0.5,
+        "unit": "cup",
+        "name": "olive oil"
+      },
+      {
+        "id": "pepper-flakes",
+        "group": "Chimichurri aioli",
+        "quantity": null,
+        "unit": "",
+        "name": "red pepper flakes",
+        "note": "a pinch"
+      },
+      {
+        "id": "aioli-seasoning",
+        "group": "Chimichurri aioli",
+        "quantity": null,
+        "unit": "",
+        "name": "salt and black pepper",
+        "note": "to taste"
+      },
+      {
+        "id": "arugula",
+        "group": "Arugula",
+        "quantity": 2,
+        "unit": "cups",
+        "name": "arugula"
+      },
+      {
+        "id": "salad-oil",
+        "group": "Arugula",
+        "quantity": 1,
+        "unit": "tbsp",
+        "name": "olive oil"
+      },
+      {
+        "id": "salad-lemon",
+        "group": "Arugula",
+        "quantity": 1,
+        "unit": "tsp",
+        "name": "lemon juice"
+      },
+      {
+        "id": "salad-seasoning",
+        "group": "Arugula",
+        "quantity": null,
+        "unit": "",
+        "name": "salt and freshly cracked black pepper",
+        "note": "a small pinch of each"
+      },
+      {
+        "id": "ciabatta",
+        "group": "Bread & provolone",
+        "quantity": 1,
+        "unit": "small loaf",
+        "name": "ciabatta",
+        "note": "split horizontally, then cut into two sandwich portions"
+      },
+      {
+        "id": "bread-butter",
+        "group": "Bread & provolone",
+        "quantity": 2,
+        "unit": "tbsp",
+        "name": "butter",
+        "note": "softened"
+      },
+      {
+        "id": "provolone",
+        "group": "Bread & provolone",
+        "quantity": 4,
+        "unit": "slices",
+        "name": "provolone",
+        "note": "estimated amount; enough to cover the cut bread"
+      },
+      {
+        "id": "flaky-salt",
+        "group": "Bread & provolone",
+        "quantity": null,
+        "unit": "",
+        "name": "flaky sea salt",
+        "note": "optional, for finishing"
+      }
+    ],
+    "steps": [
+      {
+        "id": "mix-aioli",
+        "title": "Mix the chimichurri aioli",
+        "instruction": "Combine the finely chopped parsley, minced garlic, red wine vinegar, lemon juice, red pepper flakes, salt, and pepper. Stir in the olive oil, then the mayonnaise. Taste and adjust the seasoning or lemon. Refrigerate while you cook; 20-30 minutes gives the flavors time to mingle. This is a generous batch: use what you need for the sandwiches and keep the rest separate."
+      },
+      {
+        "id": "prepare-steak",
+        "title": "Dry and season the steak",
+        "instruction": "Pat the steak thoroughly dry with paper towels. Season both sides with kosher salt and black pepper. Have the butter, smashed garlic, and thyme ready beside the stove."
+      },
+      {
+        "id": "sear-steak",
+        "title": "Sear, then butter-baste",
+        "instruction": "Heat a cast-iron or stainless-steel skillet over medium-high heat. Add the oil and sear the steak for about 3-4 minutes on the first side and 2-3 minutes on the second. Lower the heat, add the butter, smashed garlic, and thyme, then spoon the foaming butter over the steak for 1-2 minutes. These are starting times, not a doneness guarantee: check the center with a thermometer and continue cooking as needed. USDA guidance is 145 F before removing from the heat, followed by at least a 3-minute rest. See Kitchen notes for the chat's lower doneness targets and the thicker T-bone variation."
+      },
+      {
+        "id": "rest-steak",
+        "title": "Rest the steak; start the bread",
+        "instruction": "Move the steak to a clean board and rest for 10 minutes. Meanwhile, split the ciabatta horizontally and cut it into two sandwich portions. Lightly butter the cut sides. In a skillet over medium heat, toast the buttered sides down for 2-3 minutes, until golden and crisp."
+      },
+      {
+        "id": "melt-provolone",
+        "title": "Melt the provolone",
+        "instruction": "Switch the oven to high broil. Put the bread cut-side up on a broiler-safe baking sheet and cover with provolone. Broil for roughly 60-90 seconds, or up to 2 minutes, until the cheese is melted with a few browned spots. Watch continuously: bread and cheese can burn very quickly. Remove from the broiler."
+      },
+      {
+        "id": "dress-arugula",
+        "title": "Lightly dress the arugula",
+        "instruction": "Just before assembling, toss the arugula with the olive oil, lemon juice, and a small pinch of salt and pepper. Add only enough dressing to lightly coat the leaves."
+      },
+      {
+        "id": "assemble-sandwiches",
+        "title": "Slice, stack, and serve",
+        "instruction": "Slice the rested steak thinly against the grain. Spread chimichurri aioli over both cheesy cut sides of the bread. Layer the steak on the bottom halves, add a little flaky salt if using, and top with dressed arugula. Close the sandwiches and serve while the bread is crisp and the steak is warm."
+      }
+    ],
+    "notes": [
+      "About this version: consolidated from your cooking chat, not a verified transcription of the creator's paid recipe. The later chimichurri aioli replaces the earlier Dijon-and-chive sauce. Four slices of provolone and the 45-minute total are practical estimates; allow extra time for a thicker steak.",
+      "The sauce makes more than two sandwiches need. The quantities above preserve your chat's full batch. Spread to taste, and refrigerate the unused portion promptly in a clean covered container. It also works as a dip for potatoes.",
+      "Doneness from the chat: 130-135 F was described as a medium-rare finish. These lower temperatures are preferences, not USDA's recommended safety minimum of 145 F before removing the steak from the heat, followed by at least 3 minutes of rest. Carryover heat varies; do not assume a guaranteed 5-degree rise.",
+      "Thicker T-bone variation: for an already-seared steak about 1 1/4-1 1/2 inches thick, finish in a 275 F oven using an oven-safe pan. The chat estimated 8-12 minutes for medium-rare or 12-16 for medium, with lower pull temperatures of 125-128 F or 132-135 F respectively. These are unverified timing estimates and below the USDA safety minimum noted above. Use a thermometer away from the bone, check early, and cook to your chosen target rather than relying on the clock. Rest 10 minutes and remove the bone before slicing.",
+      "Keep the bread crisp: toast it while the steak rests, melt the cheese immediately afterward, and dress the arugula only just before assembly. The 10-minute rest is included in the estimated total; the bread and salad can be prepared during that window."
+    ],
+    "substitutions": [
+      "Use two ciabatta rolls instead of one small loaf. Adjust the provolone to cover the cut surfaces.",
+      "For the simpler bread method, skip butter-toasting: put provolone directly on the split ciabatta and broil for 1-2 minutes, watching the whole time."
+    ],
+    "equipment": [
+      "Heavy skillet",
+      "Instant-read thermometer",
+      "Tongs",
+      "Basting spoon",
+      "Broiler-safe baking sheet",
+      "Mixing bowls",
+      "Knife and cutting board"
+    ]
+  },
+  {
+    "id": "garlic-butter-ribeye",
+    "title": "Garlic butter ribeye",
+    "description": "A golden crust, a little rosemary, and a generous spoonful of garlicky butter. A very good reason to stay in.",
+    "category": "Dinner",
+    "tags": ["Steak", "One pan", "Date night"],
+    "cuisine": "American",
+    "method": "Pan seared",
+    "keywords": ["beef", "cast iron", "rib eye", "skillet"],
+    "prepMinutes": 10,
+    "cookMinutes": 15,
+    "servings": 2,
+    "artwork": "steak",
+    "example": true,
+    "ingredients": [
+      {
+        "id": "i1",
+        "quantity": 450,
+        "unit": "g",
+        "name": "ribeye steak",
+        "note": "about 3 cm thick"
+      },
+      { "id": "i2", "quantity": 1, "unit": "tbsp", "name": "neutral oil" },
+      { "id": "i3", "quantity": 2, "unit": "tbsp", "name": "unsalted butter" },
+      {
+        "id": "i4",
+        "quantity": 3,
+        "unit": "cloves",
+        "name": "garlic",
+        "note": "lightly crushed"
+      },
+      { "id": "i5", "quantity": 2, "unit": "sprigs", "name": "rosemary" },
+      {
+        "id": "i6",
+        "quantity": null,
+        "unit": "",
+        "name": "salt and black pepper",
+        "note": "to taste"
+      }
+    ],
+    "steps": [
+      {
+        "id": "s1",
+        "title": "Prepare the steak",
+        "instruction": "Pat the steak very dry with a paper towel. Season both sides generously with salt and black pepper."
+      },
+      {
+        "id": "s2",
+        "title": "Build a golden crust",
+        "instruction": "Heat a heavy skillet over medium-high heat. Add the oil, then the steak. Sear for 3-4 minutes on each side until deeply browned."
+      },
+      {
+        "id": "s3",
+        "title": "Baste with butter",
+        "instruction": "Reduce the heat to medium-low. Add butter, garlic, and rosemary. Tilt the pan and spoon the foaming butter over the steak for 1-2 minutes. Use a thermometer to check your preferred doneness; thicker steaks need longer."
+      },
+      {
+        "id": "s4",
+        "title": "Rest, slice, and serve",
+        "instruction": "Transfer to a board and rest for 5 minutes. Slice against the grain and spoon over the pan butter."
+      }
+    ],
+    "notes": [
+      "A dry surface and a hot pan make the best crust.",
+      "Timing varies with the thickness of the steak. Use an instant-read thermometer."
+    ],
+    "substitutions": ["Thyme works beautifully instead of rosemary."],
+    "equipment": ["Heavy skillet", "Tongs", "Instant-read thermometer"]
+  },
+  {
+    "id": "miso-mushroom-noodles",
+    "title": "Miso mushroom noodles",
+    "description": "Glossy noodles, deeply browned mushrooms, and a savory miso sauce. Weeknight comfort in one bowl.",
+    "category": "Lunch",
+    "tags": ["Asian", "Vegetarian", "Quick meals"],
+    "cuisine": "Japanese-inspired",
+    "method": "Stir fry",
+    "keywords": ["udon", "pasta", "umami", "scallion", "spring onion"],
+    "prepMinutes": 10,
+    "cookMinutes": 15,
+    "servings": 2,
+    "artwork": "noodles",
+    "example": true,
+    "ingredients": [
+      {
+        "id": "i1",
+        "quantity": 400,
+        "unit": "g",
+        "name": "cooked udon noodles"
+      },
+      {
+        "id": "i2",
+        "quantity": 250,
+        "unit": "g",
+        "name": "mixed mushrooms",
+        "note": "sliced"
+      },
+      { "id": "i3", "quantity": 1, "unit": "tbsp", "name": "neutral oil" },
+      { "id": "i4", "quantity": 1, "unit": "tbsp", "name": "white miso" },
+      { "id": "i5", "quantity": 1, "unit": "tbsp", "name": "soy sauce" },
+      { "id": "i6", "quantity": 1, "unit": "tsp", "name": "maple syrup" },
+      { "id": "i7", "quantity": 3, "unit": "tbsp", "name": "warm water" },
+      {
+        "id": "i8",
+        "quantity": 2,
+        "unit": "",
+        "name": "scallions",
+        "note": "thinly sliced"
+      }
+    ],
+    "steps": [
+      {
+        "id": "s1",
+        "title": "Stir the sauce",
+        "instruction": "Whisk the miso, soy sauce, maple syrup, and warm water in a small bowl until smooth."
+      },
+      {
+        "id": "s2",
+        "title": "Brown the mushrooms",
+        "instruction": "Heat the oil in a large skillet over medium-high heat. Add mushrooms in an even layer. Cook for 7-9 minutes, stirring occasionally, until golden and their moisture has evaporated."
+      },
+      {
+        "id": "s3",
+        "title": "Toss it together",
+        "instruction": "Loosen the udon according to the packet instructions. Add the noodles and sauce to the skillet. Toss over medium heat for 2-3 minutes, adding a splash of water if needed."
+      },
+      {
+        "id": "s4",
+        "title": "Finish the bowls",
+        "instruction": "Divide between bowls and scatter with scallions. Serve while hot."
+      }
+    ],
+    "notes": [
+      "Let the mushrooms sit undisturbed for a minute or two to get real color."
+    ],
+    "substitutions": ["Swap udon for cooked spaghetti or rice noodles."],
+    "equipment": ["Large skillet", "Small mixing bowl"]
+  },
+  {
+    "id": "crispy-lemon-chicken",
+    "title": "Crispy lemon chicken",
+    "description": "Crisp edges, juicy chicken, and bright lemon. The air fryer does most of the work.",
+    "category": "Dinner",
+    "tags": ["Chicken", "Air fryer", "Quick meals"],
+    "cuisine": "Mediterranean-inspired",
+    "method": "Air fryer",
+    "keywords": ["poultry", "boneless thighs", "high protein"],
+    "prepMinutes": 10,
+    "cookMinutes": 20,
+    "servings": 2,
+    "artwork": "chicken",
+    "example": true,
+    "ingredients": [
+      {
+        "id": "i1",
+        "quantity": 400,
+        "unit": "g",
+        "name": "boneless chicken thighs"
+      },
+      { "id": "i2", "quantity": 1, "unit": "tbsp", "name": "olive oil" },
+      {
+        "id": "i3",
+        "quantity": 1,
+        "unit": "",
+        "name": "lemon",
+        "note": "zest and juice, divided"
+      },
+      { "id": "i4", "quantity": 1, "unit": "tsp", "name": "dried oregano" },
+      { "id": "i5", "quantity": 0.5, "unit": "tsp", "name": "garlic powder" },
+      { "id": "i6", "quantity": 0.5, "unit": "tsp", "name": "salt" },
+      {
+        "id": "i7",
+        "quantity": null,
+        "unit": "",
+        "name": "black pepper",
+        "note": "to taste"
+      }
+    ],
+    "steps": [
+      {
+        "id": "s1",
+        "title": "Season the chicken",
+        "instruction": "Pat the chicken dry. Toss with olive oil, lemon zest, oregano, garlic powder, salt, and black pepper."
+      },
+      {
+        "id": "s2",
+        "title": "Arrange in the basket",
+        "instruction": "Preheat the air fryer to 190 C / 375 F. Arrange the chicken in a single layer, leaving a little space between pieces."
+      },
+      {
+        "id": "s3",
+        "title": "Cook until golden",
+        "instruction": "Air fry for 16-20 minutes, turning halfway. Check the thickest part with a thermometer; it should reach 74 C / 165 F. Add time as needed for thicker pieces."
+      },
+      {
+        "id": "s4",
+        "title": "Add the lemon",
+        "instruction": "Rest for 3 minutes, then squeeze over lemon juice to taste. Serve with rice or a crisp salad."
+      }
+    ],
+    "notes": ["Avoid crowding the basket; cook in batches if needed."],
+    "substitutions": ["Dried thyme can replace oregano."],
+    "equipment": ["Air fryer", "Instant-read thermometer"]
+  },
+  {
+    "id": "tomato-ricotta-toast",
+    "title": "Tomato & ricotta toast",
+    "description": "Thick toast, soft ricotta, and the ripest tomatoes you can find. Simple things, done well.",
+    "category": "Breakfast",
+    "tags": ["Vegetarian", "No fuss", "Quick meals"],
+    "cuisine": "Italian-inspired",
+    "method": "Toast",
+    "keywords": ["bread", "brunch", "basil", "sandwich"],
+    "prepMinutes": 5,
+    "cookMinutes": 5,
+    "servings": 2,
+    "artwork": "toast",
+    "example": true,
+    "ingredients": [
+      {
+        "id": "i1",
+        "quantity": 2,
+        "unit": "slices",
+        "name": "sourdough bread"
+      },
+      { "id": "i2", "quantity": 120, "unit": "g", "name": "ricotta" },
+      {
+        "id": "i3",
+        "quantity": 2,
+        "unit": "",
+        "name": "ripe tomatoes",
+        "note": "sliced"
+      },
+      { "id": "i4", "quantity": 1, "unit": "tbsp", "name": "olive oil" },
+      { "id": "i5", "quantity": 6, "unit": "leaves", "name": "basil" },
+      {
+        "id": "i6",
+        "quantity": null,
+        "unit": "",
+        "name": "flaky salt and black pepper",
+        "note": "to taste"
+      }
+    ],
+    "steps": [
+      {
+        "id": "s1",
+        "title": "Toast the bread",
+        "instruction": "Toast the sourdough until deeply golden at the edges and crisp enough to hold the toppings."
+      },
+      {
+        "id": "s2",
+        "title": "Layer generously",
+        "instruction": "Spread ricotta over the toast. Arrange the sliced tomatoes on top."
+      },
+      {
+        "id": "s3",
+        "title": "Finish and eat",
+        "instruction": "Drizzle with olive oil, tear over the basil, and season with flaky salt and black pepper. Eat straight away."
+      }
+    ],
+    "notes": [
+      "If the tomatoes are especially juicy, let the slices drain for a minute before assembling."
+    ],
+    "substitutions": ["Try cottage cheese in place of ricotta."],
+    "equipment": ["Toaster", "Bread knife"]
+  },
+  {
+    "id": "brothy-white-beans",
+    "title": "Brothy white beans",
+    "description": "Creamy beans, a handful of greens, and a lemony broth worth mopping up with bread.",
+    "category": "Dinner",
+    "tags": ["Vegetarian", "One pot", "Comfort food"],
+    "cuisine": "Italian-inspired",
+    "method": "Simmer",
+    "keywords": ["soup", "cannellini", "spinach", "legumes", "stew"],
+    "prepMinutes": 10,
+    "cookMinutes": 25,
+    "servings": 3,
+    "artwork": "beans",
+    "example": true,
+    "ingredients": [
+      { "id": "i1", "quantity": 2, "unit": "tbsp", "name": "olive oil" },
+      {
+        "id": "i2",
+        "quantity": 1,
+        "unit": "",
+        "name": "small onion",
+        "note": "finely diced"
+      },
+      {
+        "id": "i3",
+        "quantity": 3,
+        "unit": "cloves",
+        "name": "garlic",
+        "note": "sliced"
+      },
+      {
+        "id": "i4",
+        "quantity": 480,
+        "unit": "g",
+        "name": "canned white beans",
+        "note": "drained and rinsed"
+      },
+      { "id": "i5", "quantity": 600, "unit": "ml", "name": "vegetable stock" },
+      { "id": "i6", "quantity": 100, "unit": "g", "name": "baby spinach" },
+      {
+        "id": "i7",
+        "quantity": 0.5,
+        "unit": "",
+        "name": "lemon",
+        "note": "juice"
+      },
+      {
+        "id": "i8",
+        "quantity": null,
+        "unit": "",
+        "name": "salt and pepper",
+        "note": "to taste"
+      }
+    ],
+    "steps": [
+      {
+        "id": "s1",
+        "title": "Soften the aromatics",
+        "instruction": "Warm the oil in a saucepan over medium heat. Add onion and a pinch of salt. Cook for 6-8 minutes until softened, then add garlic and cook for 1 minute."
+      },
+      {
+        "id": "s2",
+        "title": "Simmer the beans",
+        "instruction": "Add beans and stock. Bring to a gentle simmer and cook for 15 minutes. Mash a small spoonful of beans against the side of the pan to thicken the broth."
+      },
+      {
+        "id": "s3",
+        "title": "Fold in the greens",
+        "instruction": "Stir in spinach and cook until wilted, about 2 minutes. Add lemon juice, then taste and adjust the seasoning."
+      },
+      {
+        "id": "s4",
+        "title": "Bring to the table",
+        "instruction": "Ladle into bowls and finish with a little olive oil. Serve with crusty bread."
+      }
+    ],
+    "notes": ["Add more stock if you prefer a soupier bowl."],
+    "substitutions": [
+      "Butter beans work just as well as cannellini.",
+      "Use chopped kale instead of spinach and simmer a few minutes longer."
+    ],
+    "equipment": ["Saucepan", "Wooden spoon"]
+  },
+  {
+    "id": "lemon-ricotta-pancakes",
+    "title": "Lemon ricotta pancakes",
+    "description": "Soft, sunny pancakes for slow mornings. A spoonful of ricotta keeps the middle lovely and tender.",
+    "category": "Breakfast",
+    "tags": ["Brunch", "Vegetarian", "Something sweet"],
+    "cuisine": "American",
+    "method": "Griddle",
+    "keywords": ["dessert", "lemon", "blueberry", "sweet"],
+    "prepMinutes": 10,
+    "cookMinutes": 15,
+    "servings": 3,
+    "artwork": "pancakes",
+    "example": true,
+    "ingredients": [
+      { "id": "i1", "quantity": 125, "unit": "g", "name": "all-purpose flour" },
+      { "id": "i2", "quantity": 2, "unit": "tbsp", "name": "sugar" },
+      { "id": "i3", "quantity": 1.5, "unit": "tsp", "name": "baking powder" },
+      { "id": "i4", "quantity": 150, "unit": "g", "name": "ricotta" },
+      { "id": "i5", "quantity": 120, "unit": "ml", "name": "milk" },
+      { "id": "i6", "quantity": 2, "unit": "", "name": "eggs" },
+      {
+        "id": "i7",
+        "quantity": 1,
+        "unit": "",
+        "name": "lemon",
+        "note": "finely grated zest"
+      },
+      {
+        "id": "i8",
+        "quantity": 1,
+        "unit": "tbsp",
+        "name": "butter",
+        "note": "for the pan"
+      }
+    ],
+    "steps": [
+      {
+        "id": "s1",
+        "title": "Mix the dry ingredients",
+        "instruction": "Whisk flour, sugar, baking powder, and a pinch of salt in a large bowl."
+      },
+      {
+        "id": "s2",
+        "title": "Make the batter",
+        "instruction": "In another bowl, whisk ricotta, milk, eggs, and lemon zest. Fold into the dry ingredients just until combined. A few small lumps are fine."
+      },
+      {
+        "id": "s3",
+        "title": "Cook in small batches",
+        "instruction": "Warm a lightly buttered nonstick pan over medium-low heat. Add small ladlefuls of batter. Cook for 2-3 minutes until bubbles appear, then flip and cook for another 1-2 minutes until set."
+      },
+      {
+        "id": "s4",
+        "title": "Serve warm",
+        "instruction": "Stack the pancakes and serve with fresh berries, honey, or maple syrup."
+      }
+    ],
+    "notes": [
+      "Keep the heat moderate so the centers cook before the outsides brown."
+    ],
+    "substitutions": ["Orange zest makes a lovely variation."],
+    "equipment": ["Nonstick pan", "Two mixing bowls", "Whisk"]
+  }
+]
