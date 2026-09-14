@@ -64,14 +64,32 @@ export default function RecipeEditor({
     );
   useEffect(() => {
     const element = dialog.current;
+    if (!element) return;
     const overflow = document.body.style.overflow;
     element.showModal();
     document.body.style.overflow = "hidden";
+
+    const handleBackdropClick = (event) => {
+      if (event.target !== element) return;
+      const rect = element.getBoundingClientRect();
+      const inside =
+        rect.top <= event.clientY &&
+        event.clientY <= rect.top + rect.height &&
+        rect.left <= event.clientX &&
+        event.clientX <= rect.left + rect.width;
+      if (!inside) onClose();
+    };
+
+    if (!("closedBy" in HTMLDialogElement.prototype)) {
+      element.addEventListener("click", handleBackdropClick);
+    }
+
     return () => {
+      element.removeEventListener("click", handleBackdropClick);
       element.close();
       document.body.style.overflow = overflow;
     };
-  }, []);
+  }, [onClose]);
   const submit = async (event) => {
     event.preventDefault();
     try {
@@ -98,6 +116,7 @@ export default function RecipeEditor({
     <dialog
       ref={dialog}
       className="recipe-editor"
+      closedby="any"
       aria-labelledby="editor-title"
       onCancel={onClose}
     >

@@ -94,7 +94,6 @@ function useKeepAwake() {
   }, [enabled]);
   return {
     supported: "wakeLock" in navigator,
-    enabled,
     toggle: () => {
       setError("");
       setEnabled(!enabled);
@@ -130,6 +129,16 @@ export default function RecipeDetail({
     ? progress.ingredients
     : [];
   const checkedSteps = Array.isArray(progress.steps) ? progress.steps : [];
+  const totalItems = recipe.ingredients.length + recipe.steps.length;
+  const completedIngredients = checkedIngredients.filter((id) =>
+    recipe.ingredients.some((item) => item.id === id),
+  ).length;
+  const completedSteps = checkedSteps.filter((id) =>
+    recipe.steps.some((step) => step.id === id),
+  ).length;
+  const completedItems = completedIngredients + completedSteps;
+  const progressPercent =
+    totalItems > 0 ? Math.round((completedItems / totalItems) * 100) : 0;
   const ingredientGroups = groupIngredients(recipe.ingredients);
   const toggle = (kind, id) => {
     const values = kind === "ingredients" ? checkedIngredients : checkedSteps;
@@ -244,6 +253,26 @@ export default function RecipeDetail({
             </a>
           )}
         </nav>
+        <div
+          className="cooking-progress"
+          aria-label="Cooking checklist progress"
+        >
+          <div className="cooking-progress__bar">
+            <div
+              className="cooking-progress__fill"
+              style={{ width: `${progressPercent}%` }}
+              role="progressbar"
+              aria-valuenow={progressPercent}
+              aria-valuemin={0}
+              aria-valuemax={100}
+            />
+          </div>
+          <span className="cooking-progress__label">
+            {progressPercent === 100
+              ? "Ready to serve!"
+              : `${progressPercent}% (${completedIngredients}/${recipe.ingredients.length} prepped · ${completedSteps}/${recipe.steps.length} cooked)`}
+          </span>
+        </div>
         {awake.supported && (
           <button
             className={`awake-toggle ${awake.enabled ? "active" : ""}`}

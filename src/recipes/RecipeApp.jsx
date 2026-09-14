@@ -24,6 +24,7 @@ import {
 import {
   cloudEnabled,
   deleteAccountRecipe,
+  extractAuthErrorFromUrl,
   getSession,
   importAccountLibrary,
   loadAccountLibrary,
@@ -37,10 +38,12 @@ import {
 import RecipeLibrary from "./components/RecipeLibrary";
 import RecipeDetail from "./components/RecipeDetail";
 import RecipeEditor from "./components/RecipeEditor";
+import AuthModal from "./components/AuthModal";
+import ToastStack from "./components/ToastStack";
 
 function readRoute() {
   const path = window.location.hash.slice(1);
-  if (!path || path === "/") return "";
+  if (!path || path === "/" || path === "/login") return "";
   return /^\/recipe\/[a-zA-Z0-9_-]+$/.test(path) ? path.slice(8) : "not-found";
 }
 
@@ -54,6 +57,16 @@ export default function RecipeApp() {
     loading: cloudEnabled,
   });
   const [notice, setNotice] = useState(initial.error);
+  const [toasts, setToasts] = useState(() =>
+    initial.error
+      ? [{ id: "init", message: initial.error, type: "error" }]
+      : [],
+  );
+  const [authModal, setAuthModal] = useState({
+    open: typeof window !== "undefined" && window.location.hash === "#/login",
+    intent: "signin",
+    error: "",
+  });
   const [route, setRoute] = useState(readRoute);
   const [shelfState, setShelfState] = useState({
     query: "",
@@ -82,6 +95,36 @@ export default function RecipeApp() {
   );
   const current = recipes.find((recipe) => recipe.id === route);
 
+  const addToast = (message, type = "info", title = "") => {
+    if (!message) return;
+    setToasts((prev) => [
+      ...prev.slice(-4),
+      {
+        id: `toast-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        message,
+        type,
+        title,
+      },
+    ]);
+  };
+  const dismissToast = (id) => {
+    setToasts((prev) => prev.filter((t) => t.id !== id));
+  };
+
+  useEffect(() => {
+    const authErr = extractAuthErrorFromUrl();
+    if (authErr) {
+      setAuthModal({ open: true, intent: "signin", error: authErr });
+      addToast(authErr, "error", "Sign-in Notice");
+    }
+  }, []);
+
+  useEffect(() => {
+    if (window.location.hash === "#/login") {
+      setAuthModal((prev) => ({ ...prev, open: true, intent: "signin" }));
+    }
+  }, [route]);
+
   useEffect(() => {
     const change = () => {
       setRoute(readRoute());
@@ -103,7 +146,10 @@ export default function RecipeApp() {
       if (event.key === STORAGE_KEY) {
         const latest = readLibrary();
         setLibrary(latest.library);
-        if (latest.error) setNotice(latest.error);
+        if (latest.error) {
+          setNotice(latest.error);
+          addToast(latest.error, "error");
+        }
       }
     };
     window.addEventListener("storage", sync);
@@ -119,6 +165,7 @@ export default function RecipeApp() {
         setAccount({ session: null, library: EMPTY_LIBRARY, loading: false });
         return;
       }
+      setAuthModal((prev) => ({ ...prev, open: false, error: "" }));
       setAccount((current) => ({ ...current, session, loading: true }));
       try {
         const pending = libraryRef.current;
@@ -132,7 +179,9 @@ export default function RecipeApp() {
           libraryRef.current = EMPTY_LIBRARY;
           if (active) {
             setLibrary(EMPTY_LIBRARY);
-            setNotice("Your browser recipes are now synced to this account.");
+            const msg = "Your browser recipes are now synced to this account.";
+            setNotice(msg);
+            addToast(msg, "cloud", "Synced");
           }
         }
         const remote = await loadAccountLibrary(session.user.id);
@@ -140,9 +189,9 @@ export default function RecipeApp() {
       } catch (error) {
         if (active) {
           setAccount((current) => ({ ...current, loading: false }));
-          setNotice(
-            `Your account connected, but recipes could not sync: ${error.message}`,
-          );
+          const msg = `Your account connected, but recipes could not sync: ${error.message}`;
+          setNotice(msg);
+          addToast(msg, "error");
         }
       }
     };
@@ -151,7 +200,9 @@ export default function RecipeApp() {
       .catch((error) => {
         if (active) {
           setAccount({ session: null, library: EMPTY_LIBRARY, loading: false });
-          setNotice(`Sign-in could not be restored: ${error.message}`);
+          const msg = `Sign-in could not be restored: ${error.message}`;
+          setNotice(msg);
+          addToast(msg, "error");
         }
       });
     const stopWatching = watchSession(hydrate);
@@ -180,8 +231,11 @@ export default function RecipeApp() {
       : [...activeLibrary.favorites, id];
     if (!account.session) {
       commitLocal({ ...library, favorites });
-      if (cloudEnabled)
-        setNotice("Sign in to keep favorites synced across your devices.");
+      if (cloudEnabled) {
+        const msg = "Sign in to keep favorites synced across your devices.";
+        setNotice(msg);
+        addToast(msg, "cloud");
+      }
       return;
     }
     setAccount((current) => ({
@@ -195,7 +249,9 @@ export default function RecipeApp() {
         ...current,
         library: { ...current.library, favorites: activeLibrary.favorites },
       }));
-      setNotice(`Favorite could not sync: ${error.message}`);
+      const msg = `Favorite could not sync: ${error.message}`;
+      setNotice(msg);
+      addToast(msg, "error");
     }
   };
   const save = async (recipe) => {
@@ -222,11 +278,13 @@ export default function RecipeApp() {
         }));
         setEditor(null);
         setNotice("Recipe saved to your account.");
+        addToast("Recipe saved to your account.", "success");
         window.location.hash = `/recipe/${recipe.id}`;
         return "";
       } catch (error) {
         const message = `Recipe could not sync: ${error.message}`;
         setNotice(message);
+        addToast(message, "error");
         return message;
       }
     }
@@ -234,6 +292,7 @@ export default function RecipeApp() {
     if (!error) {
       setEditor(null);
       setNotice("Recipe saved on this browser.");
+      addToast("Recipe saved on this browser.", "success");
       window.location.hash = `/recipe/${recipe.id}`;
     }
     return error;
@@ -254,10 +313,12 @@ export default function RecipeApp() {
         setEditor(null);
         window.location.hash = "/";
         setNotice("Recipe removed from your account.");
+        addToast("Recipe removed from your account.", "info");
         return "";
       } catch (error) {
         const message = `Recipe could not be removed: ${error.message}`;
         setNotice(message);
+        addToast(message, "error");
         return message;
       }
     }
@@ -266,6 +327,7 @@ export default function RecipeApp() {
       setEditor(null);
       window.location.hash = "/";
       setNotice("Recipe removed from this browser.");
+      addToast("Recipe removed from this browser.", "info");
     }
   };
   const exportLibrary = () => {
@@ -312,9 +374,9 @@ export default function RecipeApp() {
         });
         const remote = await loadAccountLibrary(account.session.user.id);
         setAccount((current) => ({ ...current, library: remote }));
-        setNotice(
-          `Imported ${personalBackup.recipes.length} personal recipes to your account.`,
-        );
+        const msg = `Imported ${personalBackup.recipes.length} personal recipes to your account.`;
+        setNotice(msg);
+        addToast(msg, "success");
         return;
       }
       const merged = [
@@ -333,30 +395,47 @@ export default function RecipeApp() {
         favorites: [...new Set([...library.favorites, ...backup.favorites])],
         progress,
       });
-      if (!error)
-        setNotice(
-          `Imported ${backup.recipes.length} recipes. Matching recipe ids were updated.`,
-        );
+      if (!error) {
+        const msg = `Imported ${backup.recipes.length} recipes. Matching recipe ids were updated.`;
+        setNotice(msg);
+        addToast(msg, "success");
+      }
     } catch (error) {
-      setNotice(
+      const msg =
         error instanceof SyntaxError
           ? "That file isn't valid JSON. Choose a mise. backup or a recipe content file."
-          : error.message,
-      );
+          : error.message;
+      setNotice(msg);
+      addToast(msg, "error");
     }
   };
   const openEditor = (recipe = null) => {
     if (cloudEnabled && !account.session) {
+      setAuthModal({
+        open: true,
+        intent: "create",
+        error: "",
+      });
       setNotice("Sign in with Google to create and manage your recipes.");
       return;
     }
     setEditor({ recipe });
   };
-  const beginSignIn = async () => {
+  const beginSignIn = () => {
+    setAuthModal({ open: true, intent: "signin", error: "" });
+  };
+  const handleAuthModalSignIn = async () => {
     try {
       await signInWithGoogle();
     } catch (error) {
-      setNotice(`Google sign-in could not start: ${error.message}`);
+      setAuthModal((prev) => ({ ...prev, error: error.message }));
+      addToast(`Google sign-in could not start: ${error.message}`, "error");
+    }
+  };
+  const closeAuthModal = () => {
+    setAuthModal((prev) => ({ ...prev, open: false, error: "" }));
+    if (window.location.hash === "#/login") {
+      window.location.hash = "#/";
     }
   };
   const endSession = async () => {
@@ -364,8 +443,11 @@ export default function RecipeApp() {
       await signOut();
       accountMenu.current?.removeAttribute("open");
       setNotice("Signed out. System recipes are still available.");
+      addToast("Signed out. System recipes are still available.", "info");
     } catch (error) {
-      setNotice(`Sign-out failed: ${error.message}`);
+      const msg = `Sign-out failed: ${error.message}`;
+      setNotice(msg);
+      addToast(msg, "error");
     }
   };
   const updateProgress = (recipeId, progress) => {
@@ -462,7 +544,15 @@ export default function RecipeApp() {
                       referrerPolicy="no-referrer"
                     />
                   ) : (
-                    <UserRound size={19} />
+                    <div className="account-avatar-fallback">
+                      {(
+                        account.session.user.user_metadata?.name ||
+                        account.session.user.email ||
+                        "C"
+                      )
+                        .slice(0, 1)
+                        .toUpperCase()}
+                    </div>
                   )}
                   <span>{account.session.user.user_metadata?.name || "My account"}</span>
                 </summary>
@@ -472,6 +562,16 @@ export default function RecipeApp() {
                   </span>
                   <strong>{account.session.user.user_metadata?.name || "Cook"}</strong>
                   <small>{account.session.user.email}</small>
+                  <div className="account-stats-pills">
+                    <span>
+                      {personalRecipes.length}{" "}
+                      {personalRecipes.length === 1 ? "recipe" : "recipes"}
+                    </span>
+                    <span>
+                      {activeLibrary.favorites.length}{" "}
+                      {activeLibrary.favorites.length === 1 ? "favorite" : "favorites"}
+                    </span>
+                  </div>
                   <button onClick={endSession}>
                     <LogOut size={17} /> Sign out
                   </button>
@@ -506,8 +606,17 @@ export default function RecipeApp() {
           onChange={importLibrary}
         />
       </header>
+      <ToastStack toasts={toasts} onDismiss={dismissToast} />
+      <AuthModal
+        isOpen={authModal.open}
+        onClose={closeAuthModal}
+        onSignIn={handleAuthModalSignIn}
+        loading={account.loading}
+        errorMessage={authModal.error}
+        initialIntent={authModal.intent}
+      />
       {notice && (
-        <div className="app-notice" role="status">
+        <div className="app-notice sr-only" role="status">
           <span>{notice}</span>
           <button
             className="icon-button"

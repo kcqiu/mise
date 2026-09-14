@@ -44,6 +44,37 @@ export async function signInWithGoogle() {
   if (error) throw error;
 }
 
+export function extractAuthErrorFromUrl() {
+  if (typeof window === "undefined") return null;
+  const searchParams = new URLSearchParams(window.location.search);
+  let hash = window.location.hash.slice(1);
+  let hashParams = new URLSearchParams();
+  if (hash.includes("error=") || hash.includes("error_description=")) {
+    const queryPart = hash.includes("?") ? hash.split("?")[1] : hash;
+    hashParams = new URLSearchParams(queryPart);
+  }
+
+  const error = searchParams.get("error") || hashParams.get("error");
+  const errorDescription =
+    searchParams.get("error_description") ||
+    hashParams.get("error_description");
+
+  if (error || errorDescription) {
+    const rawMsg = errorDescription || error;
+    const cleanHash =
+      window.location.hash.startsWith("#/recipe/")
+        ? window.location.hash.split("?")[0]
+        : "#/";
+    window.history.replaceState(
+      null,
+      "",
+      window.location.pathname + cleanHash,
+    );
+    return decodeURIComponent(rawMsg.replace(/\+/g, " "));
+  }
+  return null;
+}
+
 export async function signOut() {
   if (!supabase) return;
   const { error } = await supabase.auth.signOut();
