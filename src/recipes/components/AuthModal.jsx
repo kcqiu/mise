@@ -10,6 +10,7 @@ import {
   Utensils,
   X,
 } from "lucide-react";
+import { GOOGLE_CLIENT_ID } from "../cloud";
 
 /**
  * Google "G" brand icon SVG (official branding guidelines)
@@ -47,12 +48,15 @@ export default function AuthModal({
   isOpen,
   onClose,
   onSignIn,
+  onSignInWithIdToken,
   loading = false,
   errorMessage = "",
   initialIntent = "signin", // 'signin' | 'create' | 'favorite' | 'sync'
 }) {
   const dialogRef = useRef(null);
+  const gisContainerRef = useRef(null);
   const [connecting, setConnecting] = useState(false);
+  const [gisReady, setGisReady] = useState(false);
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -88,6 +92,63 @@ export default function AuthModal({
       setConnecting(false);
     }
   }, [isOpen, onClose]);
+
+  // Initialize Google Identity Services (GIS)
+  useEffect(() => {
+    if (!isOpen) return;
+
+    let mounted = true;
+    const initGsi = () => {
+      if (typeof window === "undefined" || !window.google?.accounts?.id) return;
+      try {
+        window.google.accounts.id.initialize({
+          client_id: GOOGLE_CLIENT_ID,
+          callback: async (response) => {
+            if (!response?.credential) return;
+            setConnecting(true);
+            try {
+              if (onSignInWithIdToken) {
+                await onSignInWithIdToken(response.credential);
+              }
+            } catch {
+              if (mounted) setConnecting(false);
+            }
+          },
+          auto_select: false,
+          cancel_on_tap_outside: true,
+        });
+
+        if (gisContainerRef.current) {
+          gisContainerRef.current.innerHTML = "";
+          window.google.accounts.id.renderButton(gisContainerRef.current, {
+            theme: "outline",
+            size: "large",
+            type: "standard",
+            text: "continue_with",
+            shape: "rectangular",
+            logo_alignment: "left",
+            width: 320,
+          });
+          if (mounted) setGisReady(true);
+        }
+      } catch {
+        if (mounted) setGisReady(false);
+      }
+    };
+
+    initGsi();
+    const interval = setInterval(() => {
+      if (window.google?.accounts?.id) {
+        initGsi();
+        clearInterval(interval);
+      }
+    }, 250);
+
+    return () => {
+      mounted = false;
+      clearInterval(interval);
+    };
+  }, [isOpen, onSignInWithIdToken]);
 
   const handleSignIn = async () => {
     setConnecting(true);
@@ -207,24 +268,30 @@ export default function AuthModal({
           )}
 
           <div className="auth-modal__actions">
-            <button
-              className="google-sign-in-button"
-              onClick={handleSignIn}
-              disabled={loading || connecting}
-              aria-label="Continue with Google"
-            >
-              {connecting || loading ? (
-                <>
-                  <Loader2 size={18} className="spin-icon" />
-                  <span>Connecting to Google...</span>
-                </>
-              ) : (
-                <>
-                  <GoogleIcon size={19} />
-                  <span>Continue with Google</span>
-                </>
-              )}
-            </button>
+            <div
+              ref={gisContainerRef}
+              className={`gis-button-wrapper ${gisReady ? "is-ready" : "is-hidden"}`}
+            />
+            {(!gisReady || connecting || loading) && (
+              <button
+                className="google-sign-in-button"
+                onClick={handleSignIn}
+                disabled={loading || connecting}
+                aria-label="Continue with Google"
+              >
+                {connecting || loading ? (
+                  <>
+                    <Loader2 size={18} className="spin-icon" />
+                    <span>Connecting to Google...</span>
+                  </>
+                ) : (
+                  <>
+                    <GoogleIcon size={19} />
+                    <span>Continue with Google</span>
+                  </>
+                )}
+              </button>
+            )}
 
             <button
               type="button"

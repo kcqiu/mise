@@ -3,10 +3,17 @@ import { ARTWORKS, RECIPE_IMAGES } from "../library";
 
 export default function RecipeArtwork({ artwork, title, className = "" }) {
   const index = ARTWORKS.indexOf(artwork);
-  const image = RECIPE_IMAGES[artwork];
+  const isCustomImage = Boolean(
+    artwork &&
+      (artwork.startsWith("http://") ||
+        artwork.startsWith("https://") ||
+        artwork.startsWith("data:image/") ||
+        artwork.startsWith("/")),
+  );
+  const image = RECIPE_IMAGES[artwork] || (isCustomImage ? artwork : null);
   return (
     <div
-      className={`recipe-art ${index < 0 ? "recipe-art--type" : ""} ${className}`}
+      className={`recipe-art ${index < 0 && !image ? "recipe-art--type" : ""} ${className}`}
       aria-hidden="true"
     >
       {image ? (

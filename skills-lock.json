@@ -1,6 +1,18 @@
 {
   "version": 1,
   "skills": {
+    "design": {
+      "source": "nextlevelbuilder/ui-ux-pro-max-skill",
+      "sourceType": "github",
+      "skillPath": ".claude/skills/design/SKILL.md",
+      "computedHash": "c1314d3243143853fd52cd4030d21a7044c1344edaf8971f8432dedf86f4b99a"
+    },
+    "gemini-api": {
+      "source": "google/skills",
+      "sourceType": "github",
+      "skillPath": "skills/cloud/gemini-api/SKILL.md",
+      "computedHash": "95dc4fa38add33fd81c4ff243b93c62c1a86b646e0a08198a42e3bc0030182bb"
+    },
     "supabase": {
       "source": "supabase/agent-skills",
       "sourceType": "github",

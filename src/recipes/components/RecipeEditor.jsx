@@ -1,6 +1,78 @@
 import { useEffect, useRef, useState } from "react";
-import { Plus, Save, Trash2, X } from "lucide-react";
+import {
+  Cloud,
+  Loader2,
+  Plus,
+  Save,
+  Sparkles,
+  Trash2,
+  Upload,
+  X,
+} from "lucide-react";
 import { ARTWORKS, validateRecipe } from "../library";
+import { uploadRecipeCover } from "../cloud";
+import { generateRecipeCoverWithGemini } from "../ai";
+import RecipeArtwork from "./RecipeArtwork";
+
+function cropAndCompressImage(file, targetSize = 800) {
+  return new Promise((resolve, reject) => {
+    if (!file) return reject(new Error("No file provided"));
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const dataUrl = e.target.result;
+      if (typeof document === "undefined") {
+        resolve({ blob: file, dataUrl });
+        return;
+      }
+      const img = new Image();
+      img.onload = () => {
+        try {
+          const canvas = document.createElement("canvas");
+          canvas.width = targetSize;
+          canvas.height = targetSize;
+          const ctx = canvas.getContext("2d");
+          if (!ctx) {
+            resolve({ blob: file, dataUrl });
+            return;
+          }
+          // Symmetrical square center-crop
+          const minDim = Math.min(img.width, img.height);
+          const sx = (img.width - minDim) / 2;
+          const sy = (img.height - minDim) / 2;
+          ctx.drawImage(
+            img,
+            sx,
+            sy,
+            minDim,
+            minDim,
+            0,
+            0,
+            targetSize,
+            targetSize,
+          );
+          canvas.toBlob(
+            (blob) => {
+              if (!blob) {
+                resolve({ blob: file, dataUrl });
+                return;
+              }
+              const webpDataUrl = canvas.toDataURL("image/webp", 0.85);
+              resolve({ blob, dataUrl: webpDataUrl });
+            },
+            "image/webp",
+            0.85,
+          );
+        } catch {
+          resolve({ blob: file, dataUrl });
+        }
+      };
+      img.onerror = () => resolve({ blob: file, dataUrl });
+      img.src = dataUrl;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
 
 const blankIngredient = () => ({
   quantity: "",
@@ -38,8 +110,13 @@ export default function RecipeEditor({
   onClose,
   onDelete,
   isLocal,
+  isCloud = false,
+  userId = null,
 }) {
   const dialog = useRef(null);
+  const fileInputRef = useRef(null);
+  const [processingCover, setProcessingCover] = useState(false);
+  const [coverNotice, setCoverNotice] = useState("");
   const [draft, setDraft] = useState(() =>
     recipe
       ? {
@@ -90,6 +167,51 @@ export default function RecipeEditor({
       document.body.style.overflow = overflow;
     };
   }, [onClose]);
+
+  const handleFileSelect = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    setProcessingCover(true);
+    setCoverNotice("Cropping & optimizing photo...");
+    try {
+      const { blob, dataUrl } = await cropAndCompressImage(file, 800);
+      let finalArtwork = dataUrl;
+      if (isCloud && userId) {
+        setCoverNotice("Uploading cover to your cloud cookbook...");
+        try {
+          const recipeId =
+            (recipe && recipe.id) || draft.id || `recipe-${Date.now()}`;
+          const publicUrl = await uploadRecipeCover(blob, recipeId, userId);
+          if (publicUrl) {
+            finalArtwork = publicUrl;
+          }
+        } catch (uploadErr) {
+          console.warn("Storage upload fell back to local dataUrl", uploadErr);
+        }
+      }
+      set("artwork", finalArtwork);
+      setCoverNotice("Cover photo attached.");
+      setTimeout(() => setCoverNotice(""), 3500);
+    } catch {
+      setCoverNotice("Could not process image file. Please try another.");
+    } finally {
+      setProcessingCover(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  const handleGeminiGenerate = async () => {
+    setCoverNotice("");
+    try {
+      await generateRecipeCoverWithGemini(draft);
+    } catch {
+      const promptPreview = draft.title ? ` (Dish: "${draft.title}")` : "";
+      setCoverNotice(
+        `Gemini AI: Realistic photo generation will automatically render your dish in the upcoming AI update${promptPreview}! You can upload a photo or paste an image URL for now.`,
+      );
+    }
+  };
+
   const submit = async (event) => {
     event.preventDefault();
     try {
@@ -159,6 +281,98 @@ export default function RecipeEditor({
               placeholder="The version you always come back to."
             />
           </label>
+
+          <div className="editor-cover-section">
+            <div className="editor-cover-header">
+              <span className="editor-cover-title">
+                Cover photo{" "}
+                <span className="field-hint">
+                  optional • auto-crops symmetrically
+                </span>
+              </span>
+              {draft.artwork && (
+                <button
+                  type="button"
+                  className="text-button editor-cover-remove"
+                  onClick={() => set("artwork", "")}
+                >
+                  Remove photo
+                </button>
+              )}
+            </div>
+
+            <div className="editor-cover-layout">
+              <div className="editor-cover-preview">
+                <RecipeArtwork
+                  artwork={draft.artwork}
+                  title={draft.title || "Recipe preview"}
+                  className="editor-cover-thumb"
+                />
+              </div>
+
+              <div className="editor-cover-controls">
+                <div className="editor-cover-buttons">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp,image/avif"
+                    className="sr-only"
+                    id="recipe-cover-upload"
+                    onChange={handleFileSelect}
+                  />
+                  <button
+                    type="button"
+                    className="button secondary editor-cover-btn"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={processingCover}
+                  >
+                    {processingCover ? (
+                      <>
+                        <Loader2 size={15} className="spin-icon" />
+                        <span>Cropping photo...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Upload size={15} />
+                        <span>Upload photo</span>
+                      </>
+                    )}
+                  </button>
+
+                  <button
+                    type="button"
+                    className="button ai-sparkle-button editor-cover-btn"
+                    onClick={handleGeminiGenerate}
+                    title="Coming soon: Realistic dish photo generated by Gemini AI"
+                  >
+                    <Sparkles size={15} />
+                    <span>Generate with Gemini</span>
+                    <span className="ai-badge">Soon</span>
+                  </button>
+                </div>
+
+                <div className="editor-cover-url-wrap">
+                  <input
+                    type="url"
+                    value={
+                      draft.artwork?.startsWith("data:") ? "" : draft.artwork
+                    }
+                    placeholder="Or paste an image URL (Unsplash, ImgBB, Supabase...)"
+                    onChange={(event) =>
+                      set("artwork", event.target.value.trim())
+                    }
+                  />
+                </div>
+
+                {coverNotice && (
+                  <p className="editor-cover-notice" role="status">
+                    {coverNotice}
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+
           <div className="form-grid">
             <label>
               Category
@@ -472,7 +686,11 @@ export default function RecipeEditor({
             <div className="delete-recipe">
               {confirmDelete ? (
                 <>
-                  <span>Delete this browser-saved recipe?</span>
+                  <span>
+                    {isCloud
+                      ? "Delete this recipe from your cookbook?"
+                      : "Delete this browser-saved recipe?"}
+                  </span>
                   <button
                     type="button"
                     className="text-button danger"
@@ -507,7 +725,13 @@ export default function RecipeEditor({
               {error}
             </p>
           )}
-          <p>Saved on this browser. Export a backup to keep a copy.</p>
+          {isCloud ? (
+            <p className="editor-status-cloud">
+              <Cloud size={14} /> Saved to your synced cloud cookbook.
+            </p>
+          ) : (
+            <p>Saved on this browser. Export a backup to keep a copy.</p>
+          )}
           <button className="button" type="submit">
             <Save size={17} />
             Save recipe

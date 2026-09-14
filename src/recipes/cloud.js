@@ -35,6 +35,10 @@ export function watchSession(callback) {
   return () => data.subscription.unsubscribe();
 }
 
+export const GOOGLE_CLIENT_ID =
+  import.meta.env.VITE_GOOGLE_CLIENT_ID?.trim() ||
+  "589540895742-ubongbejv6hei5cumq8dajut7dpmbtpq.apps.googleusercontent.com";
+
 export async function signInWithGoogle() {
   if (!supabase) return;
   const { error } = await supabase.auth.signInWithOAuth({
@@ -42,6 +46,16 @@ export async function signInWithGoogle() {
     options: { redirectTo: window.location.origin },
   });
   if (error) throw error;
+}
+
+export async function signInWithGoogleIdToken(token) {
+  if (!supabase) return null;
+  const { data, error } = await supabase.auth.signInWithIdToken({
+    provider: "google",
+    token,
+  });
+  if (error) throw error;
+  return data;
 }
 
 export function extractAuthErrorFromUrl() {
@@ -195,5 +209,40 @@ export async function importAccountLibrary(userId, library) {
       .from("recipe_progress")
       .upsert(progressRows, { onConflict: "user_id,recipe_id" });
     throwIfError(result);
+  }
+}
+
+export async function uploadRecipeCover(fileOrBlob, recipeId, userId) {
+  if (!supabase || !userId) return null;
+  const ext =
+    fileOrBlob.type === "image/png"
+      ? "png"
+      : fileOrBlob.type === "image/jpeg"
+        ? "jpg"
+        : "webp";
+  const filePath = `${userId}/${recipeId}-${Date.now()}.${ext}`;
+  const { data, error } = await supabase.storage
+    .from("recipe-covers")
+    .upload(filePath, fileOrBlob, {
+      cacheControl: "31536000",
+      upsert: true,
+      contentType: fileOrBlob.type || "image/webp",
+    });
+  if (error) throw error;
+  const { data: publicData } = supabase.storage
+    .from("recipe-covers")
+    .getPublicUrl(data.path);
+  return publicData.publicUrl;
+}
+
+export async function deleteRecipeCover(publicUrl) {
+  if (!supabase || !publicUrl || !publicUrl.includes("/recipe-covers/")) return;
+  try {
+    const parts = publicUrl.split("/recipe-covers/");
+    if (parts.length === 2) {
+      await supabase.storage.from("recipe-covers").remove([parts[1]]);
+    }
+  } catch {
+    // Non-blocking cleanup
   }
 }
