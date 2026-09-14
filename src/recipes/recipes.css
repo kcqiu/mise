@@ -3082,6 +3082,38 @@ dialog.add-recipe-modal::backdrop {
   border-radius: 999px;
 }
 
+.add-recipe-modal__hub-footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+  font-size: 13px;
+  color: var(--muted);
+  flex-wrap: wrap;
+}
+
+.add-recipe-modal__file-import-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  color: var(--green);
+  background: none;
+  border: none;
+  padding: 4px 8px;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: color 0.15s ease, background-color 0.15s ease;
+}
+
+.add-recipe-modal__file-import-btn:hover {
+  color: var(--ink);
+  background-color: rgba(35, 77, 60, 0.08);
+}
+
 /* Sub-views */
 .add-recipe-modal__form-view {
   display: flex;

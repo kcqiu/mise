@@ -25,6 +25,7 @@ export default function AddRecipeModal({
   onClose,
   onSelectManual,
   onParsedRecipe,
+  onImportFile,
   onError,
 }) {
   const dialogRef = useRef(null);
@@ -377,6 +378,21 @@ export default function AddRecipeModal({
                     and embeds the playable video on the card.
                   </p>
                 </div>
+              </button>
+            </div>
+
+            <div className="add-recipe-modal__hub-footer">
+              <span>Have an existing recipe JSON or backup file?</span>
+              <button
+                type="button"
+                className="text-button add-recipe-modal__file-import-btn"
+                onClick={() => {
+                  onImportFile?.();
+                  onClose();
+                }}
+              >
+                <Upload size={14} />
+                <span>Import file</span>
               </button>
             </div>
           </div>

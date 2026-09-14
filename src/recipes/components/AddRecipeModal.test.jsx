@@ -155,4 +155,29 @@ describe("AddRecipeModal intake hub", () => {
     expect(screen.getByText("Instagram Reels")).toBeInTheDocument();
     expect(screen.getByText("YouTube / Shorts")).toBeInTheDocument();
   });
+
+  it("renders hub footer with import file button and triggers onImportFile", async () => {
+    const user = userEvent.setup();
+    const handleImport = vi.fn();
+    const handleClose = vi.fn();
+
+    render(
+      <AddRecipeModal
+        isOpen={true}
+        onClose={handleClose}
+        onSelectManual={vi.fn()}
+        onParsedRecipe={vi.fn()}
+        onImportFile={handleImport}
+        onError={vi.fn()}
+      />
+    );
+
+    expect(screen.getByText(/Have an existing recipe JSON or backup file\?/i)).toBeInTheDocument();
+    const importBtn = screen.getByRole("button", { name: /Import file/i });
+    expect(importBtn).toBeInTheDocument();
+
+    await user.click(importBtn);
+    expect(handleImport).toHaveBeenCalledTimes(1);
+    expect(handleClose).toHaveBeenCalledTimes(1);
+  });
 });

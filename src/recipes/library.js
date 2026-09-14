@@ -323,7 +323,13 @@ export function validateRecipe(recipe) {
 
 export function parseBackup(text) {
   const data = JSON.parse(text);
-  const recipes = Array.isArray(data) ? data : data?.recipes;
+  const recipes = Array.isArray(data)
+    ? data
+    : Array.isArray(data?.recipes)
+      ? data.recipes
+      : data && typeof data === "object" && (data.title || data.name)
+        ? [data]
+        : null;
   if (!Array.isArray(recipes) || recipes.length > 1000)
     throw new Error(
       "Choose a recipe JSON file or a mise. backup (up to 1,000 recipes).",

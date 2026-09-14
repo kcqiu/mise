@@ -54,6 +54,11 @@ describe("recipe search and content", () => {
       ).favorites,
     ).toEqual([recipes[0].id]);
   });
+  it("parses single recipe JSON objects as well as backup arrays", () => {
+    const single = parseBackup(JSON.stringify(recipes[0]));
+    expect(single.recipes).toHaveLength(1);
+    expect(single.recipes[0].title).toBe(recipes[0].title);
+  });
   it("rejects incomplete, duplicate, or unsupported records", () => {
     expect(() => parseBackup("null")).toThrow(/recipe JSON/);
     expect(() =>
