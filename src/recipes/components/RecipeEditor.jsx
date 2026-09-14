@@ -115,6 +115,7 @@ export default function RecipeEditor({
 }) {
   const dialog = useRef(null);
   const fileInputRef = useRef(null);
+  const filePickerActiveRef = useRef(false);
   const [processingCover, setProcessingCover] = useState(false);
   const [coverNotice, setCoverNotice] = useState("");
   const [draft, setDraft] = useState(() =>
@@ -146,7 +147,15 @@ export default function RecipeEditor({
     element.showModal();
     document.body.style.overflow = "hidden";
 
+    const onWindowFocus = () => {
+      setTimeout(() => {
+        filePickerActiveRef.current = false;
+      }, 400);
+    };
+    window.addEventListener("focus", onWindowFocus);
+
     const handleBackdropClick = (event) => {
+      if (filePickerActiveRef.current) return;
       if (event.target !== element) return;
       const rect = element.getBoundingClientRect();
       const inside =
@@ -157,11 +166,10 @@ export default function RecipeEditor({
       if (!inside) onClose();
     };
 
-    if (!("closedBy" in HTMLDialogElement.prototype)) {
-      element.addEventListener("click", handleBackdropClick);
-    }
+    element.addEventListener("click", handleBackdropClick);
 
     return () => {
+      window.removeEventListener("focus", onWindowFocus);
       element.removeEventListener("click", handleBackdropClick);
       element.close();
       document.body.style.overflow = overflow;
@@ -238,9 +246,15 @@ export default function RecipeEditor({
     <dialog
       ref={dialog}
       className="recipe-editor"
-      closedby="any"
       aria-labelledby="editor-title"
-      onCancel={onClose}
+      onCancel={(event) => {
+        if (filePickerActiveRef.current || event.target !== dialog.current) {
+          event.preventDefault();
+          event.stopPropagation();
+          return;
+        }
+        onClose();
+      }}
     >
       <form onSubmit={submit}>
         <div className="editor-header">
@@ -318,12 +332,29 @@ export default function RecipeEditor({
                     accept="image/png,image/jpeg,image/webp,image/avif"
                     className="sr-only"
                     id="recipe-cover-upload"
-                    onChange={handleFileSelect}
+                    onClick={() => {
+                      filePickerActiveRef.current = true;
+                    }}
+                    onCancel={(e) => {
+                      e.stopPropagation();
+                      setTimeout(() => {
+                        filePickerActiveRef.current = false;
+                      }, 400);
+                    }}
+                    onChange={(e) => {
+                      handleFileSelect(e);
+                      setTimeout(() => {
+                        filePickerActiveRef.current = false;
+                      }, 400);
+                    }}
                   />
                   <button
                     type="button"
                     className="button secondary editor-cover-btn"
-                    onClick={() => fileInputRef.current?.click()}
+                    onClick={() => {
+                      filePickerActiveRef.current = true;
+                      fileInputRef.current?.click();
+                    }}
                     disabled={processingCover}
                   >
                     {processingCover ? (

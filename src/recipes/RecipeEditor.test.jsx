@@ -1,4 +1,4 @@
-﻿import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import RecipeEditor from './components/RecipeEditor';
@@ -123,6 +123,30 @@ describe('RecipeEditor component', () => {
     expect(
       screen.getByText(/Gemini AI: Realistic photo generation will automatically render your dish/i)
     ).toBeInTheDocument();
+  });
+
+  it('does not close editor when file input cancel event occurs', () => {
+    const handleClose = vi.fn();
+    render(
+      <RecipeEditor
+        recipe={defaultRecipe}
+        categories={['Baking', 'Dinner']}
+        onSave={vi.fn()}
+        onClose={handleClose}
+        onDelete={vi.fn()}
+        isLocal={true}
+        isCloud={true}
+      />
+    );
+
+    const fileInput = document.getElementById('recipe-cover-upload');
+    expect(fileInput).toBeInTheDocument();
+
+    // Fire cancel event on file input
+    const cancelEvent = new Event('cancel', { bubbles: true, cancelable: true });
+    fileInput.dispatchEvent(cancelEvent);
+
+    expect(handleClose).not.toHaveBeenCalled();
   });
 });
 
