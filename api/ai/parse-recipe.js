@@ -201,7 +201,7 @@ export default async function handler(req, res) {
   }
 
   const body = typeof req.body === "string" ? JSON.parse(req.body || "{}") : req.body || {};
-  const { mode, text, image, mimeType, url } = body;
+  const { mode, text, image, mimeType, url, caption } = body;
 
   try {
     const ai = new GoogleGenAI({ apiKey });
@@ -251,16 +251,32 @@ export default async function handler(req, res) {
       if (!url || !url.trim()) {
         return res.status(400).json({ error: "Please provide a social media video link." });
       }
+      const userCaption = typeof caption === "string" ? caption.trim() : "";
       const socialData = await fetchSocialData(url.trim());
       canonicalVideoUrl = url.trim();
       if (socialData.thumbnail) discoveredArtwork = socialData.thumbnail;
 
+      const effectiveCaption = userCaption || socialData.caption;
+      const effectiveTitle = socialData.title;
+
+      // Guard: Never hallucinate a random recipe if no caption or title could be retrieved
+      if (!effectiveCaption && !effectiveTitle) {
+        return res.status(422).json({
+          error:
+            socialData.host === "instagram.com"
+              ? "Instagram restricts automated caption scraping from cloud servers. Please paste the post caption into the caption box to extract the recipe!"
+              : `Could not retrieve the caption or recipe from this ${socialData.host} post. Please paste the post caption or video notes below.`,
+          requiresCaption: true,
+          platform: socialData.host,
+        });
+      }
+
       contents = [
         SYSTEM_INSTRUCTION,
         `Extract the culinary recipe from this social media post (${socialData.host}):
-Title: ${socialData.title}
-Creator: ${socialData.author}
-Caption / Description: ${socialData.caption || "None provided"}
+Title: ${effectiveTitle || "None provided"}
+Creator: ${socialData.author || "Unknown"}
+Caption / Description: ${effectiveCaption || "None provided"}
 Video URL: ${url}
 
 If the caption does not list every step explicitly, use your culinary knowledge of the dish mentioned in the title/caption to reconstruct the complete, authentic step-by-step cooking instructions.`

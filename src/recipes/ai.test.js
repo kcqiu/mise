@@ -95,6 +95,30 @@ describe("src/recipes/ai.js AI client bridge", () => {
     expect(result).toEqual(mockRecipe);
   });
 
+  it("parses social media URL with user caption by sending caption in payload", async () => {
+    const mockRecipe = { title: "Ube Matcha Latte", category: "Drinks" };
+
+    global.fetch = vi.fn().mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ success: true, recipe: mockRecipe }),
+    });
+
+    const result = await parseRecipeFromSocial(
+      "https://www.instagram.com/reel/CvvEAHStYXS/",
+      "Ube matcha latte recipe...",
+    );
+    expect(global.fetch).toHaveBeenCalledWith("/api/ai/parse-recipe", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        mode: "social",
+        url: "https://www.instagram.com/reel/CvvEAHStYXS/",
+        caption: "Ube matcha latte recipe...",
+      }),
+    });
+    expect(result).toEqual(mockRecipe);
+  });
+
   it("parses photo by sending base64 data to /api/ai/parse-recipe", async () => {
     const mockRecipe = { title: "Grandma's Cookies", category: "Baking" };
 

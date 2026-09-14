@@ -48,7 +48,10 @@ async function callAiEndpoint(endpoint, payload) {
         "Gemini API key is not configured. Please add GEMINI_API_KEY in your Vercel Project Environment Variables to enable AI capabilities."
       );
     }
-    throw new Error(data?.error || `AI operation failed (${response.status})`);
+    const err = new Error(data?.error || `AI operation failed (${response.status})`);
+    if (data?.requiresCaption) err.requiresCaption = true;
+    if (data?.platform) err.platform = data.platform;
+    throw err;
   }
 
   return data;
@@ -113,13 +116,13 @@ export async function parseRecipeFromUrl(url) {
  * Extracts a recipe from a TikTok, Instagram, or YouTube link.
  * Extracts video title, creator, caption, and thumbnail, and preserves the embed URL.
  * @param {string} url
+ * @param {string} [caption=""]
  * @returns {Promise<Object>} Structured recipe
  */
-export async function parseRecipeFromSocial(url) {
-  const data = await callAiEndpoint("/api/ai/parse-recipe", {
-    mode: "social",
-    url,
-  });
+export async function parseRecipeFromSocial(url, caption = "") {
+  const payload = { mode: "social", url };
+  if (caption) payload.caption = caption;
+  const data = await callAiEndpoint("/api/ai/parse-recipe", payload);
   return data.recipe;
 }
 

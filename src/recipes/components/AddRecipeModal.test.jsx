@@ -180,4 +180,50 @@ describe("AddRecipeModal intake hub", () => {
     expect(handleImport).toHaveBeenCalledTimes(1);
     expect(handleClose).toHaveBeenCalledTimes(1);
   });
+
+  it("displays Instagram caption input when Instagram URL is typed and submits with caption", async () => {
+    const user = userEvent.setup();
+    const handleParsed = vi.fn();
+    const handleClose = vi.fn();
+
+    const mockRecipe = {
+      title: "Ube Matcha Latte",
+      category: "Drinks",
+      ingredients: [{ name: "matcha", quantity: 1, unit: "tsp" }],
+      steps: [{ title: "Whisk", instruction: "Whisk matcha." }],
+    };
+    vi.spyOn(aiModule, "parseRecipeFromSocial").mockResolvedValueOnce(mockRecipe);
+
+    render(
+      <AddRecipeModal
+        isOpen={true}
+        onClose={handleClose}
+        onSelectManual={vi.fn()}
+        onParsedRecipe={handleParsed}
+        onError={vi.fn()}
+      />
+    );
+
+    await user.click(screen.getByRole("button", { name: /From TikTok, Instagram, or YouTube/i }));
+
+    const urlInput = screen.getByPlaceholderText(/tiktok\.com/i);
+    await user.type(urlInput, "https://www.instagram.com/reel/CvvEAHStYXS/");
+
+    // The caption textarea should now appear
+    expect(screen.getByText(/Recommended for Instagram/i)).toBeInTheDocument();
+    const captionInput = screen.getByPlaceholderText(/Paste the caption or ingredient list/i);
+    expect(captionInput).toBeInTheDocument();
+
+    await user.type(captionInput, "Ube matcha latte: 1/8 tsp ube extract, 1 cup milk, 1 tsp matcha");
+
+    // Click Extract & Embed
+    await user.click(screen.getByRole("button", { name: /Extract & Embed/i }));
+
+    expect(aiModule.parseRecipeFromSocial).toHaveBeenCalledWith(
+      "https://www.instagram.com/reel/CvvEAHStYXS/",
+      "Ube matcha latte: 1/8 tsp ube extract, 1 cup milk, 1 tsp matcha",
+    );
+    expect(handleParsed).toHaveBeenCalledWith(mockRecipe);
+    expect(handleClose).toHaveBeenCalledTimes(1);
+  });
 });

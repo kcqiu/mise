@@ -42,6 +42,8 @@ export default function AddRecipeModal({
   const [textInput, setTextInput] = useState("");
   const [urlInput, setUrlInput] = useState("");
   const [socialInput, setSocialInput] = useState("");
+  const [socialCaption, setSocialCaption] = useState("");
+  const [showSocialCaption, setShowSocialCaption] = useState(false);
   const [selectedPhoto, setSelectedPhoto] = useState(null);
   const [photoPreview, setPhotoPreview] = useState("");
 
@@ -54,6 +56,8 @@ export default function AddRecipeModal({
       setTextInput("");
       setUrlInput("");
       setSocialInput("");
+      setSocialCaption("");
+      setShowSocialCaption(false);
       setSelectedPhoto(null);
       setPhotoPreview("");
     }
@@ -175,10 +179,16 @@ export default function AddRecipeModal({
     setLoadingStep("Analyzing video captions and culinary steps...");
 
     try {
-      const parsed = await parseRecipeFromSocial(socialInput.trim());
+      const parsed = await parseRecipeFromSocial(
+        socialInput.trim(),
+        socialCaption.trim(),
+      );
       onParsedRecipe(parsed);
       onClose();
     } catch (err) {
+      if (err.requiresCaption) {
+        setShowSocialCaption(true);
+      }
       setErrorMsg(
         err.message || "Could not extract recipe from this video link."
       );
@@ -597,12 +607,44 @@ export default function AddRecipeModal({
                 className="add-recipe-input"
                 placeholder="https://www.tiktok.com/@creator/video/... or https://youtube.com/watch?v=..."
                 value={socialInput}
-                onChange={(e) => setSocialInput(e.target.value)}
+                onChange={(e) => {
+                  setSocialInput(e.target.value);
+                  if (/instagram\.com/i.test(e.target.value)) {
+                    setShowSocialCaption(true);
+                  }
+                }}
                 required
                 disabled={loading}
                 autoFocus
               />
             </div>
+
+            {(/instagram\.com/i.test(socialInput) || showSocialCaption) && (
+              <div className="add-recipe-modal__caption-group">
+                <div className="add-recipe-modal__caption-header">
+                  <label htmlFor="social-caption-input" className="add-recipe-modal__caption-label">
+                    Post caption / recipe text
+                  </label>
+                  {/instagram\.com/i.test(socialInput) && (
+                    <span className="caption-badge">Recommended for Instagram</span>
+                  )}
+                </div>
+                <textarea
+                  id="social-caption-input"
+                  className="add-recipe-textarea add-recipe-textarea--caption"
+                  rows={4}
+                  placeholder="Paste the caption or ingredient list from the Instagram post here..."
+                  value={socialCaption}
+                  onChange={(e) => setSocialCaption(e.target.value)}
+                  disabled={loading}
+                />
+                <p className="add-recipe-modal__caption-hint">
+                  {/instagram\.com/i.test(socialInput)
+                    ? "Meta restricts automated caption scraping from cloud servers. Pasting the caption ensures 100% accurate recipe extraction while MISE embeds your playable Reel!"
+                    : "If the video doesn't have a public text description, paste the recipe notes or ingredient list here."}
+                </p>
+              </div>
+            )}
 
             <div className="url-suggestions">
               <span className="url-suggestions-label">Supported platforms:</span>

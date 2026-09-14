@@ -3148,6 +3148,59 @@ dialog.add-recipe-modal::backdrop {
   box-shadow: 0 0 0 3px rgba(35, 77, 60, 0.12);
 }
 
+.add-recipe-modal__caption-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: rgba(0, 0, 0, 0.02);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 12px;
+  margin-top: 4px;
+}
+
+.add-recipe-modal__caption-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.add-recipe-modal__caption-label {
+  font-size: 12px;
+  font-weight: 650;
+  color: var(--ink);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.caption-badge {
+  font-size: 10px;
+  font-weight: 600;
+  color: #8c5b16;
+  background: #fbf2dc;
+  border: 1px solid #e8cd98;
+  padding: 2px 7px;
+  border-radius: 999px;
+  display: inline-block;
+}
+
+.add-recipe-textarea--caption {
+  font-size: 12px;
+  min-height: 85px;
+  max-height: 180px;
+  padding: 10px 12px;
+}
+
+.add-recipe-modal__caption-hint {
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--muted);
+  margin: 0;
+}
+
 .input-with-icon {
   position: relative;
   display: flex;
