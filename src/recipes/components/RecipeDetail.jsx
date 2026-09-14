@@ -12,7 +12,8 @@ import {
   Sun,
   UsersRound,
 } from "lucide-react";
-import { groupIngredients, quantityLabel, totalMinutes } from "../library";
+import { groupIngredients, totalMinutes } from "../library";
+import { convertMeasurement } from "../units";
 import RecipeArtwork from "./RecipeArtwork";
 import RecipeVideo from "./RecipeVideo";
 
@@ -20,36 +21,44 @@ function IngredientList({
   ingredients,
   checkedIngredients,
   multiplier,
+  unitSystem = "original",
   onToggle,
 }) {
   return (
     <ul className="ingredient-list">
-      {ingredients.map((ingredient) => (
-        <li key={ingredient.id}>
-          <label
-            className={
-              checkedIngredients.includes(ingredient.id) ? "checked" : ""
-            }
-          >
-            <input
-              type="checkbox"
-              checked={checkedIngredients.includes(ingredient.id)}
-              onChange={() => onToggle(ingredient.id)}
-            />
-            <span className="check-square">
-              <Check size={13} />
-            </span>
-            <span>
-              <strong>
-                {quantityLabel(ingredient.quantity, multiplier)}
-                {ingredient.unit ? ` ${ingredient.unit}` : ""}
-              </strong>{" "}
-              {ingredient.name}
-              {ingredient.note && <small>{ingredient.note}</small>}
-            </span>
-          </label>
-        </li>
-      ))}
+      {ingredients.map((ingredient) => {
+        const measurement = convertMeasurement(
+          ingredient.quantity,
+          ingredient.unit,
+          unitSystem,
+          multiplier,
+        );
+        return (
+          <li key={ingredient.id}>
+            <label
+              className={
+                checkedIngredients.includes(ingredient.id) ? "checked" : ""
+              }
+            >
+              <input
+                type="checkbox"
+                checked={checkedIngredients.includes(ingredient.id)}
+                onChange={() => onToggle(ingredient.id)}
+              />
+              <span className="check-square">
+                <Check size={13} />
+              </span>
+              <span>
+                {measurement.formatted ? (
+                  <strong>{measurement.formatted}</strong>
+                ) : null}{" "}
+                {ingredient.name}
+                {ingredient.note && <small>{ingredient.note}</small>}
+              </span>
+            </label>
+          </li>
+        );
+      })}
     </ul>
   );
 }
@@ -112,6 +121,7 @@ export default function RecipeDetail({
   isLocal,
 }) {
   const [servings, setServings] = useState(recipe.servings);
+  const [unitSystem, setUnitSystem] = useState("original");
   useEffect(() => setServings(recipe.servings), [recipe.servings]);
   const awake = useKeepAwake();
   const titleRef = useRef(null);
@@ -299,24 +309,56 @@ export default function RecipeDetail({
             <span>{recipe.ingredients.length} items</span>
           </div>
           <div className="servings-control">
-            <span>Servings</span>
-            <div>
+            <div className="servings-stepper">
+              <span>Servings</span>
+              <div>
+                <button
+                  className="icon-button"
+                  onClick={() => setServings(Math.max(1, servings - 1))}
+                  disabled={servings <= 1}
+                  aria-label="Fewer servings"
+                >
+                  <Minus size={15} />
+                </button>
+                <output aria-label="Adjusted servings">{servings}</output>
+                <button
+                  className="icon-button"
+                  onClick={() => setServings(Math.min(100, servings + 1))}
+                  disabled={servings >= 100}
+                  aria-label="More servings"
+                >
+                  <Plus size={15} />
+                </button>
+              </div>
+            </div>
+            <div
+              className="unit-toggle"
+              role="group"
+              aria-label="Measurement units"
+            >
               <button
-                className="icon-button"
-                onClick={() => setServings(Math.max(1, servings - 1))}
-                disabled={servings <= 1}
-                aria-label="Fewer servings"
+                type="button"
+                className={`unit-toggle-btn ${unitSystem === "original" ? "active" : ""}`}
+                onClick={() => setUnitSystem("original")}
+                aria-pressed={unitSystem === "original"}
               >
-                <Minus size={15} />
+                Original
               </button>
-              <output aria-label="Adjusted servings">{servings}</output>
               <button
-                className="icon-button"
-                onClick={() => setServings(Math.min(100, servings + 1))}
-                disabled={servings >= 100}
-                aria-label="More servings"
+                type="button"
+                className={`unit-toggle-btn ${unitSystem === "us" ? "active" : ""}`}
+                onClick={() => setUnitSystem("us")}
+                aria-pressed={unitSystem === "us"}
               >
-                <Plus size={15} />
+                US
+              </button>
+              <button
+                type="button"
+                className={`unit-toggle-btn ${unitSystem === "metric" ? "active" : ""}`}
+                onClick={() => setUnitSystem("metric")}
+                aria-pressed={unitSystem === "metric"}
+              >
+                Metric
               </button>
             </div>
           </div>
@@ -331,6 +373,7 @@ export default function RecipeDetail({
                   ingredients={ingredients}
                   checkedIngredients={checkedIngredients}
                   multiplier={servings / recipe.servings}
+                  unitSystem={unitSystem}
                   onToggle={(id) => toggle("ingredients", id)}
                 />
               </section>

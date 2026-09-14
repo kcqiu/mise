@@ -1099,12 +1099,20 @@ svg {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
   border-block: 1px solid var(--line);
   min-height: 56px;
+  padding-block: 8px;
   font-size: 12px;
   margin-bottom: 11px;
 }
-.servings-control > div {
+.servings-stepper {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.servings-stepper > div {
   display: flex;
   align-items: center;
   gap: 5px;
@@ -1118,6 +1126,35 @@ svg {
 .servings-control .icon-button {
   width: 36px;
   height: 36px;
+}
+.unit-toggle {
+  display: inline-flex;
+  align-items: center;
+  background: #edf2e9;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  padding: 2px;
+  gap: 2px;
+}
+.unit-toggle-btn {
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font: 500 11px var(--sans);
+  padding: 4px 9px;
+  border-radius: 14px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  line-height: 1;
+}
+.unit-toggle-btn:hover:not(.active) {
+  color: var(--ink);
+}
+.unit-toggle-btn.active {
+  background: var(--paper);
+  color: var(--ink);
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(16, 36, 27, 0.08);
 }
 .ingredient-list {
   padding: 0;
