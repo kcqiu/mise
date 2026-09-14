@@ -11,7 +11,10 @@ import {
 } from "lucide-react";
 import { ARTWORKS, validateRecipe } from "../library";
 import { uploadRecipeCover } from "../cloud";
-import { generateRecipeCoverWithGemini } from "../ai";
+import {
+  enhanceRecipeWithGemini,
+  generateRecipeCoverWithGemini,
+} from "../ai";
 import RecipeArtwork from "./RecipeArtwork";
 
 function cropAndCompressImage(file, targetSize = 800) {
@@ -118,6 +121,8 @@ export default function RecipeEditor({
   const filePickerActiveRef = useRef(false);
   const [processingCover, setProcessingCover] = useState(false);
   const [coverNotice, setCoverNotice] = useState("");
+  const [polishing, setPolishing] = useState(false);
+  const [polishNotice, setPolishNotice] = useState("");
   const [draft, setDraft] = useState(() =>
     recipe
       ? {
@@ -209,31 +214,98 @@ export default function RecipeEditor({
   };
 
   const handleGeminiGenerate = async () => {
-    setCoverNotice("");
+    if (!draft.title.trim()) {
+      setCoverNotice("Please give your recipe a name first so Gemini knows what dish to photograph.");
+      return;
+    }
+    setProcessingCover(true);
+    setCoverNotice("Generating photorealistic culinary photograph with Gemini Imagen...");
     try {
-      await generateRecipeCoverWithGemini(draft);
-    } catch {
-      const promptPreview = draft.title ? ` (Dish: "${draft.title}")` : "";
-      setCoverNotice(
-        `Gemini AI: Realistic photo generation will automatically render your dish in the upcoming AI update${promptPreview}! You can upload a photo or paste an image URL for now.`,
-      );
+      const generatedUrl = await generateRecipeCoverWithGemini(draft, {
+        userId: isCloud ? userId : null,
+        recipeId: draft.id || (isLocal ? recipe.id : `recipe-${crypto.randomUUID()}`),
+      });
+      if (generatedUrl) {
+        set("artwork", generatedUrl);
+        setCoverNotice(isCloud ? "Photo generated and saved to your cloud cookbook!" : "Photo generated!");
+        setTimeout(() => setCoverNotice(""), 4000);
+      }
+    } catch (err) {
+      setCoverNotice(err.message || "Failed to generate photo with Gemini Imagen.");
+      setTimeout(() => setCoverNotice(""), 6000);
+    } finally {
+      setProcessingCover(false);
+    }
+  };
+
+  const handleManualPolish = async () => {
+    if (!draft.title.trim()) {
+      setError("Please give your recipe a name before refining with AI.");
+      return;
+    }
+    setPolishing(true);
+    setPolishNotice("Polishing ingredient units and step directions with Gemini AI...");
+    try {
+      const polished = await enhanceRecipeWithGemini(draft);
+      if (polished) {
+        setDraft({
+          ...polished,
+          ingredients: (polished.ingredients || []).map((item) => ({
+            ...item,
+            quantity: item.quantity ?? "",
+          })),
+        });
+        setPolishNotice("Recipe polished by Gemini AI!");
+        setTimeout(() => setPolishNotice(""), 4000);
+      }
+    } catch (err) {
+      setPolishNotice(err.message || "Could not polish recipe.");
+      setTimeout(() => setPolishNotice(""), 5000);
+    } finally {
+      setPolishing(false);
     }
   };
 
   const submit = async (event) => {
     event.preventDefault();
+    setError("");
+    let draftToSave = draft;
+
+    // Run AI polish on save if title exists
+    if (draft.title.trim()) {
+      try {
+        setPolishing(true);
+        const polished = await enhanceRecipeWithGemini(draft);
+        if (polished) {
+          draftToSave = polished;
+          setDraft({
+            ...polished,
+            ingredients: (polished.ingredients || []).map((item) => ({
+              ...item,
+              quantity: item.quantity ?? "",
+            })),
+          });
+        }
+      } catch (aiErr) {
+        // Non-blocking fallback to manual draft if offline or API key absent
+        console.info("AI polish skipped or failed, saving manual entry:", aiErr.message);
+      } finally {
+        setPolishing(false);
+      }
+    }
+
     try {
       const saved = validateRecipe({
-        ...draft,
-        id: isLocal ? recipe.id : `recipe-${crypto.randomUUID()}`,
+        ...draftToSave,
+        id: isLocal ? recipe.id : (draftToSave.id && draftToSave.id.startsWith("recipe-") ? draftToSave.id : `recipe-${crypto.randomUUID()}`),
         example: false,
-        servings: Number(draft.servings),
-        prepMinutes: Number(draft.prepMinutes),
-        cookMinutes: Number(draft.cookMinutes),
-        restMinutes: Number(draft.restMinutes),
-        ingredients: draft.ingredients.map((item) => ({
+        servings: Number(draftToSave.servings),
+        prepMinutes: Number(draftToSave.prepMinutes),
+        cookMinutes: Number(draftToSave.cookMinutes),
+        restMinutes: Number(draftToSave.restMinutes),
+        ingredients: draftToSave.ingredients.map((item) => ({
           ...item,
-          quantity: item.quantity === "" ? null : Number(item.quantity),
+          quantity: item.quantity === "" || item.quantity == null ? null : Number(item.quantity),
         })),
       });
       const problem = await onSave(saved);
@@ -264,15 +336,49 @@ export default function RecipeEditor({
               {recipe ? "Make it yours." : "A new keeper."}
             </h2>
           </div>
-          <button
-            type="button"
-            className="icon-button"
-            onClick={onClose}
-            aria-label="Close recipe editor"
-          >
-            <X size={21} />
-          </button>
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            <button
+              type="button"
+              className="button ai-polish-btn"
+              onClick={handleManualPolish}
+              disabled={polishing}
+              title="Standardize measurements and enhance culinary steps with Gemini AI"
+            >
+              {polishing ? (
+                <>
+                  <Loader2 size={13} className="spin-icon" />
+                  <span>Refining...</span>
+                </>
+              ) : (
+                <>
+                  <Sparkles size={13} />
+                  <span>Refine with AI</span>
+                </>
+              )}
+            </button>
+            <button
+              type="button"
+              className="icon-button"
+              onClick={onClose}
+              aria-label="Close recipe editor"
+            >
+              <X size={21} />
+            </button>
+          </div>
         </div>
+        {polishNotice && (
+          <div
+            className="editor-cover-notice"
+            style={{
+              margin: "0 24px 12px 24px",
+              color: "var(--green)",
+              fontWeight: "600",
+            }}
+            role="status"
+          >
+            {polishNotice}
+          </div>
+        )}
         <div className="editor-content">
           <label>
             Recipe name
@@ -374,11 +480,21 @@ export default function RecipeEditor({
                     type="button"
                     className="button ai-sparkle-button editor-cover-btn"
                     onClick={handleGeminiGenerate}
-                    title="Coming soon: Realistic dish photo generated by Gemini AI"
+                    disabled={processingCover}
+                    title="Generate realistic dish photography with Gemini Imagen 3"
                   >
-                    <Sparkles size={15} />
-                    <span>Generate with Gemini</span>
-                    <span className="ai-badge">Soon</span>
+                    {processingCover ? (
+                      <>
+                        <Loader2 size={15} className="spin-icon" />
+                        <span>Generating...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles size={15} />
+                        <span>Generate with Gemini</span>
+                        <span className="ai-badge">Imagen 3</span>
+                      </>
+                    )}
                   </button>
                 </div>
 

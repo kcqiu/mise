@@ -82,6 +82,7 @@ describe("personal recipe workflows", () => {
     const user = userEvent.setup();
     render(<RecipeApp />);
     await user.click(screen.getByRole("button", { name: "Add recipe" }));
+    await user.click(screen.getByRole("button", { name: /Manual entry/i }));
     const dialog = screen.getByRole("dialog");
     await user.type(
       within(dialog).getByLabelText("Recipe name"),

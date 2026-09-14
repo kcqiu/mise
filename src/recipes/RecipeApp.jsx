@@ -39,6 +39,7 @@ import {
 import RecipeLibrary from "./components/RecipeLibrary";
 import RecipeDetail from "./components/RecipeDetail";
 import RecipeEditor from "./components/RecipeEditor";
+import AddRecipeModal from "./components/AddRecipeModal";
 import AuthModal from "./components/AuthModal";
 import ToastStack from "./components/ToastStack";
 
@@ -76,6 +77,7 @@ export default function RecipeApp() {
     sort: "collection",
   });
   const [editor, setEditor] = useState(null);
+  const [addRecipeModalOpen, setAddRecipeModalOpen] = useState(false);
   const importInput = useRef(null);
   const toolsMenu = useRef(null);
   const accountMenu = useRef(null);
@@ -413,6 +415,18 @@ export default function RecipeApp() {
       addToast(msg, "error");
     }
   };
+  const handleAddRecipeClick = () => {
+    if (cloudEnabled && !account.session) {
+      setAuthModal({
+        open: true,
+        intent: "create",
+        error: "",
+      });
+      setNotice("Sign in with Google to create and manage your recipes.");
+      return;
+    }
+    setAddRecipeModalOpen(true);
+  };
   const openEditor = (recipe = null) => {
     if (cloudEnabled && !account.session) {
       setAuthModal({
@@ -609,7 +623,7 @@ export default function RecipeApp() {
           <button
             className="button add-recipe-button"
             aria-label="Add recipe"
-            onClick={() => openEditor()}
+            onClick={handleAddRecipeClick}
           >
             <Plus size={17} />
             <span>Add recipe</span>
@@ -634,6 +648,16 @@ export default function RecipeApp() {
         loading={account.loading}
         errorMessage={authModal.error}
         initialIntent={authModal.intent}
+      />
+      <AddRecipeModal
+        isOpen={addRecipeModalOpen}
+        onClose={() => setAddRecipeModalOpen(false)}
+        onSelectManual={() => setEditor({ recipe: null })}
+        onParsedRecipe={(parsedRecipe) => {
+          setEditor({ recipe: parsedRecipe });
+          addToast("Recipe structured with Gemini AI!", "success");
+        }}
+        onError={(msg) => addToast(msg, "error")}
       />
       {notice && (
         <div className="app-notice sr-only" role="status">
@@ -684,7 +708,7 @@ export default function RecipeApp() {
           onFavorite={favorite}
           state={shelfState}
           onState={setShelfState}
-          onAdd={() => openEditor()}
+          onAdd={handleAddRecipeClick}
         />
       )}
       <footer className="app-footer">

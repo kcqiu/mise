@@ -2,7 +2,8 @@ import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import RecipeEditor from './components/RecipeEditor';
-import { buildGeminiCoverPrompt, generateRecipeCoverWithGemini } from './ai';
+import * as aiModule from './ai';
+import { buildGeminiCoverPrompt } from './ai';
 
 beforeEach(() => {
   HTMLDialogElement.prototype.showModal = function () {
@@ -119,9 +120,42 @@ describe('RecipeEditor component', () => {
       screen.getByPlaceholderText(/paste an image URL/i)
     ).toBeInTheDocument();
 
+    vi.spyOn(aiModule, 'generateRecipeCoverWithGemini').mockResolvedValueOnce(
+      'https://supabase.co/storage/v1/object/public/recipe-covers/user/cake.jpg'
+    );
+
     await user.click(screen.getByRole('button', { name: /Generate with Gemini/i }));
     expect(
-      screen.getByText(/Gemini AI: Realistic photo generation will automatically render your dish/i)
+      await screen.findByText(/Photo generated/i)
+    ).toBeInTheDocument();
+  });
+
+  it('provides Refine with AI button and polishes recipe draft', async () => {
+    const user = userEvent.setup();
+    vi.spyOn(aiModule, 'enhanceRecipeWithGemini').mockResolvedValueOnce({
+      ...defaultRecipe,
+      description: 'Ultra-moist ceremonial grade matcha pound cake with white chocolate glaze.',
+    });
+
+    render(
+      <RecipeEditor
+        recipe={defaultRecipe}
+        categories={['Baking', 'Dinner']}
+        onSave={vi.fn()}
+        onClose={vi.fn()}
+        onDelete={vi.fn()}
+        isLocal={true}
+        isCloud={true}
+      />
+    );
+
+    const refineBtn = screen.getByRole('button', { name: /Refine with AI/i });
+    expect(refineBtn).toBeInTheDocument();
+
+    await user.click(refineBtn);
+    expect(aiModule.enhanceRecipeWithGemini).toHaveBeenCalled();
+    expect(
+      await screen.findByText(/Recipe polished by Gemini AI/i)
     ).toBeInTheDocument();
   });
 
@@ -163,11 +197,5 @@ describe('Gemini AI module', () => {
     expect(prompt).toContain('Italian style');
     expect(prompt).toContain('Arborio rice, Lobster tails, Parmigiano');
     expect(prompt).toContain('photorealistic');
-  });
-
-  it('generateRecipeCoverWithGemini placeholder throws informative error', async () => {
-    await expect(generateRecipeCoverWithGemini({})).rejects.toThrow(
-      /upcoming AI update/i
-    );
   });
 });
