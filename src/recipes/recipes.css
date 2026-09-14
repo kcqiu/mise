@@ -1099,33 +1099,34 @@ svg {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 12px;
+  flex-wrap: nowrap;
+  gap: 8px;
   border-block: 1px solid var(--line);
-  min-height: 56px;
-  padding-block: 8px;
+  min-height: 52px;
+  padding-block: 6px;
   font-size: 12px;
   margin-bottom: 11px;
 }
 .servings-stepper {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
+  flex-shrink: 0;
 }
 .servings-stepper > div {
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 3px;
 }
 .servings-control output {
-  min-width: 28px;
+  min-width: 22px;
   text-align: center;
   font-size: 13px;
   font-variant-numeric: tabular-nums;
 }
 .servings-control .icon-button {
-  width: 36px;
-  height: 36px;
+  width: 32px;
+  height: 32px;
 }
 .unit-toggle {
   display: inline-flex;
@@ -1135,17 +1136,19 @@ svg {
   border-radius: 20px;
   padding: 2px;
   gap: 2px;
+  flex-shrink: 0;
 }
 .unit-toggle-btn {
   border: 0;
   background: transparent;
   color: var(--muted);
   font: 500 11px var(--sans);
-  padding: 4px 9px;
+  padding: 4px 8px;
   border-radius: 14px;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
   line-height: 1;
+  white-space: nowrap;
 }
 .unit-toggle-btn:hover:not(.active) {
   color: var(--ink);
@@ -1744,6 +1747,27 @@ svg {
     grid-template-columns: 290px minmax(0, 1fr);
     gap: 48px;
   }
+  .servings-control {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    padding-block: 10px;
+    min-height: auto;
+  }
+  .servings-stepper {
+    justify-content: space-between;
+    width: 100%;
+  }
+  .unit-toggle {
+    width: 100%;
+    display: flex;
+  }
+  .unit-toggle-btn {
+    flex: 1;
+    text-align: center;
+    padding: 6px 4px;
+    font-size: 11.5px;
+  }
   .detail-stats > div {
     gap: 6px;
   }
@@ -2317,10 +2341,35 @@ svg {
   }
   .servings-control {
     font-size: 13px;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    padding-block: 12px;
+    margin-bottom: 16px;
+    min-height: auto;
+  }
+  .servings-stepper {
+    justify-content: space-between;
+    width: 100%;
   }
   .servings-control .icon-button {
     width: 44px;
     height: 44px;
+  }
+  .unit-toggle {
+    width: 100%;
+    display: flex;
+    padding: 3px;
+  }
+  .unit-toggle-btn {
+    flex: 1;
+    text-align: center;
+    padding: 8px 0;
+    font-size: 12px;
+    min-height: 38px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
   .equipment {
     margin-top: 26px;
