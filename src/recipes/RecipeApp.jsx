@@ -1033,6 +1033,30 @@ export default function RecipeApp() {
         </a>
         <span className="header-caption">Recipes, kept close.</span>
         <div className="header-actions">
+          <a
+            href="#/groceries"
+            className={`groceries-nav-btn ${route === "groceries" ? "is-active" : ""}`}
+            aria-label={`Grocery list${grocerySession.recipes?.length ? ` (${grocerySession.recipes.length} recipes)` : ""}`}
+            title="Open grocery list"
+          >
+            <ShoppingBag size={17} />
+            <span className="groceries-nav-label">Grocery list</span>
+            {Boolean(grocerySession.recipes?.length) && (
+              <span className="groceries-badge">
+                {grocerySession.recipes.length}
+              </span>
+            )}
+          </a>
+
+          <button
+            className="button add-recipe-button"
+            aria-label="Add recipe"
+            onClick={handleAddRecipeClick}
+          >
+            <Plus size={17} />
+            <span>Add recipe</span>
+          </button>
+
           {cloudEnabled &&
             (account.session ? (
               <details ref={accountMenu} className="account-menu">
@@ -1041,30 +1065,19 @@ export default function RecipeApp() {
                   aria-label="Open account menu"
                   title={account.session.user.email}
                 >
-                  {account.session.user.user_metadata?.avatar_url ? (
-                    <img
-                      src={account.session.user.user_metadata.avatar_url}
-                      alt=""
-                      referrerPolicy="no-referrer"
-                    />
-                  ) : (
-                    <div className="account-avatar-fallback">
-                      {(
-                        account.session.user.user_metadata?.name ||
-                        account.session.user.email ||
-                        "C"
-                      )
-                        .slice(0, 1)
-                        .toUpperCase()}
-                    </div>
-                  )}
-                  <span>{account.session.user.user_metadata?.name || "My account"}</span>
+                  <img
+                    className="account-avatar-img"
+                    src={account.session.user.user_metadata?.avatar_url || "/recipe/art/avatar-mara.webp"}
+                    alt=""
+                    referrerPolicy="no-referrer"
+                  />
+                  <span>{account.session.user.user_metadata?.name || "Mara"}</span>
                 </summary>
                 <div className="tools-menu account-menu__panel">
                   <span className="eyebrow">
                     <Cloud size={13} /> Synced library
                   </span>
-                  <strong>{account.session.user.user_metadata?.name || "Cook"}</strong>
+                  <strong>{account.session.user.user_metadata?.name || "Mara"}</strong>
                   <small>{account.session.user.email}</small>
                   <div className="account-stats-pills">
                     <span>
@@ -1083,36 +1096,18 @@ export default function RecipeApp() {
               </details>
             ) : (
               <button
-                className="button button--light account-sign-in"
+                className="account-sign-in"
                 onClick={beginSignIn}
                 disabled={account.loading}
+                aria-label="Sign in"
+                title="Sign in"
               >
-                <LogIn size={17} />
+                <span className="account-sign-in__icon" aria-hidden="true">
+                  <UserRound size={17} strokeWidth={1.8} />
+                </span>
                 <span>{account.loading ? "Connecting" : "Sign in"}</span>
               </button>
             ))}
-          <a
-            href="#/groceries"
-            className={`button button--light groceries-nav-btn ${route === "groceries" ? "is-active" : ""}`}
-            aria-label={`Grocery list${grocerySession.recipes?.length ? ` (${grocerySession.recipes.length} recipes)` : ""}`}
-            title="Open grocery list"
-          >
-            <ShoppingBag size={17} />
-            <span className="groceries-nav-label">Groceries</span>
-            {Boolean(grocerySession.recipes?.length) && (
-              <span className="groceries-badge">
-                {grocerySession.recipes.length}
-              </span>
-            )}
-          </a>
-          <button
-            className="button add-recipe-button"
-            aria-label="Add recipe"
-            onClick={handleAddRecipeClick}
-          >
-            <Plus size={17} />
-            <span>Add recipe</span>
-          </button>
         </div>
         <input
           ref={importInput}

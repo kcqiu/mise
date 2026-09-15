@@ -24,6 +24,12 @@ export const RECIPE_IMAGES = {
   "lobster-butter": "/recipe/art/lobster-butter.webp",
   "mango-matcha": "/recipe/art/mango-matcha.webp",
   "jasmine-matcha": "/recipe/art/jasmine-matcha.webp",
+  beans: "/recipe/art/brothy-beans.webp",
+  steak: "/recipe/art/ribeye-steak.webp",
+  chicken: "/recipe/art/lemon-chicken.webp",
+  noodles: "/recipe/art/miso-noodles.webp",
+  toast: "/recipe/art/tomato-toast.webp",
+  pancakes: "/recipe/art/lemon-pancakes.webp",
 };
 
 const VIDEO_HOSTS = new Set([
