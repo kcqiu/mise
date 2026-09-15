@@ -9,4 +9,4 @@
 - [x] ~~Phase 6: Recipe Editor~~
 - [x] ~~Phase 7: Recipe Detail~~
 - [x] ~~Phase 8: Base Styles & Preflight~~
-- [ ] Phase 9: Final Legacy Cleanup
+- [x] ~~Phase 9: Final Legacy Cleanup~~

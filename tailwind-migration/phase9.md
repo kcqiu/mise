@@ -18,7 +18,7 @@ Retire remaining legacy stylesheet imports from `src/recipes/main.jsx`, leaving 
    - Mark all phases complete in `master-plan.md`.
 
 ## Success Criteria
-- [ ] No legacy CSS files remaining in `src/recipes/`.
-- [ ] Production build clean and optimized.
-- [ ] 155/155 tests passing.
-- [ ] Master plan marked done and committed.
+- [x] ~~No legacy CSS files remaining in `src/recipes/`.~~
+- [x] ~~Production build clean and optimized.~~
+- [x] ~~155/155 tests passing.~~
+- [x] ~~Master plan marked done and committed.~~
