@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import RecipeDetail from "./components/RecipeDetail";
+import RecipeDetail from "./RecipeDetail";
 
 describe("RecipeDetail unit conversion", () => {
   const mockRecipe = {
@@ -168,4 +168,3 @@ describe("RecipeDetail unit conversion", () => {
     expect(handleToggleGroceries).toHaveBeenCalledWith("matcha-latte", 2);
   });
 });
-

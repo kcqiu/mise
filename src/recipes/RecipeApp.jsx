@@ -2,13 +2,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowLeft,
   BookOpen,
-  Cloud,
-  LogIn,
-  LogOut,
-  Plus,
-  ShoppingBag,
-  Sprout,
-  UserRound,
   X,
 } from "lucide-react";
 import publishedRecipes from "./data/recipes.json";
@@ -64,13 +57,8 @@ import AddRecipeModal from "./components/AddRecipeModal";
 import AuthModal from "./components/AuthModal";
 import ToastStack from "./components/ToastStack";
 import GroceryListView from "./components/GroceryListView";
-
-function readRoute() {
-  const path = window.location.hash.slice(1);
-  if (!path || path === "/" || path === "/login") return "";
-  if (path === "/groceries") return "groceries";
-  return /^\/recipe\/[a-zA-Z0-9_-]+$/.test(path) ? path.slice(8) : "not-found";
-}
+import { AppFooter, AppHeader } from "./components/AppShell";
+import useHashRoute from "./useHashRoute";
 
 export default function RecipeApp() {
   const [initial] = useState(readLibrary);
@@ -92,7 +80,7 @@ export default function RecipeApp() {
     intent: "signin",
     error: "",
   });
-  const [route, setRoute] = useState(readRoute);
+  const route = useHashRoute();
   const [shelfState, setShelfState] = useState({
     query: "",
     category: "",
@@ -451,14 +439,6 @@ export default function RecipeApp() {
     }
   }, [route, account.session, account.loading]);
 
-  useEffect(() => {
-    const change = () => {
-      setRoute(readRoute());
-      window.scrollTo(0, 0);
-    };
-    window.addEventListener("hashchange", change);
-    return () => window.removeEventListener("hashchange", change);
-  }, []);
   useEffect(() => {
     document.title = current
       ? `${current.title} | mise.`
@@ -1027,98 +1007,20 @@ export default function RecipeApp() {
       >
         Skip to recipes
       </a>
-      <header className="app-header">
-        <a href="#/" className="mise-brand" aria-label="mise. recipe shelf">
-          mise<span>.</span>
-        </a>
-        <span className="header-caption">Recipes, kept close.</span>
-        <div className="header-actions">
-          <a
-            href="#/groceries"
-            className={`groceries-nav-btn ${route === "groceries" ? "is-active" : ""}`}
-            aria-label={`Grocery list${grocerySession.recipes?.length ? ` (${grocerySession.recipes.length} recipes)` : ""}`}
-            title="Open grocery list"
-          >
-            <ShoppingBag size={17} />
-            <span className="groceries-nav-label">Grocery list</span>
-            {Boolean(grocerySession.recipes?.length) && (
-              <span className="groceries-badge">
-                {grocerySession.recipes.length}
-              </span>
-            )}
-          </a>
-
-          <button
-            className="button add-recipe-button"
-            aria-label="Add recipe"
-            onClick={handleAddRecipeClick}
-          >
-            <Plus size={17} />
-            <span>Add recipe</span>
-          </button>
-
-          {cloudEnabled &&
-            (account.session ? (
-              <details ref={accountMenu} className="account-menu">
-                <summary
-                  className="account-chip"
-                  aria-label="Open account menu"
-                  title={account.session.user.email}
-                >
-                  <img
-                    className="account-avatar-img"
-                    src={account.session.user.user_metadata?.avatar_url || "/recipe/art/avatar-mara.webp"}
-                    alt=""
-                    referrerPolicy="no-referrer"
-                  />
-                  <span>{account.session.user.user_metadata?.name || "Mara"}</span>
-                </summary>
-                <div className="tools-menu account-menu__panel">
-                  <span className="eyebrow">
-                    <Cloud size={13} /> Synced library
-                  </span>
-                  <strong>{account.session.user.user_metadata?.name || "Mara"}</strong>
-                  <small>{account.session.user.email}</small>
-                  <div className="account-stats-pills">
-                    <span>
-                      {personalRecipes.length}{" "}
-                      {personalRecipes.length === 1 ? "recipe" : "recipes"}
-                    </span>
-                    <span>
-                      {activeLibrary.favorites.length}{" "}
-                      {activeLibrary.favorites.length === 1 ? "favorite" : "favorites"}
-                    </span>
-                  </div>
-                  <button onClick={endSession}>
-                    <LogOut size={17} /> Sign out
-                  </button>
-                </div>
-              </details>
-            ) : (
-              <button
-                className="account-sign-in"
-                onClick={beginSignIn}
-                disabled={account.loading}
-                aria-label="Sign in"
-                title="Sign in"
-              >
-                <span className="account-sign-in__icon" aria-hidden="true">
-                  <UserRound size={17} strokeWidth={1.8} />
-                </span>
-                <span>{account.loading ? "Connecting" : "Sign in"}</span>
-              </button>
-            ))}
-        </div>
-        <input
-          ref={importInput}
-          className="sr-only"
-          type="file"
-          accept=".json,application/json,.txt,.md,text/plain,text/markdown"
-          aria-label="Import recipe file or backup"
-          tabIndex={-1}
-          onChange={importRecipeFile}
-        />
-      </header>
+      <AppHeader
+        account={account}
+        accountMenuRef={accountMenu}
+        cloudAvailable={cloudEnabled}
+        favoriteCount={activeLibrary.favorites.length}
+        groceryRecipeCount={grocerySession.recipes?.length || 0}
+        importInputRef={importInput}
+        onAddRecipe={handleAddRecipeClick}
+        onImportRecipeFile={importRecipeFile}
+        onSignIn={beginSignIn}
+        onSignOut={endSession}
+        personalRecipeCount={personalRecipes.length}
+        route={route}
+      />
       <ToastStack toasts={toasts} onDismiss={dismissToast} />
       <AuthModal
         isOpen={authModal.open}
@@ -1138,7 +1040,6 @@ export default function RecipeApp() {
           addToast("Recipe structured with Gemini AI!", "success");
         }}
         onImportFile={() => importInput.current?.click()}
-        onError={(msg) => addToast(msg, "error")}
       />
       {notice && (
         <div className="app-notice sr-only" role="status">
@@ -1160,7 +1061,6 @@ export default function RecipeApp() {
           onDispatchMutation={dispatchGroceryMutation}
           onCompleteTrip={handleCompleteTrip}
           syncStatus={syncStatus}
-          userId={account.session?.user?.id || null}
           onToast={addToast}
         />
       ) : route ? (
@@ -1207,13 +1107,7 @@ export default function RecipeApp() {
           onAdd={handleAddRecipeClick}
         />
       )}
-      <footer className="app-footer">
-        <a href="#/" className="mise-brand">
-          mise<span>.</span>
-        </a>
-        <span>A little less searching. A little more cooking.</span>
-        <Sprout size={23} strokeWidth={1.3} aria-hidden="true" />
-      </footer>
+      <AppFooter />
       {editor && (
         <RecipeEditor
           recipe={editor.recipe}

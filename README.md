@@ -59,8 +59,9 @@ See [setup, architecture and limitations](docs/instagram-import.md).
 ## Checks
 
 ```bash
-npm test
-npm run build
+npm run check
 ```
 
 Run `supabase/verify.sql` to check the schema, account policies, and signup hook.
+See [the architecture guide](docs/architecture.md) for feature boundaries,
+stylesheet ownership, and repository conventions.

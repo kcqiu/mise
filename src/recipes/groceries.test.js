@@ -2,7 +2,6 @@ import { describe, it, expect } from "vitest";
 import {
   parseIngredientDetails,
   getCanonicalItemKey,
-  categorizeAisle,
   isNonShoppingUtility,
   isPantryStaple,
   selectGroceryList,
@@ -12,10 +11,8 @@ import {
   rolloverGrocerySession,
   EMPTY_GROCERY_SESSION,
   generateUUID,
-  getDeviceId,
   dbRecordToGrocerySession,
   readGroceryQueue,
-  saveGroceryQueue,
   enqueueGroceryMutation,
   ackGroceryMutations,
   clearGroceryQueue,
@@ -23,7 +20,6 @@ import {
   rebaseMutationsOverSession,
   mergeGuestIntoAccountSession,
   formatGroceryListText,
-  DEFAULT_AISLE_ORDER,
   PRESET_AISLE_PROFILES,
   reorderAisles,
 } from "./groceries";
@@ -881,4 +877,3 @@ describe("Groceries Phase 2: Mutations, Sync, Guest Merge & Export Tests", () =>
     expect(reordered[2].category).toBe("Meat & Seafood");
   });
 });
-
