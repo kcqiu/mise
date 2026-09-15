@@ -12,7 +12,7 @@ Migrate `GroceryListView` layout, aisle categories, checklist interactions, reci
 - Remove all `.grocery-*` and `.aisle-*` rules from legacy CSS.
 
 ## Success Criteria
-- [ ] GroceryListView fully migrated to Tailwind utilities.
-- [ ] Legacy grocery CSS rules removed.
-- [ ] All 30 grocery domain tests + 11 component tests pass.
-- [ ] Clean commit for Phase 5.
+- [x] GroceryListView fully migrated to Tailwind utilities.
+- [x] Legacy grocery CSS rules removed.
+- [x] All 30 grocery domain tests + 11 component tests pass.
+- [x] Clean commit for Phase 5.

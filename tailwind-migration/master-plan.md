@@ -5,7 +5,7 @@
 - [x] ~~Phase 2: Shared Controls & Shell~~
 - [x] ~~Phase 3: Overlays & Modals~~
 - [x] ~~Phase 4: Recipe Shelf~~
-- [ ] Phase 5: Grocery Experience
+- [x] ~~Phase 5: Grocery Experience~~
 - [ ] Phase 6: Recipe Editor
 - [ ] Phase 7: Recipe Detail
 - [ ] Phase 8: Base Styles & Preflight

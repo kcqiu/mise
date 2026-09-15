@@ -173,7 +173,7 @@ export default function RecipeDetail({
           <ArrowLeft size={17} />
           Back to the shelf
         </a>
-        <div className="detail-toolbar-actions">
+        <div className="detail-toolbar-actions flex items-center gap-3">
           <button className="text-button" onClick={() => onEdit(recipe)}>
             <Pencil size={15} />
             {isLocal ? "Edit recipe" : "Make it your own"}
@@ -320,7 +320,9 @@ export default function RecipeDetail({
             {onToggleGroceries && (
               <button
                 type="button"
-                className={`text-button grocery-toggle-btn ${inGroceries ? "is-active" : ""}`}
+                className={`text-button grocery-toggle-btn inline-flex items-center gap-1.5 shrink-0 whitespace-nowrap text-[13px] font-[550] transition-colors duration-200 cursor-pointer ${
+                  inGroceries ? "is-active text-accent font-semibold" : "text-muted hover:text-ink"
+                }`}
                 onClick={() => onToggleGroceries(recipe.id, servings)}
                 aria-pressed={inGroceries}
               >
