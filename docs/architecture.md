@@ -7,6 +7,7 @@ for the recipe shelf, recipe details, grocery list, and sign-in flow.
 
 - `src/recipes/RecipeApp.jsx` coordinates account, recipe, and grocery state.
 - `src/recipes/components/` contains views and their component tests.
+- `src/components/ui/` contains reusable interface controls shared across views.
 - `src/recipes/library.js` handles recipe validation, search, and local storage.
 - `src/recipes/groceries.js` contains grocery normalization, selectors, offline
   mutations, and reconciliation.
