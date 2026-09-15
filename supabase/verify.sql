@@ -32,3 +32,9 @@ select
       )
     )
   ) as rejected_result;
+
+-- Verify Groceries Phase 2 table, RLS, and partial unique constraint
+select
+  (select relrowsecurity from pg_class where oid = 'public.grocery_sessions'::regclass) as grocery_sessions_rls,
+  (select relrowsecurity from pg_class where oid = 'public.grocery_mutation_log'::regclass) as grocery_mutations_rls,
+  (select count(*) from pg_indexes where tablename = 'grocery_sessions' and indexname = 'grocery_sessions_one_active_per_user_idx') as unique_active_constraint;

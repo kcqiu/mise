@@ -3480,3 +3480,834 @@ dialog.add-recipe-modal::backdrop {
   color: #70470d;
 }
 
+/* ==========================================================================
+   Groceries & Grocery List Feature Styles
+   ========================================================================== */
+
+/* Header Groceries Nav Button */
+.groceries-nav-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.groceries-nav-btn.is-active {
+  background: var(--paper, #fbf7ee);
+  border-color: var(--accent, #234d3c);
+  color: var(--accent, #234d3c);
+  font-weight: 600;
+}
+
+.groceries-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent, #234d3c);
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  margin-left: 2px;
+}
+
+/* Recipe Detail Toolbar & Pill Buttons */
+.detail-toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.grocery-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted, #6e675f);
+  transition: color 0.18s;
+}
+
+.grocery-toggle-btn:hover {
+  color: var(--ink, #1f1b18);
+}
+
+.grocery-toggle-btn.is-active {
+  color: var(--accent, #234d3c);
+  font-weight: 600;
+}
+
+.grocery-add-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  transition: all 0.18s ease;
+}
+
+.grocery-add-pill.is-active {
+  background: var(--accent, #234d3c) !important;
+  color: #ffffff !important;
+  border-color: #1a4031 !important;
+}
+
+/* Dedicated Grocery List Page */
+.grocery-page {
+  width: min(1080px, calc(100% - 72px));
+  margin: 0 auto;
+  padding: 24px 0 96px;
+}
+
+.grocery-top-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.grocery-clear-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--muted, #6e675f);
+}
+
+.grocery-clear-btn:hover {
+  color: var(--ink, #1f1b18);
+}
+
+.grocery-header {
+  margin: 28px 0 24px;
+}
+
+.grocery-title-area h1 {
+  font-family: var(--serif, "Newsreader", Georgia, serif);
+  font-size: clamp(32px, 4vw, 44px);
+  line-height: 1.1;
+  margin: 6px 0 8px;
+  color: var(--ink, #1f1b18);
+}
+
+.grocery-subtitle {
+  font-size: 14px;
+  color: var(--muted, #6e675f);
+  margin: 0;
+}
+
+.grocery-progress-bar {
+  width: 100%;
+  height: 6px;
+  background: rgba(227, 222, 212, 0.7);
+  border-radius: 999px;
+  overflow: hidden;
+  margin-top: 14px;
+}
+
+.grocery-progress-fill {
+  height: 100%;
+  background: var(--accent, #234d3c);
+  border-radius: 999px;
+  transition: width 0.25s ease;
+}
+
+/* Active Recipes Bar */
+.grocery-recipes-section {
+  background: rgba(246, 242, 233, 0.7);
+  border: 1px solid var(--border, #e3ded4);
+  border-radius: 16px;
+  padding: 16px 20px;
+  margin-bottom: 24px;
+}
+
+.grocery-section-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 12px;
+}
+
+.grocery-section-heading h2 {
+  font-size: 15px;
+  font-weight: 600;
+  margin: 0;
+  color: var(--ink, #1f1b18);
+}
+
+.grocery-section-heading span {
+  font-size: 12px;
+  color: var(--muted, #6e675f);
+}
+
+.grocery-recipes-scroller {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  padding-bottom: 6px;
+  scrollbar-width: thin;
+}
+
+.grocery-recipe-chip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--card, #ffffff);
+  border: 1px solid var(--border, #e3ded4);
+  border-radius: 12px;
+  padding: 8px 12px;
+  min-width: 220px;
+  flex-shrink: 0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.grocery-recipe-chip__art {
+  width: 38px;
+  height: 38px;
+  border-radius: 8px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.grocery-recipe-chip__art .recipe-art {
+  width: 100%;
+  height: 100%;
+}
+
+.grocery-recipe-chip__info {
+  flex: 1;
+  min-width: 0;
+}
+
+.grocery-recipe-chip__title {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink, #1f1b18);
+  text-decoration: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 4px;
+}
+
+.grocery-recipe-chip__title:hover {
+  text-decoration: underline;
+}
+
+.grocery-servings-stepper {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(244, 240, 230, 0.7);
+  border-radius: 6px;
+  padding: 2px 6px;
+}
+
+.grocery-stepper-btn {
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.grocery-servings-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ink, #1f1b18);
+}
+
+.grocery-recipe-remove {
+  color: var(--muted, #6e675f);
+  opacity: 0.6;
+  transition: opacity 0.15s;
+}
+
+.grocery-recipe-remove:hover {
+  opacity: 1;
+  color: #c93b2b;
+}
+
+/* Add Custom Item Input */
+.grocery-add-section {
+  margin-bottom: 28px;
+}
+
+.grocery-add-form {
+  display: flex;
+  gap: 10px;
+}
+
+.grocery-add-input {
+  flex: 1;
+  padding: 12px 16px;
+  border-radius: 12px;
+  border: 1px solid var(--border, #e3ded4);
+  background: var(--card, #ffffff);
+  font-size: 15px;
+  color: var(--ink, #1f1b18);
+  outline: none;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+  transition: border-color 0.18s;
+}
+
+.grocery-add-input:focus {
+  border-color: var(--accent, #234d3c);
+}
+
+.grocery-add-submit {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 20px;
+  border-radius: 12px;
+  font-weight: 600;
+}
+
+/* Empty State */
+.grocery-empty-state {
+  text-align: center;
+  padding: 64px 20px;
+  max-width: 440px;
+  margin: 0 auto;
+}
+
+.grocery-empty-icon {
+  width: 80px;
+  height: 80px;
+  margin: 0 auto 20px;
+  border-radius: 50%;
+  background: rgba(244, 240, 230, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent, #234d3c);
+}
+
+.grocery-empty-state h2 {
+  font-family: var(--serif, "Newsreader", Georgia, serif);
+  font-size: 24px;
+  margin: 0 0 8px;
+  color: var(--ink, #1f1b18);
+}
+
+.grocery-empty-state p {
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--muted, #6e675f);
+  margin: 0 0 24px;
+}
+
+/* Aisle Grouped Checklist */
+.grocery-aisle-group {
+  margin-bottom: 28px;
+}
+
+.grocery-aisle-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  border-bottom: 1px solid var(--border, #e3ded4);
+  padding-bottom: 8px;
+  margin-bottom: 12px;
+}
+
+.grocery-aisle-header h3 {
+  font-family: var(--serif, "Newsreader", Georgia, serif);
+  font-size: 20px;
+  margin: 0;
+  color: var(--ink, #1f1b18);
+}
+
+.grocery-aisle-count {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted, #6e675f);
+}
+
+.grocery-items-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.grocery-item-row {
+  min-height: 50px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 16px;
+  background: var(--card, #ffffff);
+  border: 1px solid rgba(227, 222, 212, 0.7);
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+  transition: all 0.15s ease;
+}
+
+.grocery-item-row:hover {
+  border-color: var(--border, #e3ded4);
+  background: #ffffff;
+}
+
+.grocery-item-row.is-checked {
+  opacity: 0.55;
+  background: rgba(248, 246, 240, 0.6);
+}
+
+.grocery-item-row.is-checked .grocery-item-name {
+  text-decoration: line-through;
+  color: var(--muted, #6e675f);
+}
+
+.grocery-checkbox {
+  width: 24px;
+  height: 24px;
+  border-radius: 7px;
+  border: 2px solid #b7b0a5;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  padding: 0;
+  color: #ffffff;
+  transition: all 0.15s ease;
+}
+
+.grocery-checkbox:hover {
+  border-color: var(--accent, #234d3c);
+}
+
+.grocery-checkbox.is-active {
+  background: var(--accent, #234d3c);
+  border-color: var(--accent, #234d3c);
+}
+
+.grocery-item-content {
+  flex: 1;
+  min-width: 0;
+  cursor: pointer;
+}
+
+.grocery-item-main {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.grocery-item-qty {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink, #1f1b18);
+}
+
+.grocery-item-name {
+  font-size: 15px;
+  color: var(--ink, #1f1b18);
+  word-break: break-word;
+}
+
+.grocery-item-attribution {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.grocery-recipe-pill {
+  font-size: 11px;
+  color: var(--muted, #6e675f);
+  background: rgba(239, 235, 225, 0.8);
+  padding: 2px 8px;
+  border-radius: 6px;
+  line-height: 1.3;
+}
+
+.grocery-item-note {
+  display: block;
+  font-size: 12px;
+  color: var(--muted, #6e675f);
+  margin-top: 2px;
+}
+
+.grocery-item-dismiss {
+  color: var(--muted, #6e675f);
+  opacity: 0.35;
+  transition: opacity 0.15s, color 0.15s;
+}
+
+.grocery-item-row:hover .grocery-item-dismiss {
+  opacity: 0.8;
+}
+
+.grocery-item-dismiss:hover {
+  opacity: 1;
+  color: #c93b2b;
+}
+
+/* Pantry Staples Collapsible Drawer */
+.grocery-staples-section {
+  margin-top: 32px;
+  border: 1px dashed var(--border, #e3ded4);
+  border-radius: 14px;
+  background: rgba(248, 245, 238, 0.7);
+  overflow: hidden;
+}
+
+.grocery-staples-summary {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 18px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+}
+
+.grocery-staples-summary__title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink, #1f1b18);
+}
+
+.grocery-staples-badge {
+  background: rgba(227, 222, 212, 0.8);
+  color: var(--ink, #1f1b18);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+.grocery-staples-body {
+  padding: 0 18px 18px;
+  border-top: 1px solid rgba(227, 222, 212, 0.6);
+}
+
+.grocery-staples-help {
+  font-size: 13px;
+  color: var(--muted, #6e675f);
+  margin: 12px 0 14px;
+  line-height: 1.4;
+}
+
+.grocery-item-row--staple {
+  background: rgba(255, 255, 255, 0.85);
+}
+
+.grocery-staple-add-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  padding: 4px 10px;
+  border-radius: 8px;
+}
+
+/* Complete Trip Modal */
+.grocery-complete-modal {
+  max-width: 420px;
+}
+
+.grocery-complete-modal__desc {
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--muted, #6e675f);
+  margin: 16px 0 24px;
+}
+
+.grocery-complete-modal__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.grocery-complete-modal__actions .button {
+  width: 100%;
+  justify-content: center;
+}
+
+/* Mobile & Tablet Optimizations */
+@media (max-width: 800px) {
+  .grocery-page {
+    width: calc(100% - 36px);
+    padding-top: 16px;
+  }
+
+  .grocery-item-dismiss {
+    opacity: 0.6;
+  }
+
+  .grocery-item-row {
+    min-height: 52px;
+    padding: 12px 14px;
+  }
+
+  .groceries-nav-label {
+    display: none;
+  }
+}
+
+.grocery-item-requirements {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-top: 5px;
+}
+
+.grocery-requirement-line {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--muted, #6e675f);
+}
+
+.grocery-requirement-qty {
+  font-weight: 600;
+  color: var(--ink, #1f1b18);
+}
+
+.grocery-requirement-dash {
+  color: var(--muted, #6e675f);
+  opacity: 0.6;
+}
+
+.grocery-requirement-recipe {
+  color: var(--muted, #6e675f);
+}
+
+/* Phase 2: Grocery Sync Indicator & Toolbar Icons */
+.grocery-sync-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 999px;
+  transition: all 0.18s ease;
+  user-select: none;
+}
+
+.grocery-sync-pill--saved {
+  background: rgba(43, 110, 78, 0.12);
+  color: #2b6e4e;
+}
+
+.grocery-sync-pill--syncing {
+  background: rgba(162, 101, 20, 0.12);
+  color: #a26514;
+}
+
+.grocery-sync-pill--offline {
+  background: rgba(110, 103, 95, 0.12);
+  color: #6e675f;
+}
+
+.spin-icon {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.grocery-top-icon-btn {
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  border: 1px solid var(--border, #e3ded4);
+  background: var(--surface, #ffffff);
+  color: var(--ink, #1f1b18);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.grocery-top-icon-btn:hover {
+  background: rgba(227, 222, 212, 0.35);
+  border-color: rgba(180, 172, 160, 0.7);
+}
+
+/* Share / Export Modal */
+.grocery-share-modal {
+  max-width: 480px;
+  width: 100%;
+}
+
+.grocery-share-preview {
+  width: 100%;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 12.5px;
+  line-height: 1.5;
+  background: rgba(248, 245, 238, 0.7);
+  border: 1px solid var(--border, #e3ded4);
+  border-radius: 10px;
+  padding: 12px 14px;
+  color: var(--ink, #1f1b18);
+  resize: vertical;
+  margin: 14px 0 20px;
+  box-sizing: border-box;
+}
+
+.grocery-share-modal__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.grocery-share-modal__actions .button {
+  width: 100%;
+  justify-content: center;
+  gap: 8px;
+}
+
+/* Organize Aisles Modal */
+.grocery-aisle-modal {
+  max-width: 460px;
+  width: 100%;
+}
+
+.grocery-preset-section {
+  margin: 14px 0 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.grocery-preset-title {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted, #6e675f);
+}
+
+.grocery-preset-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.grocery-preset-chip {
+  font-size: 11.5px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: rgba(248, 245, 238, 0.85);
+  border: 1px solid var(--border, #e3ded4);
+}
+
+.grocery-aisle-reorder-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 280px;
+  overflow-y: auto;
+  border: 1px solid var(--border, #e3ded4);
+  border-radius: 10px;
+  padding: 8px;
+  background: var(--surface, #ffffff);
+}
+
+.grocery-aisle-reorder-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 7px 12px;
+  border-radius: 6px;
+  background: rgba(248, 245, 238, 0.4);
+}
+
+.grocery-aisle-reorder-name {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--ink, #1f1b18);
+}
+
+.grocery-aisle-reorder-btns {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.grocery-aisle-reorder-btns .icon-button {
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.grocery-aisle-modal__footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border, #e3ded4);
+}
+
+/* Offline Notice in Trip Completion Modal */
+.grocery-offline-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: rgba(193, 110, 23, 0.1);
+  border: 1px solid rgba(193, 110, 23, 0.3);
+  border-radius: 10px;
+  padding: 10px 14px;
+  margin-bottom: 16px;
+  font-size: 13px;
+  color: #92540d;
+  line-height: 1.45;
+}
+
+.grocery-offline-notice svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+/* Case 4 Guest Merge Modal */
+.grocery-guest-merge-modal {
+  max-width: 440px;
+  width: 100%;
+}
+
+.grocery-guest-merge-modal .grocery-guest-merge-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.grocery-guest-merge-modal .button {
+  width: 100%;
+  justify-content: center;
+}

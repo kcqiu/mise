@@ -142,4 +142,30 @@ describe("RecipeDetail unit conversion", () => {
       steps: [],
     });
   });
+
+  it("renders Add to Groceries button and triggers onToggleGroceries when clicked", async () => {
+    const user = userEvent.setup();
+    const handleToggleGroceries = vi.fn();
+
+    render(
+      <RecipeDetail
+        recipe={mockRecipe}
+        favorite={false}
+        progress={{ ingredients: [], steps: [] }}
+        onFavorite={vi.fn()}
+        onProgress={vi.fn()}
+        onEdit={vi.fn()}
+        isLocal={true}
+        inGroceries={false}
+        onToggleGroceries={handleToggleGroceries}
+      />
+    );
+
+    const groceryBtns = screen.getAllByRole("button", { name: "Add to Groceries" });
+    expect(groceryBtns.length).toBeGreaterThan(0);
+
+    await user.click(groceryBtns[0]);
+    expect(handleToggleGroceries).toHaveBeenCalledWith("matcha-latte", 2);
+  });
 });
+

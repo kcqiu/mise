@@ -9,6 +9,7 @@ import {
   Pencil,
   Plus,
   RotateCcw,
+  ShoppingBag,
   Sun,
   UsersRound,
 } from "lucide-react";
@@ -119,6 +120,8 @@ export default function RecipeDetail({
   onProgress,
   onEdit,
   isLocal,
+  inGroceries = false,
+  onToggleGroceries,
 }) {
   const [servings, setServings] = useState(recipe.servings);
   const [unitSystem, setUnitSystem] = useState("original");
@@ -170,10 +173,23 @@ export default function RecipeDetail({
           <ArrowLeft size={17} />
           Back to the shelf
         </a>
-        <button className="text-button" onClick={() => onEdit(recipe)}>
-          <Pencil size={15} />
-          {isLocal ? "Edit recipe" : "Make it your own"}
-        </button>
+        <div className="detail-toolbar-actions">
+          {onToggleGroceries && (
+            <button
+              type="button"
+              className={`text-button grocery-toggle-btn ${inGroceries ? "is-active" : ""}`}
+              onClick={() => onToggleGroceries(recipe.id, servings)}
+              aria-pressed={inGroceries}
+            >
+              <ShoppingBag size={15} />
+              <span>{inGroceries ? "In Groceries" : "Add to Groceries"}</span>
+            </button>
+          )}
+          <button className="text-button" onClick={() => onEdit(recipe)}>
+            <Pencil size={15} />
+            {isLocal ? "Edit recipe" : "Make it your own"}
+          </button>
+        </div>
       </div>
       <header className="detail-header">
         <div className="detail-heading">
@@ -305,8 +321,21 @@ export default function RecipeDetail({
       <div className="cooking-layout">
         <section className="ingredients-panel" id="ingredients" tabIndex={-1}>
           <div className="section-heading">
-            <h2>Ingredients</h2>
-            <span>{recipe.ingredients.length} items</span>
+            <div className="section-heading-text">
+              <h2>Ingredients</h2>
+              <span>{recipe.ingredients.length} items</span>
+            </div>
+            {onToggleGroceries && (
+              <button
+                type="button"
+                className={`button button--light button--compact grocery-add-pill ${inGroceries ? "is-active" : ""}`}
+                onClick={() => onToggleGroceries(recipe.id, servings)}
+                aria-pressed={inGroceries}
+              >
+                <ShoppingBag size={14} />
+                <span>{inGroceries ? "In Groceries" : "Add to Groceries"}</span>
+              </button>
+            )}
           </div>
           <div className="servings-control">
             <div className="servings-stepper">

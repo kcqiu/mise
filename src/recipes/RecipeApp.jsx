@@ -6,6 +6,7 @@ import {
   LogIn,
   LogOut,
   Plus,
+  ShoppingBag,
   Sprout,
   UserRound,
   X,
@@ -34,17 +35,40 @@ import {
   signInWithGoogleIdToken,
   signOut,
   watchSession,
+  loadAccountGrocerySession,
+  saveAccountGroceryMutations,
+  completeAccountGrocerySession,
+  subscribeGrocerySession,
+  broadcastGroceryMutations,
 } from "./cloud";
+import {
+  readGrocerySession,
+  saveGrocerySession,
+  readGroceryQueue,
+  enqueueGroceryMutation,
+  ackGroceryMutations,
+  clearGroceryQueue,
+  applyMutationToSession,
+  rebaseMutationsOverSession,
+  mergeGuestIntoAccountSession,
+  generateUUID,
+  getDeviceId,
+  resetGrocerySession,
+  rolloverGrocerySession,
+  EMPTY_GROCERY_SESSION,
+} from "./groceries";
 import RecipeLibrary from "./components/RecipeLibrary";
 import RecipeDetail from "./components/RecipeDetail";
 import RecipeEditor from "./components/RecipeEditor";
 import AddRecipeModal from "./components/AddRecipeModal";
 import AuthModal from "./components/AuthModal";
 import ToastStack from "./components/ToastStack";
+import GroceryListView from "./components/GroceryListView";
 
 function readRoute() {
   const path = window.location.hash.slice(1);
   if (!path || path === "/" || path === "/login") return "";
+  if (path === "/groceries") return "groceries";
   return /^\/recipe\/[a-zA-Z0-9_-]+$/.test(path) ? path.slice(8) : "not-found";
 }
 
@@ -77,6 +101,17 @@ export default function RecipeApp() {
   });
   const [editor, setEditor] = useState(null);
   const [addRecipeModalOpen, setAddRecipeModalOpen] = useState(false);
+  const [grocerySession, setGrocerySession] = useState(readGrocerySession);
+  const grocerySessionRef = useRef(grocerySession);
+  grocerySessionRef.current = grocerySession;
+  const [syncStatus, setSyncStatus] = useState("saved");
+  const [guestMergeModal, setGuestMergeModal] = useState({
+    open: false,
+    guestSession: null,
+    cloudSession: null,
+  });
+  const syncTimerRef = useRef(null);
+  const syncingRef = useRef(false);
   const importInput = useRef(null);
   const accountMenu = useRef(null);
   const activeLibrary = account.session ? account.library : library;
@@ -114,6 +149,229 @@ export default function RecipeApp() {
   };
   const dismissToast = (id) => {
     setToasts((prev) => prev.filter((t) => t.id !== id));
+  };
+
+  const updateGrocerySession = (nextSession) => {
+    const userId = account.session?.user?.id || null;
+    setGrocerySession(nextSession);
+    saveGrocerySession(nextSession, userId);
+  };
+
+  const flushGroceryQueue = async (userId) => {
+    if (!userId || syncingRef.current) return;
+    if (typeof navigator !== "undefined" && !navigator.onLine) {
+      setSyncStatus("offline");
+      return;
+    }
+    const queue = readGroceryQueue(userId);
+    if (!queue.length) {
+      setSyncStatus("saved");
+      return;
+    }
+
+    syncingRef.current = true;
+    setSyncStatus("syncing");
+
+    try {
+      const currentSession = grocerySessionRef.current;
+      const res = await saveAccountGroceryMutations(
+        userId,
+        currentSession.id,
+        currentSession.revision,
+        queue,
+      );
+
+      if (res.success) {
+        ackGroceryMutations(res.ackMutationIds, userId);
+        const remaining = readGroceryQueue(userId);
+        const nextSession = res.session
+          ? rebaseMutationsOverSession(res.session, remaining)
+          : currentSession;
+
+        setGrocerySession(nextSession);
+        saveGrocerySession(nextSession, userId);
+        setSyncStatus("saved");
+
+        broadcastGroceryMutations(currentSession.id, {
+          ackMutationIds: res.ackMutationIds,
+          revision: res.revision,
+          session: res.session,
+        });
+      } else if (res.code === "SESSION_COMPLETED") {
+        // Requirement 9: Stale-session mutation rejection & user-item recovery
+        const recovered = queue.filter(
+          (m) => m.type === "CUSTOM_ITEM_ADDED" || m.type === "RECIPE_ADDED",
+        );
+        clearGroceryQueue(userId);
+
+        const activeSession = res.currentActiveSession || EMPTY_GROCERY_SESSION;
+        let nextSession = activeSession;
+        if (recovered.length > 0) {
+          recovered.forEach((mut) => {
+            const remapped = {
+              ...mut,
+              mutationId: generateUUID(),
+              sessionId: nextSession.id,
+              observedRevision: nextSession.revision,
+            };
+            nextSession = applyMutationToSession(nextSession, remapped);
+            enqueueGroceryMutation(remapped, userId);
+          });
+        }
+        setGrocerySession(nextSession);
+        saveGrocerySession(nextSession, userId);
+        setSyncStatus("saved");
+        addToast(
+          "Your previous grocery trip was completed on another device. Unsaved additions were moved to your active list.",
+          "info",
+        );
+        if (recovered.length > 0) {
+          setTimeout(() => flushGroceryQueue(userId), 100);
+        }
+      } else {
+        setSyncStatus("offline");
+      }
+    } catch {
+      setSyncStatus("offline");
+    } finally {
+      syncingRef.current = false;
+    }
+  };
+
+  const dispatchGroceryMutation = (mutation) => {
+    const userId = account.session?.user?.id || null;
+    const currentSession = grocerySessionRef.current;
+    const envelope = {
+      mutationId: generateUUID(),
+      sessionId: currentSession.id,
+      deviceId: getDeviceId(),
+      type: mutation.type,
+      targetId: mutation.targetId,
+      payload: mutation.payload || {},
+      observedRevision: currentSession.revision || 1,
+      clientTimestamp: Date.now(),
+    };
+
+    const nextSession = applyMutationToSession(currentSession, envelope);
+    setGrocerySession(nextSession);
+    saveGrocerySession(nextSession, userId);
+
+    if (userId) {
+      enqueueGroceryMutation(envelope, userId);
+      clearTimeout(syncTimerRef.current);
+      syncTimerRef.current = setTimeout(() => {
+        flushGroceryQueue(userId);
+      }, 400);
+    }
+  };
+
+  const handleCompleteTrip = async (action) => {
+    const userId = account.session?.user?.id || null;
+    if (!userId) {
+      const nextSession =
+        action === "clear"
+          ? resetGrocerySession()
+          : rolloverGrocerySession(grocerySession, recipes);
+      setGrocerySession(nextSession);
+      saveGrocerySession(nextSession, null);
+      addToast(
+        action === "clear"
+          ? "Grocery list cleared"
+          : "Completed trip; unpurchased items rolled over",
+        "success",
+      );
+      return;
+    }
+
+    if (typeof navigator !== "undefined" && !navigator.onLine) {
+      addToast("Internet connection required to complete trip", "error");
+      return;
+    }
+
+    setSyncStatus("syncing");
+    const newSessionId = generateUUID();
+    let rolloverCustom = [];
+    if (action === "rollover") {
+      const rolled = rolloverGrocerySession(
+        grocerySession,
+        recipes,
+        newSessionId,
+      );
+      rolloverCustom = rolled.customItems || [];
+    }
+
+    const res = await completeAccountGrocerySession(
+      userId,
+      grocerySession.id,
+      action,
+      rolloverCustom,
+      newSessionId,
+      grocerySession.revision,
+    );
+
+    if (res.success) {
+      const nextActive = res.activeSession || EMPTY_GROCERY_SESSION;
+      clearGroceryQueue(userId);
+      setGrocerySession(nextActive);
+      saveGrocerySession(nextActive, userId);
+      setSyncStatus("saved");
+
+      broadcastGroceryMutations(grocerySession.id, {
+        completedSessionId: grocerySession.id,
+        activeSession: nextActive,
+      });
+
+      addToast(
+        action === "clear"
+          ? "Grocery list cleared"
+          : "Completed trip; unpurchased items rolled over",
+        "success",
+      );
+    } else if (res.code === "REVISION_CONFLICT") {
+      setSyncStatus("saved");
+      addToast(
+        "Could not complete trip: your list was updated on another device. Please review the latest list.",
+        "error",
+      );
+      if (res.session) {
+        setGrocerySession(res.session);
+        saveGrocerySession(res.session, userId);
+      }
+    } else {
+      setSyncStatus("offline");
+      addToast(
+        "Failed to complete trip. Please check your connection and try again.",
+        "error",
+      );
+    }
+  };
+
+  const toggleRecipeInGroceries = (recipeId, servings) => {
+    const targetRecipe = recipes.find((r) => r.id === recipeId);
+    const title = targetRecipe ? targetRecipe.title : "Recipe";
+    const inBag = (grocerySession.recipes || []).some(
+      (r) => r.recipeId === recipeId,
+    );
+
+    if (inBag) {
+      dispatchGroceryMutation({
+        type: "RECIPE_REMOVED",
+        targetId: recipeId,
+        payload: {},
+      });
+      addToast(`Removed ${title} from Groceries`, "info");
+    } else {
+      const serv = servings || targetRecipe?.servings || 2;
+      dispatchGroceryMutation({
+        type: "RECIPE_ADDED",
+        targetId: recipeId,
+        payload: { servings: serv },
+      });
+      addToast(
+        `Added ${title} to Groceries (${serv} servings)`,
+        "success",
+      );
+    }
   };
 
   useEffect(() => {
@@ -168,6 +426,7 @@ export default function RecipeApp() {
       if (!active) return;
       if (!session) {
         setAccount({ session: null, library: EMPTY_LIBRARY, loading: false });
+        setGrocerySession(readGrocerySession(null));
         return;
       }
       setAuthModal((prev) => ({ ...prev, open: false, error: "" }));
@@ -191,6 +450,90 @@ export default function RecipeApp() {
         }
         const remote = await loadAccountLibrary(session.user.id);
         if (active) setAccount({ session, library: remote, loading: false });
+
+        // Phase 2: Groceries Auth Hydration & Guest Migration
+        try {
+          const remoteGroceries = await loadAccountGrocerySession(session.user.id);
+          const cloudSession = remoteGroceries?.session || null;
+          const guestSession = readGrocerySession(null);
+          const cachedUser = readGrocerySession(session.user.id);
+
+          const guestHasData = Boolean(
+            (guestSession.recipes && guestSession.recipes.length > 0) ||
+            (guestSession.customItems && guestSession.customItems.length > 0) ||
+            (guestSession.itemOverrides && Object.keys(guestSession.itemOverrides).length > 0)
+          );
+          const cloudHasData = Boolean(
+            cloudSession && (
+              (cloudSession.recipes && cloudSession.recipes.length > 0) ||
+              (cloudSession.customItems && cloudSession.customItems.length > 0) ||
+              (cloudSession.itemOverrides && Object.keys(cloudSession.itemOverrides).length > 0)
+            )
+          );
+
+          if (guestHasData && cloudHasData) {
+            // Case 4: Both have active data - present prompt modal
+            setGuestMergeModal({
+              open: true,
+              guestSession,
+              cloudSession,
+            });
+          } else if (guestHasData && !cloudHasData) {
+            // Case 1: Guest has data, cloud is empty -> push guest to account
+            const baseSession = cloudSession || { ...EMPTY_GROCERY_SESSION, id: generateUUID() };
+            const merged = mergeGuestIntoAccountSession(guestSession, baseSession);
+            setGrocerySession(merged);
+            saveGrocerySession(merged, session.user.id);
+            saveGrocerySession(EMPTY_GROCERY_SESSION, null);
+
+            // Queue mutations to sync to cloud
+            (guestSession.recipes || []).forEach((r) => {
+              enqueueGroceryMutation({
+                mutationId: generateUUID(),
+                sessionId: merged.id,
+                deviceId: getDeviceId(),
+                type: "RECIPE_ADDED",
+                targetId: r.recipeId,
+                payload: { servings: r.servings },
+                observedRevision: merged.revision,
+                clientTimestamp: Date.now(),
+              }, session.user.id);
+            });
+            (guestSession.customItems || []).forEach((c) => {
+              enqueueGroceryMutation({
+                mutationId: generateUUID(),
+                sessionId: merged.id,
+                deviceId: getDeviceId(),
+                type: "CUSTOM_ITEM_ADDED",
+                targetId: c.id,
+                payload: c,
+                observedRevision: merged.revision,
+                clientTimestamp: Date.now(),
+              }, session.user.id);
+            });
+            Object.entries(guestSession.itemOverrides || {}).forEach(([key, ov]) => {
+              enqueueGroceryMutation({
+                mutationId: generateUUID(),
+                sessionId: merged.id,
+                deviceId: getDeviceId(),
+                type: "ITEM_STATUS_CHANGED",
+                targetId: key,
+                payload: { status: ov.status },
+                observedRevision: merged.revision,
+                clientTimestamp: Date.now(),
+              }, session.user.id);
+            });
+            flushGroceryQueue(session.user.id);
+          } else {
+            // Case 2 & 3: Guest empty, load cloud or cached session
+            const activeSess = cloudSession || (cachedUser.id !== EMPTY_GROCERY_SESSION.id ? cachedUser : { ...EMPTY_GROCERY_SESSION, id: generateUUID() });
+            setGrocerySession(activeSess);
+            saveGrocerySession(activeSess, session.user.id);
+          }
+        } catch {
+          const cachedUser = readGrocerySession(session.user.id);
+          setGrocerySession(cachedUser);
+        }
       } catch (error) {
         if (active) {
           setAccount((current) => ({ ...current, loading: false }));
@@ -216,6 +559,59 @@ export default function RecipeApp() {
       stopWatching();
     };
   }, []);
+
+  // Realtime channel subscription for multi-device sync
+  useEffect(() => {
+    const userId = account.session?.user?.id;
+    if (!userId || !grocerySession?.id) return undefined;
+
+    const unsubscribe = subscribeGrocerySession(grocerySession.id, (message) => {
+      if (message.ackMutationIds) {
+        ackGroceryMutations(message.ackMutationIds, userId);
+      }
+      if (message.session) {
+        const remaining = readGroceryQueue(userId);
+        const rebased = rebaseMutationsOverSession(message.session, remaining);
+        setGrocerySession(rebased);
+        saveGrocerySession(rebased, userId);
+      } else if (message.activeSession && message.completedSessionId === grocerySession.id) {
+        // Session was completed by peer device
+        clearGroceryQueue(userId);
+        setGrocerySession(message.activeSession);
+        saveGrocerySession(message.activeSession, userId);
+        addToast("Grocery trip was completed on another device.", "info");
+      }
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, [account.session?.user?.id, grocerySession?.id]);
+
+  // Online / Offline synchronization
+  useEffect(() => {
+    const handleOnline = () => {
+      setSyncStatus("saved");
+      const userId = account.session?.user?.id;
+      if (userId) {
+        flushGroceryQueue(userId);
+      }
+    };
+    const handleOffline = () => {
+      setSyncStatus("offline");
+    };
+
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+    if (typeof navigator !== "undefined" && !navigator.onLine) {
+      setSyncStatus("offline");
+    }
+
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
+  }, [account.session?.user?.id]);
 
   const commitLocal = (next) => {
     try {
@@ -512,6 +908,7 @@ export default function RecipeApp() {
     try {
       await signOut();
       accountMenu.current?.removeAttribute("open");
+      setGrocerySession(readGrocerySession(null));
       setNotice("Signed out. System recipes are still available.");
       addToast("Signed out. System recipes are still available.", "info");
     } catch (error) {
@@ -615,6 +1012,20 @@ export default function RecipeApp() {
                 <span>{account.loading ? "Connecting" : "Sign in"}</span>
               </button>
             ))}
+          <a
+            href="#/groceries"
+            className={`button button--light groceries-nav-btn ${route === "groceries" ? "is-active" : ""}`}
+            aria-label={`Grocery list${grocerySession.recipes?.length ? ` (${grocerySession.recipes.length} recipes)` : ""}`}
+            title="Open grocery list"
+          >
+            <ShoppingBag size={17} />
+            <span className="groceries-nav-label">Groceries</span>
+            {Boolean(grocerySession.recipes?.length) && (
+              <span className="groceries-badge">
+                {grocerySession.recipes.length}
+              </span>
+            )}
+          </a>
           <button
             className="button add-recipe-button"
             aria-label="Add recipe"
@@ -667,7 +1078,18 @@ export default function RecipeApp() {
           </button>
         </div>
       )}
-      {route ? (
+      {route === "groceries" ? (
+        <GroceryListView
+          session={grocerySession}
+          recipes={recipes}
+          onUpdateSession={updateGrocerySession}
+          onDispatchMutation={dispatchGroceryMutation}
+          onCompleteTrip={handleCompleteTrip}
+          syncStatus={syncStatus}
+          userId={account.session?.user?.id || null}
+          onToast={addToast}
+        />
+      ) : route ? (
         current ? (
           <RecipeDetail
             key={current.id}
@@ -678,6 +1100,10 @@ export default function RecipeApp() {
             onProgress={(progress) => updateProgress(current.id, progress)}
             onEdit={(recipe) => openEditor(recipe)}
             isLocal={personalRecipes.some((recipe) => recipe.id === current.id)}
+            inGroceries={(grocerySession.recipes || []).some(
+              (r) => r.recipeId === current.id,
+            )}
+            onToggleGroceries={toggleRecipeInGroceries}
           />
         ) : (
           <main
@@ -728,6 +1154,88 @@ export default function RecipeApp() {
           onDelete={remove}
           onClose={() => setEditor(null)}
         />
+      )}
+      {guestMergeModal.open && (
+        <div className="modal-backdrop">
+          <div
+            className="modal-panel grocery-guest-merge-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="guest-merge-title"
+          >
+            <div className="modal-header">
+              <h2 id="guest-merge-title">Sync Grocery Lists</h2>
+            </div>
+            <p className="modal-lead">
+              You have an active grocery list on this device and an existing grocery trip in your account.
+            </p>
+            <p className="shelf-counter">
+              How would you like to handle these items?
+            </p>
+            <div className="grocery-guest-merge-actions">
+              <button
+                type="button"
+                className="button button--accent"
+                onClick={() => {
+                  const userId = account.session?.user?.id;
+                  const merged = mergeGuestIntoAccountSession(
+                    guestMergeModal.guestSession,
+                    guestMergeModal.cloudSession,
+                  );
+                  setGrocerySession(merged);
+                  saveGrocerySession(merged, userId);
+                  saveGrocerySession(EMPTY_GROCERY_SESSION, null);
+                  setGuestMergeModal({ open: false, guestSession: null, cloudSession: null });
+                  addToast("Guest and account grocery lists merged.", "success");
+
+                  if (userId) {
+                    (guestMergeModal.guestSession?.recipes || []).forEach((r) => {
+                      enqueueGroceryMutation({
+                        mutationId: generateUUID(),
+                        sessionId: merged.id,
+                        deviceId: getDeviceId(),
+                        type: "RECIPE_ADDED",
+                        targetId: r.recipeId,
+                        payload: { servings: r.servings },
+                        observedRevision: merged.revision,
+                        clientTimestamp: Date.now(),
+                      }, userId);
+                    });
+                    (guestMergeModal.guestSession?.customItems || []).forEach((c) => {
+                      enqueueGroceryMutation({
+                        mutationId: generateUUID(),
+                        sessionId: merged.id,
+                        deviceId: getDeviceId(),
+                        type: "CUSTOM_ITEM_ADDED",
+                        targetId: c.id,
+                        payload: c,
+                        observedRevision: merged.revision,
+                        clientTimestamp: Date.now(),
+                      }, userId);
+                    });
+                    flushGroceryQueue(userId);
+                  }
+                }}
+              >
+                Merge guest items with account trip
+              </button>
+              <button
+                type="button"
+                className="button button--light"
+                onClick={() => {
+                  const userId = account.session?.user?.id;
+                  setGrocerySession(guestMergeModal.cloudSession);
+                  saveGrocerySession(guestMergeModal.cloudSession, userId);
+                  saveGrocerySession(EMPTY_GROCERY_SESSION, null);
+                  setGuestMergeModal({ open: false, guestSession: null, cloudSession: null });
+                  addToast("Kept account grocery trip.", "info");
+                }}
+              >
+                Keep account trip only
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

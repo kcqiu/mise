@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import { dbRecordToGrocerySession } from "./groceries";
 
 const url = import.meta.env.VITE_SUPABASE_URL?.trim();
 const publishableKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY?.trim();
@@ -245,4 +246,182 @@ export async function deleteRecipeCover(publicUrl) {
   } catch {
     // Non-blocking cleanup
   }
+}
+
+// -----------------------------------------------------------------------------
+// Phase 2: Groceries Cloud Synchronization & Realtime
+// -----------------------------------------------------------------------------
+
+let customClient = null;
+
+/**
+ * For testing purposes only: allows injecting a mock Supabase client.
+ */
+export function setSupabaseClientForTesting(client) {
+  customClient = client;
+}
+
+/**
+ * Loads the currently active grocery session for the authenticated user.
+ */
+export async function loadAccountGrocerySession(userId) {
+  const client = customClient || supabase;
+  if (!client || !userId) {
+    return { success: false, session: null, error: new Error("Not authenticated") };
+  }
+  try {
+    const { data, error } = await client.rpc("get_active_grocery_session");
+    if (error) throw error;
+    if (data?.success) {
+      return {
+        success: true,
+        session: data.session ? dbRecordToGrocerySession(data.session) : null,
+        error: null,
+      };
+    }
+    return {
+      success: false,
+      session: null,
+      error: new Error(data?.error || "Failed to load active session"),
+    };
+  } catch (err) {
+    return { success: false, session: null, error: err };
+  }
+}
+
+/**
+ * Applies a batch of queued mutations atomically on the server.
+ */
+export async function saveAccountGroceryMutations(userId, sessionId, expectedRevision, mutations) {
+  const client = customClient || supabase;
+  if (!client || !userId) {
+    return { success: false, error: new Error("Not authenticated") };
+  }
+  try {
+    const { data, error } = await client.rpc("apply_grocery_mutations", {
+      p_session_id: sessionId,
+      p_expected_revision: expectedRevision,
+      p_mutations: mutations,
+    });
+    if (error) throw error;
+    if (data?.success) {
+      return {
+        success: true,
+        sessionId: data.sessionId,
+        revision: Number(data.revision),
+        ackMutationIds: Array.isArray(data.ackMutationIds) ? data.ackMutationIds : [],
+        session: data.session ? dbRecordToGrocerySession(data.session) : null,
+        error: null,
+      };
+    }
+    if (data?.code === "SESSION_COMPLETED") {
+      return {
+        success: false,
+        code: "SESSION_COMPLETED",
+        sessionId: data.sessionId,
+        currentActiveSession: data.currentActiveSession
+          ? dbRecordToGrocerySession(data.currentActiveSession)
+          : null,
+        error: null,
+      };
+    }
+    return {
+      success: false,
+      code: data?.code || "MUTATION_FAILED",
+      error: new Error(data?.code || "Failed to apply mutations"),
+    };
+  } catch (err) {
+    return { success: false, error: err };
+  }
+}
+
+/**
+ * Completes the active session and creates a rollover or cleared new session.
+ */
+export async function completeAccountGrocerySession(
+  userId,
+  sessionId,
+  action,
+  rolloverCustomItems,
+  newSessionId,
+  expectedRevision,
+) {
+  const client = customClient || supabase;
+  if (!client || !userId) {
+    return { success: false, error: new Error("Not authenticated") };
+  }
+  try {
+    const { data, error } = await client.rpc("complete_grocery_session", {
+      p_session_id: sessionId,
+      p_action: action,
+      p_rollover_custom_items: rolloverCustomItems || [],
+      p_new_session_id: newSessionId,
+      p_expected_revision: expectedRevision,
+    });
+    if (error) throw error;
+    if (data?.success) {
+      return {
+        success: true,
+        action: data.action,
+        completedSessionId: data.completedSessionId,
+        activeSession: data.activeSession ? dbRecordToGrocerySession(data.activeSession) : null,
+        error: null,
+      };
+    }
+    if (data?.code === "REVISION_CONFLICT") {
+      return {
+        success: false,
+        code: "REVISION_CONFLICT",
+        currentRevision: Number(data.currentRevision),
+        session: data.session ? dbRecordToGrocerySession(data.session) : null,
+        error: null,
+      };
+    }
+    return {
+      success: false,
+      code: data?.code || "COMPLETE_FAILED",
+      error: new Error(data?.code || "Failed to complete grocery session"),
+    };
+  } catch (err) {
+    return { success: false, error: err };
+  }
+}
+
+/**
+ * Subscribes to the private realtime channel for a grocery session.
+ */
+export function subscribeGrocerySession(sessionId, onBroadcastMessage) {
+  const client = customClient || supabase;
+  if (!client || !sessionId) return () => {};
+  const channel = client.channel(`grocery:${sessionId}`, {
+    config: {
+      broadcast: { self: false },
+    },
+  });
+
+  channel
+    .on("broadcast", { event: "grocery_mutations" }, (payload) => {
+      if (typeof onBroadcastMessage === "function" && payload?.payload) {
+        onBroadcastMessage(payload.payload);
+      }
+    })
+    .subscribe();
+
+  return () => {
+    client.removeChannel(channel);
+  };
+}
+
+/**
+ * Broadcasts committed mutations or state to peer devices on the grocery session channel.
+ */
+export async function broadcastGroceryMutations(sessionId, payload) {
+  const client = customClient || supabase;
+  if (!client || !sessionId) return;
+  const channel = client.channel(`grocery:${sessionId}`);
+  await channel.send({
+    type: "broadcast",
+    event: "grocery_mutations",
+    payload,
+  });
 }
