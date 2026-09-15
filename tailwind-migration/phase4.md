@@ -15,7 +15,7 @@ Migrate the central browse experience (`RecipeLibrary` and `RecipeCard`), includ
 - Remove shelf and card selectors from legacy CSS.
 
 ## Success Criteria
-- [ ] RecipeLibrary and RecipeCard styled with Tailwind utilities.
-- [ ] Shelf legacy CSS rules removed.
-- [ ] Tests pass (155/155).
-- [ ] Clean commit for Phase 4.
+- [x] RecipeLibrary and RecipeCard styled with Tailwind utilities.
+- [x] Shelf legacy CSS rules removed.
+- [x] Tests pass (155/155).
+- [x] Clean commit for Phase 4.

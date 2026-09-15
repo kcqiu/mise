@@ -7,6 +7,7 @@ import {
 } from "framer-motion";
 import { ArrowRight, Search, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { cn } from "@/lib/utils";
 
 const PLACEHOLDER_INTERVAL = 3600;
 const ANIMATION_DURATION = 460;
@@ -157,21 +158,30 @@ export function PlaceholdersAndVanishInput({
 
   return (
     <LazyMotion features={domAnimation} strict>
-      <form className="search-field vanish-input" onSubmit={handleSubmit}>
+      <form
+        className="search-field vanish-input relative flex flex-1 items-center gap-3 w-full max-w-[460px] max-[768px]:max-w-none h-11 min-h-[44px] px-4 border border-ink/15 rounded-lg bg-white shadow-[0_1px_3px_rgba(36,35,31,0.04)] overflow-hidden transition-all focus-within:border-ink focus-within:ring-2 focus-within:ring-ink/10"
+        onSubmit={handleSubmit}
+      >
         <Search
-          className="vanish-input__search-icon"
+          className="vanish-input__search-icon shrink-0 text-muted"
           size={18}
           aria-hidden="true"
         />
-        <div className="vanish-input__input-wrap">
+        <div className="vanish-input__input-wrap relative flex-1 self-stretch min-w-0 flex items-center">
           <canvas
             ref={canvasRef}
-            className={`vanish-input__canvas ${animating ? "is-visible" : ""}`}
+            className={cn(
+              "vanish-input__canvas absolute inset-0 pointer-events-none z-[2] w-full h-full transition-opacity duration-200",
+              animating ? "opacity-100" : "opacity-0"
+            )}
             aria-hidden="true"
           />
           <input
             ref={inputRef}
-            className={`vanish-input__input ${animating ? "is-animating" : ""}`}
+            className={cn(
+              "vanish-input__input relative z-[1] w-full min-w-0 h-full p-0 border-0 outline-none bg-transparent text-ink font-sans text-sm max-[768px]:text-[15px] leading-[1.4] [&::-webkit-search-cancel-button]:hidden",
+              animating && "text-transparent"
+            )}
             type="search"
             value={value}
             onChange={(event) => {
@@ -181,13 +191,17 @@ export function PlaceholdersAndVanishInput({
             autoComplete="off"
           />
           <div
-            className={`vanish-input__placeholder ${value ? "is-hidden" : ""}`}
+            className={cn(
+              "vanish-input__placeholder absolute inset-0 pointer-events-none z-0 flex items-center overflow-hidden text-muted text-[13.5px] opacity-80",
+              value ? "invisible" : ""
+            )}
             aria-hidden="true"
           >
             <AnimatePresence mode="wait" initial={false}>
               {!value && (
                 <m.span
                   key={placeholder}
+                  className="truncate max-w-full"
                   initial={
                     prefersReducedMotion
                       ? { opacity: 1, y: 0 }
@@ -213,7 +227,7 @@ export function PlaceholdersAndVanishInput({
         {value && (
           <button
             type="button"
-            className="vanish-input__clear"
+            className="vanish-input__clear inline-flex shrink-0 items-center justify-center w-8 h-9 p-1 border-0 rounded-[3px] bg-transparent text-muted hover:text-ink cursor-pointer transition-colors"
             onClick={() => onClear?.()}
             aria-label="Clear search"
           >
@@ -221,7 +235,10 @@ export function PlaceholdersAndVanishInput({
           </button>
         )}
         {!value && (
-          <span className="vanish-input__prompt-icon" aria-hidden="true">
+          <span
+            className="vanish-input__prompt-icon inline-flex shrink-0 items-center justify-center w-[30px] h-[30px] -mr-[9px] text-muted opacity-55"
+            aria-hidden="true"
+          >
             <ArrowRight size={15} />
           </span>
         )}

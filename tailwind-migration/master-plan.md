@@ -4,7 +4,7 @@
 - [x] ~~Phase 1: Leaf Components~~
 - [x] ~~Phase 2: Shared Controls & Shell~~
 - [x] ~~Phase 3: Overlays & Modals~~
-- [ ] Phase 4: Recipe Shelf
+- [x] ~~Phase 4: Recipe Shelf~~
 - [ ] Phase 5: Grocery Experience
 - [ ] Phase 6: Recipe Editor
 - [ ] Phase 7: Recipe Detail

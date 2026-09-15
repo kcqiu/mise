@@ -1,7 +1,9 @@
 import { useMemo } from "react";
 import { BookOpen, X } from "lucide-react";
 import { PlaceholdersAndVanishInput } from "../../components/ui/placeholders-and-vanish-input";
+import Button from "../../components/ui/Button";
 import { createSearch, getCategories, totalMinutes } from "../library";
+import { cn } from "@/lib/utils";
 import RecipeCard from "./RecipeCard";
 
 const SEARCH_PLACEHOLDERS = [
@@ -46,24 +48,27 @@ export default function RecipeLibrary({
   const set = (patch) => onState({ ...state, ...patch });
 
   return (
-    <main id="recipe-main" className="shelf" tabIndex={-1}>
-      <section className="shelf-banner" aria-label="Cookbook overview">
-        <div className="shelf-banner__left">
-          <div className="eyebrow shelf-banner__eyebrow">
-            <span className="little-rule" /> A personal cookbook
+    <main id="recipe-main" className="shelf w-full max-w-[1312px] mx-auto px-4 md:px-6" tabIndex={-1}>
+      <section
+        className="shelf-banner grid grid-cols-1 md:grid-cols-[minmax(0,0.484fr)_minmax(0,1fr)] xl:grid-cols-[420px_868px] items-center gap-[18px] md:gap-5 xl:gap-6 w-full max-w-[1312px] mx-auto mb-6 md:mb-9 pt-4 md:pt-6"
+        aria-label="Cookbook overview"
+      >
+        <div className="shelf-banner__left flex flex-col justify-center min-w-0">
+          <div className="shelf-banner__eyebrow flex items-center gap-2 mb-3 text-terracotta text-xs font-semibold uppercase tracking-wider">
+            <span className="little-rule inline-block w-[23px] h-px bg-current shrink-0" /> A personal cookbook
           </div>
-          <h1 className="shelf-banner__title">
-            The recipe <em>shelf.</em>
+          <h1 className="shelf-banner__title font-serif font-normal text-[34px] md:text-5xl leading-[1.08] tracking-[-0.02em] text-ink m-0 mb-2.5">
+            The recipe <em className="text-ink not-italic italic font-normal">shelf.</em>
           </h1>
-          <p className="shelf-banner__subtitle">
+          <p className="shelf-banner__subtitle text-muted text-sm leading-relaxed m-0">
             Good things to make. And make again.
           </p>
         </div>
-        <div className="shelf-banner__image-wrap">
+        <div className="shelf-banner__image-wrap shrink-0 w-full xl:w-[868px] h-auto xl:h-[220px] aspect-[868/220] rounded-xl md:rounded-2xl overflow-hidden bg-[#e8ede3]">
           <img
             src="/recipe/art/cookbook-banner.webp"
             alt="Artisanal kitchen counter with fresh lemons and olive oil"
-            className="shelf-banner__image"
+            className="shelf-banner__image block w-full h-full object-cover"
             width="868"
             height="220"
             loading="eager"
@@ -71,18 +76,23 @@ export default function RecipeLibrary({
         </div>
       </section>
       <section className="shelf-content" aria-label="Recipes">
-        <div className="shelf-tools">
-          <div className="search-row">
+        <div className="shelf-tools mb-6 md:mb-7 pt-1 md:pt-1.5 pb-4 md:pb-5 border-b border-line">
+          <div className="search-row flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3.5 md:gap-6">
             <PlaceholdersAndVanishInput
               placeholders={SEARCH_PLACEHOLDERS}
               value={query}
               onChange={(event) => set({ query: event.target.value })}
               onClear={() => set({ query: "" })}
             />
-            <nav className="collection-tabs" aria-label="Recipe collections">
+            <nav className="collection-tabs flex shrink-0 items-center gap-5 md:gap-6 md:ml-auto pt-0.5 pb-1 md:py-0" aria-label="Recipe collections">
               <button
                 type="button"
-                className={collection === "all" ? "active" : ""}
+                className={cn(
+                  "inline-flex items-center justify-center p-0 pt-1 pb-1.5 border-0 border-b-2 bg-transparent text-[13px] font-medium leading-[1.4] whitespace-nowrap cursor-pointer transition-colors",
+                  collection === "all"
+                    ? "active border-ink text-ink font-semibold"
+                    : "border-transparent text-muted hover:text-ink"
+                )}
                 aria-pressed={collection === "all"}
                 onClick={() => set({ collection: "all" })}
               >
@@ -90,7 +100,12 @@ export default function RecipeLibrary({
               </button>
               <button
                 type="button"
-                className={collection === "favorites" ? "active" : ""}
+                className={cn(
+                  "inline-flex items-center justify-center p-0 pt-1 pb-1.5 border-0 border-b-2 bg-transparent text-[13px] font-medium leading-[1.4] whitespace-nowrap cursor-pointer transition-colors",
+                  collection === "favorites"
+                    ? "active border-ink text-ink font-semibold"
+                    : "border-transparent text-muted hover:text-ink"
+                )}
                 aria-pressed={collection === "favorites"}
                 onClick={() => set({ collection: "favorites" })}
               >
@@ -98,34 +113,50 @@ export default function RecipeLibrary({
               </button>
             </nav>
           </div>
-          <div className="category-panel">
-            <nav className="category-nav" aria-label="Recipe categories">
+          <div className="category-panel flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 md:gap-4 mt-3 md:mt-3.5">
+            <nav className="category-nav flex flex-nowrap md:flex-wrap items-center gap-2 m-0 p-0 overflow-x-auto max-[768px]:pb-2 max-[768px]:[scrollbar-width:none] max-[768px]:[&::-webkit-scrollbar]:hidden" aria-label="Recipe categories">
               <button
                 type="button"
-                className={`category-pill ${!category ? "active" : ""}`}
+                className={cn(
+                  "category-pill inline-flex shrink-0 items-center justify-center gap-1.5 h-8 min-h-[32px] px-3.5 border rounded-[4px] text-[11.5px] font-semibold leading-none tracking-[0.04em] uppercase whitespace-nowrap cursor-pointer transition-all",
+                  !category
+                    ? "active border-ink bg-ink text-white"
+                    : "border-ink/15 bg-white text-ink hover:border-[#aebcb2] hover:bg-[#faf8f5]"
+                )}
                 aria-pressed={!category}
                 onClick={() => set({ category: "" })}
               >
                 All
               </button>
-              {categories.map(([name, count]) => (
-                <button
-                  type="button"
-                  key={name}
-                  className={`category-pill ${category === name ? "active" : ""}`}
-                  aria-pressed={category === name}
-                  onClick={() => set({ category: name })}
-                >
-                  {name}
-                  {Boolean(count) && (
-                    <span className="category-pill__count">{count}</span>
-                  )}
-                </button>
-              ))}
+              {categories.map(([name, count]) => {
+                const isActive = category === name;
+                return (
+                  <button
+                    type="button"
+                    key={name}
+                    className={cn(
+                      "category-pill inline-flex shrink-0 items-center justify-center gap-1.5 h-8 min-h-[32px] px-3.5 border rounded-[4px] text-[11.5px] font-semibold leading-none tracking-[0.04em] uppercase whitespace-nowrap cursor-pointer transition-all",
+                      isActive
+                        ? "active border-ink bg-ink text-white"
+                        : "border-ink/15 bg-white text-ink hover:border-[#aebcb2] hover:bg-[#faf8f5]"
+                    )}
+                    aria-pressed={isActive}
+                    onClick={() => set({ category: name })}
+                  >
+                    {name}
+                    {Boolean(count) && (
+                      <span className={cn("category-pill__count ml-0.5 text-[10px] font-medium opacity-60", isActive && "text-white opacity-85")}>
+                        {count}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
             </nav>
-            <label className="sort-control">
+            <label className="sort-control inline-flex shrink-0 items-center max-[768px]:justify-end ml-auto">
               <span className="sr-only">Sort recipes</span>
               <select
+                className="h-8 min-h-[32px] pl-1.5 pr-4 border-0 outline-none bg-transparent text-muted hover:text-ink text-[11px] font-semibold tracking-[0.05em] uppercase cursor-pointer transition-colors"
                 value={sort}
                 onChange={(event) => set({ sort: event.target.value })}
               >
@@ -137,9 +168,9 @@ export default function RecipeLibrary({
           </div>
         </div>
         {(query || category || collection === "favorites") && (
-          <div className="results-bar">
-            <p aria-live="polite">
-              <strong>
+          <div className="results-bar flex items-center justify-between gap-4 min-h-[40px] mb-5">
+            <p aria-live="polite" className="flex items-center gap-2.5 m-0 text-muted text-[13px]">
+              <strong className="text-ink font-semibold">
                 {query
                   ? `Results for "${query}"`
                   : category ||
@@ -154,7 +185,7 @@ export default function RecipeLibrary({
             {category && (
               <button
                 type="button"
-                className="filter-chip"
+                className="filter-chip inline-flex items-center gap-1.5 px-2.5 py-1 border border-terracotta/30 rounded-[4px] bg-transparent text-terracotta text-[11px] font-medium cursor-pointer hover:bg-terracotta/10 transition-colors"
                 onClick={() => set({ category: "" })}
               >
                 Clear {category}
@@ -164,7 +195,7 @@ export default function RecipeLibrary({
           </div>
         )}
         {results.length ? (
-          <div className="recipe-grid--shelf">
+          <div className="recipe-grid--shelf grid grid-cols-1 max-[600px]:grid-cols-1 min-[601px]:grid-cols-2 min-[1151px]:grid-cols-3 gap-5 min-[601px]:gap-[28px_18px] min-[1151px]:gap-[32px_24px] w-full">
             {results.map((recipe) => (
               <RecipeCard
                 key={recipe.id}
@@ -176,31 +207,32 @@ export default function RecipeLibrary({
             ))}
           </div>
         ) : (
-          <div className="empty-state">
-            <BookOpen size={38} strokeWidth={1.2} />
-            <h2>
+          <div className="empty-state flex flex-col items-center pt-[76px] px-[22px] pb-[100px] text-muted text-center">
+            <BookOpen size={38} strokeWidth={1.2} className="text-muted" />
+            <h2 className="font-serif font-normal text-[30px] leading-[1.2] text-ink my-6 mb-3">
               {collection === "favorites" && !query && !category
                 ? "A shelf for your favorites."
                 : "Nothing on the shelf. Yet."}
             </h2>
-            <p>
+            <p className="max-w-[390px] text-sm leading-[1.6] text-muted mb-2.5">
               {collection === "favorites" && !query && !category
                 ? "Save a recipe with the bookmark to keep it here."
                 : "Try another ingredient, or clear your filters."}
             </p>
-            <button
-              type="button"
-              className="button button--light"
+            <Button
+              variant="light"
+              size="default"
+              className="mt-2.5"
               onClick={() =>
                 set({ query: "", category: "", collection: "all" })
               }
             >
               Browse all recipes
-            </button>
+            </Button>
           </div>
         )}
-        <div className="shelf-footnote">
-          <span className="little-rule" />
+        <div className="shelf-footnote flex items-center gap-3 pt-[34px] pb-1 text-muted text-[11px] leading-[1.7]">
+          <span className="little-rule inline-block w-[23px] h-px bg-current shrink-0" />
           {recipes.some((recipe) => recipe.example)
             ? "Starter recipes are here to try. Your own recipes belong right alongside them."
             : "Your collection, one recipe at a time."}
