@@ -15,9 +15,9 @@ Create reusable React UI primitives (`Button`, `IconButton`, `TextButton`, `Badg
 - Test against all viewports (Desktop 1440px, Tablet 768px, Mobile 390px).
 
 ## Success Criteria
-- [ ] UI primitives created and used in shell.
-- [ ] Header and shell controls migrated to Tailwind utilities + primitives.
-- [ ] Legacy `.button`, `.icon-button`, `.app-header` rules removed.
-- [ ] Tests pass (155/155).
-- [ ] Clean commit for Phase 2.
+- [x] UI primitives created and used in shell.
+- [x] Header and shell controls migrated to Tailwind utilities + primitives.
+- [x] Legacy `.button`, `.icon-button`, `.app-header` rules removed.
+- [x] Tests pass (155/155).
+- [x] Clean commit for Phase 2.
 

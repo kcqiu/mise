@@ -32,3 +32,66 @@
   --accent: var(--color-accent);
   --green: var(--color-green);
 }
+
+/* Transitional utilities for backwards compatibility during migration */
+@utility button {
+  min-height: 44px;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  gap: 9px;
+  padding: 12px 19px;
+  background-color: #24231f;
+  border: 1px solid #24231f;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 550;
+  border-radius: 4px;
+  transition: background-color 0.18s, border-color 0.18s;
+  &:hover {
+    background-color: #383630;
+    border-color: #383630;
+  }
+}
+
+@utility button--light {
+  color: #24231f;
+  background-color: #fff;
+  border: 1px solid rgba(36, 35, 31, 0.16);
+  &:hover {
+    color: #24231f;
+    background-color: #faf8f5;
+    border-color: rgba(36, 35, 31, 0.32);
+  }
+}
+
+@utility icon-button {
+  border: 0;
+  background-color: transparent;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  padding: 0;
+  transition: color 0.15s, background-color 0.15s;
+  &:hover {
+    background-color: rgba(36, 35, 31, 0.06);
+  }
+}
+
+@utility text-button {
+  padding: 0;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: none;
+  border: 0;
+  font-size: 13px;
+  font-weight: 550;
+  &:hover {
+    color: var(--color-terracotta);
+  }
+}
