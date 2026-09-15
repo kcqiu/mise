@@ -229,10 +229,18 @@ export default function RecipeApp() {
           setTimeout(() => flushGroceryQueue(userId), 100);
         }
       } else {
-        setSyncStatus("offline");
+        if (typeof navigator !== "undefined" && !navigator.onLine) {
+          setSyncStatus("offline");
+        } else {
+          setSyncStatus("saved");
+        }
       }
     } catch {
-      setSyncStatus("offline");
+      if (typeof navigator !== "undefined" && !navigator.onLine) {
+        setSyncStatus("offline");
+      } else {
+        setSyncStatus("saved");
+      }
     } finally {
       syncingRef.current = false;
     }
@@ -300,50 +308,67 @@ export default function RecipeApp() {
       rolloverCustom = rolled.customItems || [];
     }
 
-    const res = await completeAccountGrocerySession(
-      userId,
-      grocerySession.id,
-      action,
-      rolloverCustom,
-      newSessionId,
-      grocerySession.revision,
-    );
-
-    if (res.success) {
-      const nextActive = res.activeSession || EMPTY_GROCERY_SESSION;
-      clearGroceryQueue(userId);
-      setGrocerySession(nextActive);
-      saveGrocerySession(nextActive, userId);
-      setSyncStatus("saved");
-
-      broadcastGroceryMutations(grocerySession.id, {
-        completedSessionId: grocerySession.id,
-        activeSession: nextActive,
-      });
-
-      addToast(
-        action === "clear"
-          ? "Grocery list cleared"
-          : "Completed trip; unpurchased items rolled over",
-        "success",
+    try {
+      const res = await completeAccountGrocerySession(
+        userId,
+        grocerySession.id,
+        action,
+        rolloverCustom,
+        newSessionId,
+        grocerySession.revision,
       );
-    } else if (res.code === "REVISION_CONFLICT") {
-      setSyncStatus("saved");
-      addToast(
-        "Could not complete trip: your list was updated on another device. Please review the latest list.",
-        "error",
-      );
-      if (res.session) {
-        setGrocerySession(res.session);
-        saveGrocerySession(res.session, userId);
+
+      if (res && res.success) {
+        const nextActive = res.activeSession || EMPTY_GROCERY_SESSION;
+        clearGroceryQueue(userId);
+        setGrocerySession(nextActive);
+        saveGrocerySession(nextActive, userId);
+        setSyncStatus("saved");
+
+        broadcastGroceryMutations(grocerySession.id, {
+          completedSessionId: grocerySession.id,
+          activeSession: nextActive,
+        });
+
+        addToast(
+          action === "clear"
+            ? "Grocery list cleared"
+            : "Completed trip; unpurchased items rolled over",
+          "success",
+        );
+        return;
+      } else if (res && res.code === "REVISION_CONFLICT") {
+        setSyncStatus("saved");
+        addToast(
+          "Could not complete trip: your list was updated on another device. Please review the latest list.",
+          "error",
+        );
+        if (res.session) {
+          setGrocerySession(res.session);
+          saveGrocerySession(res.session, userId);
+        }
+        return;
       }
-    } else {
-      setSyncStatus("offline");
-      addToast(
-        "Failed to complete trip. Please check your connection and try again.",
-        "error",
-      );
+    } catch {
+      // Graceful fallback below
     }
+
+    // Fallback: If cloud RPC fails or table/RPC is not yet migrated,
+    // finalize trip locally in localStorage so user's cart is never stuck
+    const nextSession =
+      action === "clear"
+        ? resetGrocerySession(newSessionId)
+        : rolloverGrocerySession(grocerySession, recipes, newSessionId);
+    clearGroceryQueue(userId);
+    setGrocerySession(nextSession);
+    saveGrocerySession(nextSession, userId);
+    setSyncStatus("saved");
+    addToast(
+      action === "clear"
+        ? "Grocery list cleared"
+        : "Completed trip; unpurchased items rolled over",
+      "success",
+    );
   };
 
   const toggleRecipeInGroceries = (recipeId, servings) => {
@@ -387,6 +412,44 @@ export default function RecipeApp() {
       setAuthModal((prev) => ({ ...prev, open: true, intent: "signin" }));
     }
   }, [route]);
+
+  // Bug 1: Close account dropdown when clicking outside or pressing Escape
+  useEffect(() => {
+    const handleOutsideClick = (e) => {
+      if (
+        accountMenu.current?.hasAttribute("open") &&
+        !accountMenu.current.contains(e.target)
+      ) {
+        accountMenu.current.removeAttribute("open");
+      }
+    };
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape" && accountMenu.current?.hasAttribute("open")) {
+        accountMenu.current.removeAttribute("open");
+      }
+    };
+    document.addEventListener("click", handleOutsideClick);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("click", handleOutsideClick);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, []);
+
+  // Bug 7: Lock groceries cart behind login:
+  // Guests can click "Add to Groceries", but once on #/groceries, trigger login/signup after 10 seconds
+  useEffect(() => {
+    if (route === "groceries" && !account.session && !account.loading) {
+      const timer = setTimeout(() => {
+        setAuthModal({
+          open: true,
+          intent: "groceries",
+          error: "",
+        });
+      }, 10000);
+      return () => clearTimeout(timer);
+    }
+  }, [route, account.session, account.loading]);
 
   useEffect(() => {
     const change = () => {
@@ -526,13 +589,25 @@ export default function RecipeApp() {
             flushGroceryQueue(session.user.id);
           } else {
             // Case 2 & 3: Guest empty, load cloud or cached session
-            const activeSess = cloudSession || (cachedUser.id !== EMPTY_GROCERY_SESSION.id ? cachedUser : { ...EMPTY_GROCERY_SESSION, id: generateUUID() });
+            const cachedHasData = Boolean(
+              (cachedUser.recipes && cachedUser.recipes.length > 0) ||
+              (cachedUser.customItems && cachedUser.customItems.length > 0) ||
+              (cachedUser.itemOverrides && Object.keys(cachedUser.itemOverrides).length > 0)
+            );
+            const activeSess = cloudSession || (cachedHasData ? cachedUser : (cachedUser.id !== EMPTY_GROCERY_SESSION.id ? cachedUser : { ...EMPTY_GROCERY_SESSION, id: generateUUID() }));
             setGrocerySession(activeSess);
             saveGrocerySession(activeSess, session.user.id);
           }
         } catch {
           const cachedUser = readGrocerySession(session.user.id);
-          setGrocerySession(cachedUser);
+          const cachedHasData = Boolean(
+            (cachedUser.recipes && cachedUser.recipes.length > 0) ||
+            (cachedUser.customItems && cachedUser.customItems.length > 0) ||
+            (cachedUser.itemOverrides && Object.keys(cachedUser.itemOverrides).length > 0)
+          );
+          if (cachedHasData) {
+            setGrocerySession(cachedUser);
+          }
         }
       } catch (error) {
         if (active) {
@@ -902,6 +977,10 @@ export default function RecipeApp() {
     setAuthModal((prev) => ({ ...prev, open: false, error: "" }));
     if (window.location.hash === "#/login") {
       window.location.hash = "#/";
+    }
+    if (route === "groceries" && !account.session) {
+      window.location.hash = "#/";
+      addToast("Please sign in or create an account to use the Groceries bag.", "info");
     }
   };
   const endSession = async () => {

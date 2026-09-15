@@ -221,4 +221,35 @@ describe("personal recipe workflows", () => {
     expect(within(articles[0]).getByText("Newer Added Recipe")).toBeInTheDocument();
     expect(within(articles[1]).getByText("Older Added Recipe")).toBeInTheDocument();
   });
+
+  it("navigates to groceries route and triggers auth modal for guest", async () => {
+    vi.useFakeTimers();
+    render(<RecipeApp />);
+
+    await act(async () => {
+      window.location.hash = "/groceries";
+      window.dispatchEvent(new HashChangeEvent("hashchange"));
+    });
+
+    expect(screen.getByRole("heading", { name: "Grocery List" })).toBeInTheDocument();
+
+    // Fast-forward 10 seconds
+    act(() => {
+      vi.advanceTimersByTime(10000);
+    });
+
+    // Auth modal should open with groceries intent
+    expect(
+      screen.getByRole("heading", { name: "Sign in to keep your grocery list" }),
+    ).toBeInTheDocument();
+
+    // Dismiss auth modal as guest
+    const closeBtn = screen.getByRole("button", { name: /Close sign-in dialog/i });
+    fireEvent.click(closeBtn);
+
+    // Should redirect back to shelf #/
+    expect(window.location.hash).toBe("#/");
+
+    vi.useRealTimers();
+  });
 });

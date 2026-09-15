@@ -166,6 +166,7 @@ export default function AuthModal({
     create: "Sign in to write your own recipes",
     favorite: "Sign in to sync your favorites",
     sync: "Sign in to sync cooking progress",
+    groceries: "Sign in to keep your grocery list",
   };
 
   const intentDescriptions = {
@@ -177,6 +178,8 @@ export default function AuthModal({
       "Keep your favorite keepers ready to cook whether you're at your computer or in the kitchen on your phone.",
     sync:
       "Never lose your place. Connect your account to automatically sync step checklists and ingredient preps.",
+    groceries:
+      "Keep your shopping list synced across your phone, tablet, and computer so you never forget an ingredient at the store.",
   };
 
   return (

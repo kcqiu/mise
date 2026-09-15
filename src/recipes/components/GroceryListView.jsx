@@ -1,8 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import {
-  ArrowDown,
   ArrowLeft,
-  ArrowUp,
   Check,
   CheckCheck,
   ChevronDown,
@@ -15,7 +13,6 @@ import {
   RefreshCw,
   Share2,
   ShoppingBag,
-  SlidersHorizontal,
   Sparkles,
   Sun,
   Trash2,
@@ -30,10 +27,6 @@ import {
   rolloverGrocerySession,
   generateUUID,
   formatGroceryListText,
-  DEFAULT_AISLE_ORDER,
-  PRESET_AISLE_PROFILES,
-  readAisleOrder,
-  saveAisleOrder,
 } from "../groceries";
 
 function useKeepAwake() {
@@ -102,20 +95,45 @@ export default function GroceryListView({
   const [staplesOpen, setStaplesOpen] = useState(false);
   const [completeModalOpen, setCompleteModalOpen] = useState(false);
   const [shareModalOpen, setShareModalOpen] = useState(false);
-  const [aisleModalOpen, setAisleModalOpen] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [aisleOrder, setAisleOrder] = useState(() => readAisleOrder(userId));
   const awake = useKeepAwake();
   const inputRef = useRef(null);
+  const copyBtnRef = useRef(null);
 
-  // Sync aisle order when user changes
+  // Derive active view model using the pure deterministic selector
+  const derived = selectGroceryList(session, recipes);
+  const isOffline = typeof navigator !== "undefined" && !navigator.onLine;
+
+  const isEmpty = derived.totalCount === 0 && derived.activeRecipes.length === 0;
+
+  // Auto-close complete trip modal if list becomes empty
   useEffect(() => {
-    setAisleOrder(readAisleOrder(userId));
-  }, [userId]);
+    if (isEmpty && completeModalOpen) {
+      setCompleteModalOpen(false);
+    }
+  }, [isEmpty, completeModalOpen]);
 
-  // Derive active view model using the pure deterministic selector with custom aisle ordering
-  const derived = selectGroceryList(session, recipes, aisleOrder);
-  const isOffline = syncStatus === "offline" || (typeof navigator !== "undefined" && !navigator.onLine);
+  // Focus share modal copy button when opened
+  useEffect(() => {
+    if (shareModalOpen) {
+      const timer = setTimeout(() => {
+        copyBtnRef.current?.focus();
+      }, 60);
+      return () => clearTimeout(timer);
+    }
+  }, [shareModalOpen]);
+
+  // Close modals on Escape key
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") {
+        if (shareModalOpen) setShareModalOpen(false);
+        if (completeModalOpen) setCompleteModalOpen(false);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [shareModalOpen, completeModalOpen]);
 
   // Centralized action dispatcher supporting mutation sync & session update
   const dispatchAction = (mutation, nextSession) => {
@@ -344,30 +362,6 @@ export default function GroceryListView({
     onToast?.("Completed trip; rolled over remaining items into standalone custom items", "success");
   };
 
-  // --- Aisle Reordering Handlers ---
-  const handleMoveAisle = (index, direction) => {
-    const target = index + direction;
-    if (target < 0 || target >= aisleOrder.length) return;
-    const next = [...aisleOrder];
-    const temp = next[index];
-    next[index] = next[target];
-    next[target] = temp;
-    setAisleOrder(next);
-    saveAisleOrder(next, userId);
-  };
-
-  const handleSelectPreset = (presetKey) => {
-    const profile = PRESET_AISLE_PROFILES[presetKey];
-    if (!profile) return;
-    setAisleOrder(profile.order);
-    saveAisleOrder(profile.order, userId);
-  };
-
-  const handleResetAisles = () => {
-    setAisleOrder(DEFAULT_AISLE_ORDER);
-    saveAisleOrder(DEFAULT_AISLE_ORDER, userId);
-  };
-
   // --- Export / Share Handlers ---
   const exportText = formatGroceryListText(derived);
 
@@ -396,8 +390,6 @@ export default function GroceryListView({
       }
     }
   };
-
-  const isEmpty = derived.totalCount === 0 && derived.activeRecipes.length === 0;
 
   return (
     <main className="grocery-page" id="recipe-main">
@@ -445,19 +437,6 @@ export default function GroceryListView({
               title="Share or export list"
             >
               <Share2 size={16} />
-            </button>
-          )}
-
-          {/* Organize Aisles button */}
-          {!isEmpty && (
-            <button
-              type="button"
-              className="icon-button grocery-top-icon-btn"
-              onClick={() => setAisleModalOpen(true)}
-              aria-label="Organize aisle order"
-              title="Organize aisles"
-            >
-              <SlidersHorizontal size={16} />
             </button>
           )}
 
@@ -792,6 +771,7 @@ export default function GroceryListView({
             />
             <div className="grocery-share-modal__actions">
               <button
+                ref={copyBtnRef}
                 type="button"
                 className="button button--accent"
                 onClick={handleCopyText}
@@ -821,98 +801,13 @@ export default function GroceryListView({
         </div>
       )}
 
-      {/* Organize Aisles Modal */}
-      {aisleModalOpen && (
-        <div className="modal-backdrop" onClick={() => setAisleModalOpen(false)}>
-          <div
-            className="modal-panel grocery-aisle-modal"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="aisle-modal-title"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="modal-header">
-              <h2 id="aisle-modal-title">Organize Aisle Order</h2>
-              <button
-                type="button"
-                className="icon-button"
-                onClick={() => setAisleModalOpen(false)}
-                aria-label="Close dialog"
-              >
-                <X size={18} />
-              </button>
-            </div>
-            <p className="grocery-modal-desc">
-              Arrange the order aisles appear to match the physical layout of your preferred grocery store.
-            </p>
-
-            <div className="grocery-preset-section">
-              <span className="grocery-preset-title">Store Layout Presets:</span>
-              <div className="grocery-preset-chips">
-                {Object.entries(PRESET_AISLE_PROFILES).map(([key, profile]) => (
-                  <button
-                    key={key}
-                    type="button"
-                    className="button button--light grocery-preset-chip"
-                    onClick={() => handleSelectPreset(key)}
-                  >
-                    {profile.name}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <ul className="grocery-aisle-reorder-list" role="list">
-              {aisleOrder.map((category, idx) => (
-                <li key={category} className="grocery-aisle-reorder-item">
-                  <span className="grocery-aisle-reorder-name">{category}</span>
-                  <div className="grocery-aisle-reorder-btns">
-                    <button
-                      type="button"
-                      className="icon-button"
-                      disabled={idx === 0}
-                      onClick={() => handleMoveAisle(idx, -1)}
-                      aria-label={`Move ${category} up`}
-                    >
-                      <ArrowUp size={14} />
-                    </button>
-                    <button
-                      type="button"
-                      className="icon-button"
-                      disabled={idx === aisleOrder.length - 1}
-                      onClick={() => handleMoveAisle(idx, 1)}
-                      aria-label={`Move ${category} down`}
-                    >
-                      <ArrowDown size={14} />
-                    </button>
-                  </div>
-                </li>
-              ))}
-            </ul>
-
-            <div className="grocery-aisle-modal__footer">
-              <button
-                type="button"
-                className="text-button"
-                onClick={handleResetAisles}
-              >
-                Reset to Default
-              </button>
-              <button
-                type="button"
-                className="button button--accent"
-                onClick={() => setAisleModalOpen(false)}
-              >
-                Done
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Trip Completion Confirmation Modal */}
       {completeModalOpen && (
-        <div className="modal-backdrop" onClick={() => setCompleteModalOpen(false)}>
+        <div
+          className="modal-backdrop"
+          onClick={() => setCompleteModalOpen(false)}
+          role="presentation"
+        >
           <div
             className="modal-panel grocery-complete-modal"
             role="dialog"
@@ -931,9 +826,22 @@ export default function GroceryListView({
                 <X size={18} />
               </button>
             </div>
-            <p className="grocery-complete-modal__desc">
-              You purchased <strong>{derived.checkedCount}</strong> of <strong>{derived.totalCount}</strong> items on your list. How would you like to finish this trip?
+
+            <p className="grocery-modal-desc">
+              Choose how you'd like to finalize this shopping trip.
             </p>
+
+            <div className="grocery-complete-stat-card">
+              <div className="grocery-complete-stat-info">
+                <span className="grocery-complete-stat-label">Purchased Items</span>
+                <span className="grocery-complete-stat-val">
+                  {derived.checkedCount} of {derived.totalCount} items
+                </span>
+              </div>
+              <span className="grocery-complete-stat-badge">
+                {derived.progressPercent}% Done
+              </span>
+            </div>
 
             {isOffline && (
               <div className="grocery-offline-notice" role="alert">
@@ -944,25 +852,43 @@ export default function GroceryListView({
               </div>
             )}
 
-            <div className="grocery-complete-modal__actions">
+            <div className="grocery-complete-choices">
               <button
                 type="button"
-                className="button button--accent"
+                className="grocery-complete-choice-btn is-primary"
                 onClick={handleKeepUnchecked}
                 disabled={isOffline}
+                aria-label="Keep unpurchased items (Rollover)"
                 title={isOffline ? "Requires internet connection" : "Keep remaining items"}
               >
-                Keep unchecked items (Rollover)
+                <div className="grocery-complete-choice-title">
+                  <Sparkles size={16} />
+                  <strong>Keep unpurchased items (Rollover)</strong>
+                </div>
+                <span className="grocery-complete-choice-desc">
+                  Roll over unpurchased items into a fresh trip and clear purchased items.
+                </span>
               </button>
+
               <button
                 type="button"
-                className="button button--light"
+                className="grocery-complete-choice-btn"
                 onClick={handleClearAll}
                 disabled={isOffline}
+                aria-label="Clear entire list"
                 title={isOffline ? "Requires internet connection" : "Clear entire list"}
               >
-                Clear entire list
+                <div className="grocery-complete-choice-title">
+                  <Trash2 size={16} />
+                  <strong>Clear entire list</strong>
+                </div>
+                <span className="grocery-complete-choice-desc">
+                  Finish this trip and start fresh with an empty cart.
+                </span>
               </button>
+            </div>
+
+            <div className="grocery-complete-modal__footer">
               <button
                 type="button"
                 className="text-button"

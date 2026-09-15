@@ -106,6 +106,26 @@ describe("AuthModal component", () => {
       ),
     ).toBeInTheDocument();
   });
+
+  it("renders with groceries intent copy when initialIntent is groceries", () => {
+    render(
+      <AuthModal
+        isOpen={true}
+        onClose={vi.fn()}
+        onSignIn={vi.fn()}
+        initialIntent="groceries"
+      />,
+    );
+
+    expect(
+      screen.getByRole("heading", { name: "Sign in to keep your grocery list" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Keep your shopping list synced across your phone, tablet, and computer so you never forget an ingredient at the store.",
+      ),
+    ).toBeInTheDocument();
+  });
 });
 
 describe("ToastStack component", () => {

@@ -211,6 +211,8 @@ describe("GroceryListView Component", () => {
   });
 
   it("disables complete trip action buttons and shows notice when offline", () => {
+    const onlineSpy = vi.spyOn(navigator, "onLine", "get").mockReturnValue(false);
+
     const session = {
       ...EMPTY_GROCERY_SESSION,
       recipes: [{ recipeId: "fajitas", servings: 2, addedAt: 100 }],
@@ -220,7 +222,6 @@ describe("GroceryListView Component", () => {
       <GroceryListView
         session={session}
         recipes={sampleRecipes}
-        syncStatus="offline"
       />
     );
 
@@ -229,7 +230,9 @@ describe("GroceryListView Component", () => {
 
     expect(screen.getByText(/Offline Mode:/)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Clear entire list/ })).toBeDisabled();
-    expect(screen.getByRole("button", { name: /Keep unchecked items/ })).toBeDisabled();
+    expect(screen.getByRole("button", { name: /Keep unpurchased items/ })).toBeDisabled();
+
+    onlineSpy.mockRestore();
   });
 
   it("dispatches typed mutation envelopes when onDispatchMutation is provided", () => {
@@ -289,7 +292,7 @@ describe("GroceryListView Component", () => {
     expect(writeTextMock).toHaveBeenCalledWith(expect.stringContaining("MISE Grocery List"));
   });
 
-  it("opens aisle order modal and allows selecting store layout presets", () => {
+  it("does not render organize aisles button", () => {
     const session = {
       ...EMPTY_GROCERY_SESSION,
       recipes: [{ recipeId: "fajitas", servings: 2, addedAt: 100 }],
@@ -302,11 +305,7 @@ describe("GroceryListView Component", () => {
       />
     );
 
-    const organizeBtn = screen.getByRole("button", { name: "Organize aisle order" });
-    fireEvent.click(organizeBtn);
-
-    expect(screen.getByRole("dialog", { name: "Organize Aisle Order" })).toBeInTheDocument();
-    expect(screen.getByText("Produce-First (Trader Joe's)")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Organize aisle order/i })).not.toBeInTheDocument();
   });
 });
 
