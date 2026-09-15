@@ -102,7 +102,7 @@ export function CulinaryGlassCard({
 
           {/* Glass action button */}
           <div className="culinary-glass-card__action">
-            <span>Cook Recipe</span>
+            <span>See Recipe</span>
             <ArrowRight size={15} strokeWidth={2.2} />
           </div>
         </a>

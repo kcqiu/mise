@@ -69,7 +69,7 @@ export default function RecipeCard({
             )}
           </div>
           <div className="recipe-card__action">
-            <span>Cook Recipe</span>
+            <span>See Recipe</span>
             <ArrowRight size={15} strokeWidth={2.2} />
           </div>
         </div>
