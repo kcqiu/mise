@@ -533,8 +533,8 @@ export function aggregateContributions(contributions) {
       totalMl += c.quantity * (VOLUME_FACTORS_ML[u] || 1);
     });
 
-    let finalQty = 0;
-    let finalUnit = "ml";
+    let finalQty;
+    let finalUnit;
     if (totalMl < 15) {
       finalQty = totalMl / 5;
       finalUnit = "tsp";
@@ -564,8 +564,8 @@ export function aggregateContributions(contributions) {
       totalG += c.quantity * (WEIGHT_FACTORS_G[u] || 1);
     });
 
-    let finalQty = 0;
-    let finalUnit = "g";
+    let finalQty;
+    let finalUnit;
     if (totalG >= 450) {
       finalQty = totalG / 453.6;
       finalUnit = "lb";

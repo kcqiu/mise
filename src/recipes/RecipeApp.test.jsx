@@ -216,11 +216,14 @@ describe("personal recipe workflows", () => {
 
     render(<RecipeApp />);
 
-    const articles = screen.getAllByRole("article");
-    // Newest recipe should be the very first article on the shelf
+    const grid = document.querySelector(".recipe-grid--shelf");
+    const articles = within(grid).getAllByRole("article");
+
+    // The sorted list is rendered in order: newest first
     expect(within(articles[0]).getByText("Newer Added Recipe")).toBeInTheDocument();
     expect(within(articles[1]).getByText("Older Added Recipe")).toBeInTheDocument();
   });
+
 
   it("navigates to groceries route and triggers auth modal for guest", async () => {
     vi.useFakeTimers();

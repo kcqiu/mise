@@ -31,7 +31,7 @@ export default function RecipeArtwork({ artwork, title, className = "" }) {
           alt=""
           width="1000"
           height="1000"
-          loading="lazy"
+          loading="eager"
           decoding="async"
           referrerPolicy="no-referrer"
           onError={() => setHasError(true)}

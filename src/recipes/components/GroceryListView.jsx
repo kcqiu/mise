@@ -88,7 +88,6 @@ export default function GroceryListView({
   onDispatchMutation,
   onCompleteTrip,
   syncStatus = "saved",
-  userId = null,
   onToast,
 }) {
   const [customInput, setCustomInput] = useState("");

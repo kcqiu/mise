@@ -1,9 +1,9 @@
 import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import RecipeEditor from './components/RecipeEditor';
-import * as aiModule from './ai';
-import { buildCoverPrompt } from './ai';
+import RecipeEditor from './RecipeEditor';
+import * as aiModule from '../ai';
+import { buildCoverPrompt } from '../ai';
 
 beforeEach(() => {
   HTMLDialogElement.prototype.showModal = function () {

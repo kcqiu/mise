@@ -174,17 +174,6 @@ export default function RecipeDetail({
           Back to the shelf
         </a>
         <div className="detail-toolbar-actions">
-          {onToggleGroceries && (
-            <button
-              type="button"
-              className={`text-button grocery-toggle-btn ${inGroceries ? "is-active" : ""}`}
-              onClick={() => onToggleGroceries(recipe.id, servings)}
-              aria-pressed={inGroceries}
-            >
-              <ShoppingBag size={15} />
-              <span>{inGroceries ? "In Groceries" : "Add to Groceries"}</span>
-            </button>
-          )}
           <button className="text-button" onClick={() => onEdit(recipe)}>
             <Pencil size={15} />
             {isLocal ? "Edit recipe" : "Make it your own"}
@@ -303,6 +292,9 @@ export default function RecipeDetail({
           <button
             className={`awake-toggle ${awake.enabled ? "active" : ""}`}
             aria-pressed={awake.enabled}
+            aria-label={
+              awake.enabled ? "Allow screen to sleep" : "Keep screen awake"
+            }
             onClick={awake.toggle}
           >
             <Sun size={17} />
@@ -328,7 +320,7 @@ export default function RecipeDetail({
             {onToggleGroceries && (
               <button
                 type="button"
-                className={`button button--light button--compact grocery-add-pill ${inGroceries ? "is-active" : ""}`}
+                className={`text-button grocery-toggle-btn ${inGroceries ? "is-active" : ""}`}
                 onClick={() => onToggleGroceries(recipe.id, servings)}
                 aria-pressed={inGroceries}
               >

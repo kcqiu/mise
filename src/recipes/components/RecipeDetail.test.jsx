@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import RecipeDetail from "./components/RecipeDetail";
+import RecipeDetail from "./RecipeDetail";
 
 describe("RecipeDetail unit conversion", () => {
   const mockRecipe = {
@@ -162,10 +162,9 @@ describe("RecipeDetail unit conversion", () => {
     );
 
     const groceryBtns = screen.getAllByRole("button", { name: "Add to Groceries" });
-    expect(groceryBtns.length).toBeGreaterThan(0);
+    expect(groceryBtns).toHaveLength(1);
 
     await user.click(groceryBtns[0]);
     expect(handleToggleGroceries).toHaveBeenCalledWith("matcha-latte", 2);
   });
 });
-

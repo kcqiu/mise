@@ -1,9 +1,9 @@
 import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import AuthModal from "./components/AuthModal";
-import ToastStack from "./components/ToastStack";
-import { extractAuthErrorFromUrl } from "./cloud";
+import AuthModal from "./AuthModal";
+import ToastStack from "./ToastStack";
+import { extractAuthErrorFromUrl } from "../cloud";
 
 beforeEach(() => {
   HTMLDialogElement.prototype.showModal = function () {

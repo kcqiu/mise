@@ -1,66 +1,68 @@
 # MISE
 
-Personal recipe library built with React, Vite, and Supabase. System recipes are
-available to everyone; signed-in cooks can create a private collection and sync
-favorites and cooking progress across devices.
+MISE is a personal digital cookbook for saving recipes, cooking from them, and
+turning planned meals into a grocery list.
 
-## Local development
+The app includes:
+
+- A searchable recipe shelf with categories and favorites
+- Recipe creation and import from text, photos, websites, and social posts
+- Adjustable servings, unit conversion, and cooking progress
+- A grocery list generated from selected recipes
+- Optional Google sign-in and Supabase sync across devices
+
+## Local setup
+
+MISE requires Node.js 24.
 
 ```bash
 npm install
 npm run dev
 ```
 
-Create `.env.local` from `.env.example` when Supabase authentication is enabled.
+The app works with browser storage when Supabase is not configured. For account
+sync and AI features, copy `.env.example` to `.env.local` and add the required
+values.
 
-## Supabase setup
+## Environment variables
 
-1. Apply the SQL files in `supabase/migrations` in filename order.
-2. Run `npm run seed:generate` after changing the system recipe JSON.
-3. Run `supabase/seed.sql` in the SQL Editor to publish the system collection.
-4. Enable Google in Authentication > Providers.
-5. Configure `private.hook_restrict_signup_by_email` as the Postgres
-   `before-user-created` Auth hook. Approved accounts live in
-   `private.signup_allowlist`.
-6. Add approved email addresses to `private.signup_allowlist` using the
-   dashboard SQL Editor. This list is intentionally not included in source control.
-7. Set the Auth Site URL to your deployed application URL. Add local development
-   URLs to the redirect allowlist only when needed.
+| Variable | Purpose |
+| --- | --- |
+| `VITE_SUPABASE_URL` | Supabase project URL |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | Browser-safe Supabase key |
+| `GEMINI_API_KEY` | Recipe parsing and refinement |
+| `CHOCODATA_API_KEY` | Optional Instagram caption lookup |
+| `CLOUDFLARE_ACCOUNT_ID` | AI cover generation |
+| `CLOUDFLARE_API_TOKEN` | AI cover generation |
 
-The browser receives only the Supabase project URL and publishable key. Never
-place a secret key, service-role key, Google client secret, or database password
-in a `VITE_` variable.
+Never place server secrets in a `VITE_` variable.
 
-## Production
+Vite serves the frontend only. Run through a Vercel-compatible local runtime or
+use a preview deployment when testing the functions in `api/`.
 
-The Vercel project should use:
+## Database setup
 
-- Framework preset: Vite
-- Build command: `npm run build`
-- Output directory: `dist`
+1. Apply the files in `supabase/migrations/` in filename order.
+2. Run `npm run seed:generate` after changing the published recipe data.
+3. Apply `supabase/seed.sql` to load the published recipes.
+4. For account access, enable Google Auth and configure the signup hook created
+   by the migrations.
 
-The public deployment is intended to be unlisted and uses `noindex, nofollow`.
-
-## Persistence
-
-When cloud configuration is present, Google sign-in unlocks recipe creation.
-Recipes, favorites, and cooking progress are account-owned and protected by RLS.
-Any existing browser-saved library is imported once after the first successful
-sign-in. Without cloud configuration, the app retains its original local-only
-behavior for development and recovery.
-
-## Instagram recipe imports
-
-Automatic imports from other creators' public Instagram posts use the server-only
-`CHOCODATA_API_KEY`, alongside `GEMINI_API_KEY`. Meta account IDs and app secrets
-do not enable arbitrary post caption lookup. Pasted captions skip ChocoData.
-See [setup, architecture and limitations](docs/instagram-import.md).
+Authentication, recipe data, favorites, progress, grocery sessions, and cover
+storage are protected by Supabase row-level security policies.
 
 ## Checks
 
 ```bash
-npm test
-npm run build
+npm run check
 ```
 
-Run `supabase/verify.sql` to check the schema, account policies, and signup hook.
+This runs linting, CSS checks, tests, the production build, and seed verification.
+
+## Deployment
+
+The Vercel project uses the Vite preset, `npm run build`, and the `dist` output
+directory. Configure the same environment variables for the target Vercel
+environment.
+
+See [Architecture](docs/architecture.md) for the project layout.
