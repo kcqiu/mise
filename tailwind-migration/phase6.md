@@ -12,7 +12,7 @@ Migrate `RecipeEditor` forms, ingredient list builder, step reordering, cover ph
 - Remove all `.editor-*` rules from legacy CSS.
 
 ## Success Criteria
-- [ ] RecipeEditor fully migrated to Tailwind utilities.
-- [ ] All 11 RecipeEditor vitest tests pass.
-- [ ] Legacy editor CSS rules removed.
-- [ ] Clean commit for Phase 6.
+- [x] RecipeEditor fully migrated to Tailwind utilities.
+- [x] All 11 RecipeEditor vitest tests pass.
+- [x] Legacy editor CSS rules removed.
+- [x] Clean commit for Phase 6.

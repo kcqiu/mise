@@ -85,3 +85,18 @@ dialog::backdrop {
 .animate-panel-scale {
   animation: 0.25s cubic-bezier(0.16, 1, 0.3, 1) modalPanelScale;
 }
+
+@keyframes editorIn {
+  0% {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.recipe-editor[open] {
+  animation: 0.2s ease-out editorIn;
+}

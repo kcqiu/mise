@@ -6,7 +6,7 @@
 - [x] ~~Phase 3: Overlays & Modals~~
 - [x] ~~Phase 4: Recipe Shelf~~
 - [x] ~~Phase 5: Grocery Experience~~
-- [ ] Phase 6: Recipe Editor
+- [x] ~~Phase 6: Recipe Editor~~
 - [ ] Phase 7: Recipe Detail
 - [ ] Phase 8: Base Styles & Preflight
 - [ ] Phase 9: Final Legacy Cleanup
