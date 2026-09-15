@@ -26,7 +26,6 @@ export default function AddRecipeModal({
   onSelectManual,
   onParsedRecipe,
   onImportFile,
-  onError,
 }) {
   const dialogRef = useRef(null);
   const fileInputRef = useRef(null);

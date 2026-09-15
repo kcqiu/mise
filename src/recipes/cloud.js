@@ -36,10 +36,6 @@ export function watchSession(callback) {
   return () => data.subscription.unsubscribe();
 }
 
-export const GOOGLE_CLIENT_ID =
-  import.meta.env.VITE_GOOGLE_CLIENT_ID?.trim() ||
-  "589540895742-ubongbejv6hei5cumq8dajut7dpmbtpq.apps.googleusercontent.com";
-
 export async function signInWithGoogle() {
   if (!supabase) return;
   const { error } = await supabase.auth.signInWithOAuth({
@@ -47,16 +43,6 @@ export async function signInWithGoogle() {
     options: { redirectTo: window.location.origin },
   });
   if (error) throw error;
-}
-
-export async function signInWithGoogleIdToken(token) {
-  if (!supabase) return null;
-  const { data, error } = await supabase.auth.signInWithIdToken({
-    provider: "google",
-    token,
-  });
-  if (error) throw error;
-  return data;
 }
 
 export function extractAuthErrorFromUrl() {
