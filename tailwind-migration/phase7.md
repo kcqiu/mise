@@ -13,7 +13,7 @@ Migrate `RecipeDetail` (the design north star) to Tailwind utilities with strict
 - Remove all remaining `.recipe-detail-*` rules from legacy CSS.
 
 ## Success Criteria
-- [ ] RecipeDetail fully migrated to Tailwind utilities.
-- [ ] Visual pixel parity verified across Desktop, Tablet, and Mobile.
-- [ ] All 5 RecipeDetail vitest tests pass.
-- [ ] Clean commit for Phase 7.
+- [x] RecipeDetail fully migrated to Tailwind utilities.
+- [x] Visual pixel parity verified across Desktop, Tablet, and Mobile.
+- [x] All 5 RecipeDetail vitest tests pass.
+- [x] Clean commit for Phase 7.

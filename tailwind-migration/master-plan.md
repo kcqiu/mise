@@ -7,6 +7,6 @@
 - [x] ~~Phase 4: Recipe Shelf~~
 - [x] ~~Phase 5: Grocery Experience~~
 - [x] ~~Phase 6: Recipe Editor~~
-- [ ] Phase 7: Recipe Detail
+- [x] ~~Phase 7: Recipe Detail~~
 - [ ] Phase 8: Base Styles & Preflight
 - [ ] Phase 9: Final Legacy Cleanup
