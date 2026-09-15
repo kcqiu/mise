@@ -176,18 +176,18 @@ input.vanish-input__input {
 }
 
 .vanish-input__clear,
-.vanish-input__submit {
+.vanish-input__prompt-icon {
   display: inline-flex;
   flex: 0 0 auto;
   align-items: center;
   justify-content: center;
-  border: 0;
 }
 
 .vanish-input__clear {
   width: 32px;
   height: 36px;
   padding: 4px;
+  border: 0;
   border-radius: 3px;
   background: transparent;
   color: var(--muted);
@@ -198,23 +198,12 @@ input.vanish-input__input {
   color: var(--ink);
 }
 
-.vanish-input__submit {
+.vanish-input__prompt-icon {
   width: 30px;
   height: 30px;
   margin-right: -9px;
-  border-radius: 6px;
-  background: var(--ink);
-  color: var(--white);
-}
-
-.vanish-input__submit:disabled {
-  background: transparent;
   color: var(--muted);
   opacity: 0.55;
-}
-
-.vanish-input__submit span {
-  display: block;
 }
 
 .collection-tabs {

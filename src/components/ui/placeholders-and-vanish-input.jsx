@@ -220,20 +220,11 @@ export function PlaceholdersAndVanishInput({
             <X size={16} />
           </button>
         )}
-        <m.button
-          type="submit"
-          className="vanish-input__submit"
-          disabled={!value || animating}
-          aria-label="Search"
-          whileTap={prefersReducedMotion ? undefined : { scale: 0.94 }}
-        >
-          <m.span
-            animate={{ x: value ? 1 : 0 }}
-            transition={{ duration: prefersReducedMotion ? 0 : 0.2 }}
-          >
+        {!value && (
+          <span className="vanish-input__prompt-icon" aria-hidden="true">
             <ArrowRight size={15} />
-          </m.span>
-        </m.button>
+          </span>
+        )}
       </form>
     </LazyMotion>
   );
