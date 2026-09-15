@@ -6,6 +6,29 @@
   --color-muted: #69766d;
   --color-terracotta: #b34939;
   --color-line: #dce2d9;
+  --color-sand: #e6dfd3;
+  --color-accent: #24231f;
+  --color-green: #24231f;
+
   --font-serif: "Fraunces", Georgia, serif;
-  --font-sans: "DM Sans", sans-serif;
+  --font-sans: "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-full: 9999px;
+}
+
+/* compatibility aliases while legacy CSS exists */
+:root {
+  --paper: var(--color-paper);
+  --ink: var(--color-ink);
+  --muted: var(--color-muted);
+  --red: var(--color-terracotta);
+  --line: var(--color-line);
+  --serif: var(--font-serif);
+  --sans: var(--font-sans);
+  --accent: var(--color-accent);
+  --green: var(--color-green);
 }
