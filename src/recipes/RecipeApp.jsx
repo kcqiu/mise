@@ -983,7 +983,7 @@ export default function RecipeApp() {
     <div className="recipe-app">
       <a
         href="#recipe-main"
-        className="recipe-skip"
+        className="recipe-skip fixed top-4 left-4 z-[200] bg-ink text-white px-5 py-3.5 -translate-y-[150%] focus:translate-y-0 transition-transform font-medium text-sm rounded shadow-lg"
         onClick={(event) => {
           event.preventDefault();
           document.getElementById("recipe-main")?.focus();
@@ -1064,13 +1064,13 @@ export default function RecipeApp() {
           />
         ) : (
           <main
-            className="empty-state missing-recipe"
+            className="empty-state missing-recipe min-h-[65svh] flex flex-col items-center justify-center text-center p-8 gap-4"
             id="recipe-main"
             tabIndex={-1}
           >
-            <BookOpen size={40} strokeWidth={1.2} />
-            <h1>This recipe isn't on the shelf.</h1>
-            <p>
+            <BookOpen size={40} strokeWidth={1.2} className="text-muted" />
+            <h1 className="font-serif text-3xl font-normal text-ink m-0">This recipe isn't on the shelf.</h1>
+            <p className="text-muted text-sm max-w-md m-0">
               It may be saved on another device. Import your backup to bring it
               here.
             </p>

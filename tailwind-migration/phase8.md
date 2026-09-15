@@ -15,7 +15,7 @@ Retire legacy base reset styles and consolidate global defaults (typography, foc
 - Remove legacy `recipes-base.css` and `recipes-vars.css`.
 
 ## Success Criteria
-- [ ] Global styling consolidated in `@layer base`.
-- [ ] No unstyled native elements or broken focus rings.
-- [ ] Tests pass (155/155).
-- [ ] Clean commit for Phase 8.
+- [x] Global styling consolidated in `@layer base`.
+- [x] No unstyled native elements or broken focus rings.
+- [x] Tests pass (155/155).
+- [x] Clean commit for Phase 8.

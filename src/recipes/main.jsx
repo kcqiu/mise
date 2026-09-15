@@ -3,7 +3,6 @@ import { createRoot } from "react-dom/client";
 import RecipeApp from "./RecipeApp";
 import "../tailwind.css";
 import "../styles/special-effects.css";
-import "./recipes-base.css";
 
 createRoot(document.getElementById("recipe-root")).render(
   <React.StrictMode>
