@@ -1,7 +1,7 @@
 # Tailwind Migration Master To-Do List
 
 - [x] ~~Phase 0: Migration Foundation~~
-- [ ] Phase 1: Leaf Components
+- [x] ~~Phase 1: Leaf Components~~
 - [ ] Phase 2: Shared Controls & Shell
 - [ ] Phase 3: Overlays & Modals
 - [ ] Phase 4: Recipe Shelf

@@ -126,12 +126,12 @@ export function AppHeader({
 
 export function AppFooter() {
   return (
-    <footer className="app-footer">
-      <a href="#/" className="mise-brand">
-        mise<span>.</span>
+    <footer className="app-footer border-t border-line text-[#798577] flex items-center gap-7 min-h-[108px] mt-[72px] w-[min(1312px,calc(100%-48px))] mx-auto">
+      <a href="#/" className="mise-brand text-ink text-[31px] font-serif font-medium leading-[0.9] pb-1 no-underline">
+        mise<span className="text-terracotta">.</span>
       </a>
-      <span>A little less searching. A little more cooking.</span>
-      <Sprout size={23} strokeWidth={1.3} aria-hidden="true" />
+      <span className="text-[11px]">A little less searching. A little more cooking.</span>
+      <Sprout size={23} strokeWidth={1.3} aria-hidden="true" className="ml-auto" />
     </footer>
   );
 }

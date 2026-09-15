@@ -18,8 +18,8 @@ Migrate small, self-contained leaf components where visual regressions are trivi
 6. Commit changes.
 
 ## Success Criteria
-- [ ] All 4 leaf components styled purely with Tailwind utilities.
-- [ ] Owned legacy CSS selectors removed from legacy stylesheet.
-- [ ] Tests pass (155/155).
-- [ ] Clean commit for Phase 1.
+- [x] All 4 leaf components styled purely with Tailwind utilities.
+- [x] Owned legacy CSS selectors removed from legacy stylesheet.
+- [x] Tests pass (155/155).
+- [x] Clean commit for Phase 1.
 
