@@ -30,7 +30,6 @@ values.
 | --- | --- |
 | `VITE_SUPABASE_URL` | Supabase project URL |
 | `VITE_SUPABASE_PUBLISHABLE_KEY` | Browser-safe Supabase key |
-| `VITE_GOOGLE_CLIENT_ID` | Optional Google Identity Services client ID |
 | `GEMINI_API_KEY` | Recipe parsing and refinement |
 | `CHOCODATA_API_KEY` | Optional Instagram caption lookup |
 | `CLOUDFLARE_ACCOUNT_ID` | AI cover generation |

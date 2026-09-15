@@ -7,6 +7,8 @@
 }
 .grocery-toggle-btn {
   color: var(--muted, #6e675f);
+  white-space: nowrap;
+  flex-shrink: 0;
   align-items: center;
   gap: 6px;
   transition: color 0.18s;
@@ -18,20 +20,6 @@
 .grocery-toggle-btn.is-active {
   color: var(--accent, #234d3c);
   font-weight: 600;
-}
-.grocery-add-pill {
-  border-radius: 999px;
-  align-items: center;
-  gap: 6px;
-  padding: 5px 12px;
-  font-size: 12px;
-  transition: all 0.18s;
-  display: inline-flex;
-}
-.grocery-add-pill.is-active {
-  background: var(--accent, #234d3c);
-  color: #fff;
-  border-color: #1a4031;
 }
 /* Grocery list ------------------------------------------------------------ */
 
@@ -731,102 +719,4 @@
 .grocery-guest-merge-modal .button {
   justify-content: center;
   width: 100%;
-}
-.groceries-nav-btn {
-  position: relative;
-  color: var(--ink);
-  cursor: pointer;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 8px;
-  font-size: 14px;
-  font-weight: 500;
-  text-decoration: none;
-  transition: color 0.15s;
-  display: inline-flex;
-  box-shadow: none;
-  background: transparent;
-  border: none;
-}
-.groceries-nav-btn:hover {
-  color: #55534c;
-  background: transparent;
-}
-.groceries-nav-btn.is-active {
-  color: var(--green);
-  background: transparent;
-  border: none;
-  font-weight: 600;
-}
-.add-recipe-button {
-  cursor: pointer;
-  border-radius: 6px;
-  align-items: center;
-  gap: 7px;
-  padding: 9px 18px;
-  font-size: 14px;
-  font-weight: 600;
-  transition:
-    background 0.15s,
-    border-color 0.15s;
-  display: inline-flex;
-  background: #24231f;
-  color: #fff;
-  border: 1px solid #24231f;
-}
-.add-recipe-button:hover {
-  background: #383630;
-  border-color: #383630;
-}
-.account-chip,
-.account-sign-in {
-  cursor: pointer;
-  color: var(--ink);
-  align-items: center;
-  gap: 8px;
-  min-height: 40px;
-  padding: 0 4px;
-  font-size: 14px;
-  font-weight: 500;
-  text-decoration: none;
-  display: inline-flex;
-  box-shadow: none;
-  background: transparent;
-  border: none;
-  transition: opacity 0.15s;
-}
-.account-chip {
-  max-width: 180px;
-  border-radius: 4px;
-}
-.account-chip:hover,
-.account-sign-in:hover {
-  opacity: 0.8;
-  background: transparent;
-}
-.account-avatar-img {
-  object-fit: cover;
-  border-radius: 50%;
-  width: 32px;
-  height: 32px;
-  display: block;
-}
-.account-sign-in__icon {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background: rgba(36, 35, 31, 0.08);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--ink);
-  transition: background 0.15s;
-}
-.account-sign-in:hover .account-sign-in__icon {
-  background: rgba(36, 35, 31, 0.15);
-}
-.account-sign-in > span {
-  color: var(--ink);
-  font-size: 14px;
-  font-weight: 500;
 }

@@ -162,7 +162,7 @@ describe("RecipeDetail unit conversion", () => {
     );
 
     const groceryBtns = screen.getAllByRole("button", { name: "Add to Groceries" });
-    expect(groceryBtns.length).toBeGreaterThan(0);
+    expect(groceryBtns).toHaveLength(1);
 
     await user.click(groceryBtns[0]);
     expect(handleToggleGroceries).toHaveBeenCalledWith("matcha-latte", 2);

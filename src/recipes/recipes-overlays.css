@@ -295,31 +295,6 @@
   width: 28px;
   height: 28px;
 }
-.cooking-progress {
-  align-items: center;
-  gap: 12px;
-  margin-left: auto;
-  display: flex;
-}
-.cooking-progress__bar {
-  background: #e3eae0;
-  border-radius: 999px;
-  width: 120px;
-  height: 7px;
-  overflow: hidden;
-}
-.cooking-progress__fill {
-  background: var(--green);
-  border-radius: 999px;
-  height: 100%;
-  transition: width 0.35s cubic-bezier(0.16, 1, 0.3, 1);
-}
-.cooking-progress__label {
-  color: var(--muted);
-  white-space: nowrap;
-  font-size: 11px;
-  font-weight: 600;
-}
 .account-stats-pills {
   gap: 6px;
   margin: 8px 0;
@@ -337,16 +312,6 @@
   .auth-modal__benefits {
     grid-template-columns: 1fr;
     gap: 10px;
-  }
-  .cooking-progress {
-    justify-content: space-between;
-    width: 100%;
-    margin-top: 8px;
-    margin-left: 0;
-  }
-  .cooking-progress__bar {
-    flex: 1;
-    max-width: 180px;
   }
   .toast-stack {
     width: auto;
@@ -821,19 +786,4 @@ dialog.add-recipe-modal::backdrop {
   color: #70470d;
   background: #f7edd1;
   border-color: #deb666;
-}
-.groceries-badge {
-  background: var(--accent, #234d3c);
-  color: #fff;
-  border-radius: 999px;
-  justify-content: center;
-  align-items: center;
-  min-width: 18px;
-  height: 18px;
-  margin-left: 2px;
-  padding: 0 5px;
-  font-size: 11px;
-  font-weight: 700;
-  line-height: 1;
-  display: inline-flex;
 }

@@ -25,7 +25,6 @@ import {
   setAccountFavorite,
   setAccountProgress,
   signInWithGoogle,
-  signInWithGoogleIdToken,
   signOut,
   watchSession,
   loadAccountGrocerySession,
@@ -938,21 +937,6 @@ export default function RecipeApp() {
       addToast(`Google sign-in could not start: ${error.message}`, "error");
     }
   };
-  const handleAuthModalSignInWithIdToken = async (idToken) => {
-    try {
-      setAccount((prev) => ({ ...prev, loading: true }));
-      const result = await signInWithGoogleIdToken(idToken);
-      if (result?.session) {
-        setAuthModal({ open: false, intent: "signin", error: "" });
-        addToast("Signed in to your cookbook shelf!", "success", "Welcome");
-      }
-    } catch (error) {
-      setAccount((prev) => ({ ...prev, loading: false }));
-      const msg = error.message || "Google sign-in failed.";
-      setAuthModal((prev) => ({ ...prev, error: msg }));
-      addToast(`Sign-in error: ${msg}`, "error");
-    }
-  };
   const closeAuthModal = () => {
     setAuthModal((prev) => ({ ...prev, open: false, error: "" }));
     if (window.location.hash === "#/login") {
@@ -1026,7 +1010,6 @@ export default function RecipeApp() {
         isOpen={authModal.open}
         onClose={closeAuthModal}
         onSignIn={handleAuthModalSignIn}
-        onSignInWithIdToken={handleAuthModalSignInWithIdToken}
         loading={account.loading}
         errorMessage={authModal.error}
         initialIntent={authModal.intent}
