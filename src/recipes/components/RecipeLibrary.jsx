@@ -41,7 +41,7 @@ export default function RecipeLibrary({
     <main id="recipe-main" className="shelf" tabIndex={-1}>
       <section className="shelf-banner" aria-label="Cookbook overview">
         <div className="shelf-banner__left">
-          <div className="eyebrow shelf-intro__label shelf-banner__eyebrow">
+          <div className="eyebrow shelf-banner__eyebrow">
             <span className="little-rule" /> A personal cookbook
           </div>
           <h1 className="shelf-banner__title">
@@ -64,8 +64,8 @@ export default function RecipeLibrary({
       </section>
       <section className="shelf-content" aria-label="Recipes">
         <div className="shelf-tools">
-          <div className="search-row shelf-search-row">
-            <div className="search-field shelf-search-field">
+          <div className="search-row">
+            <div className="search-field">
               <Search size={18} />
               <input
                 type="search"
@@ -85,7 +85,7 @@ export default function RecipeLibrary({
                 </button>
               )}
             </div>
-            <nav className="collection-tabs shelf-collection-tabs" aria-label="Recipe collections">
+            <nav className="collection-tabs" aria-label="Recipe collections">
               <button
                 type="button"
                 className={collection === "all" ? "active" : ""}
@@ -104,11 +104,11 @@ export default function RecipeLibrary({
               </button>
             </nav>
           </div>
-          <div className="category-panel shelf-category-panel">
-            <nav className="category-nav shelf-category-nav" aria-label="Recipe categories">
+          <div className="category-panel">
+            <nav className="category-nav" aria-label="Recipe categories">
               <button
                 type="button"
-                className={`category-pill shelf-category-btn ${!category ? "active" : ""}`}
+                className={`category-pill ${!category ? "active" : ""}`}
                 aria-pressed={!category}
                 onClick={() => set({ category: "" })}
               >
@@ -118,7 +118,7 @@ export default function RecipeLibrary({
                 <button
                   type="button"
                   key={name}
-                  className={`category-pill shelf-category-btn ${category === name ? "active" : ""}`}
+                  className={`category-pill ${category === name ? "active" : ""}`}
                   aria-pressed={category === name}
                   onClick={() => set({ category: name })}
                 >
@@ -129,7 +129,7 @@ export default function RecipeLibrary({
                 </button>
               ))}
             </nav>
-            <label className="sort-control shelf-sort-control">
+            <label className="sort-control">
               <span className="sr-only">Sort recipes</span>
               <select
                 value={sort}
@@ -170,7 +170,7 @@ export default function RecipeLibrary({
           </div>
         )}
         {results.length ? (
-          <div className="recipe-grid recipe-grid--shelf">
+          <div className="recipe-grid--shelf">
             {results.map((recipe) => (
               <RecipeCard
                 key={recipe.id}
@@ -215,4 +215,3 @@ export default function RecipeLibrary({
     </main>
   );
 }
-

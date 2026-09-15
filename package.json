@@ -27,6 +27,8 @@
     "@testing-library/user-event": "^14.6.1",
     "@vitejs/plugin-react": "^6.1.1",
     "jsdom": "^25.0.1",
+    "purgecss": "^8.0.0",
+    "purify-css": "^1.2.5",
     "vite": "^8.2.2",
     "vitest": "^4.1.11"
   }
