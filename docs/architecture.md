@@ -1,72 +1,53 @@
-# MISE architecture
+# Architecture
 
-MISE is a single-page React application built with Vite. Keep feature work within
-the existing boundaries below so visual and persistence concerns do not drift
-back into one large file.
+MISE is a React 19 single-page application built with Vite. It uses hash routes
+for the recipe shelf, recipe details, grocery list, and sign-in flow.
 
-## Frontend boundaries
+## Project layout
 
-- `src/recipes/RecipeApp.jsx` owns application-level state, hash routing, account
-  state, and coordination between recipe and grocery features.
-- `src/recipes/components/` contains rendered views and colocated component tests.
-- `src/recipes/library.js` owns recipe-library parsing, validation, and local
-  persistence.
-- `src/recipes/groceries.js` owns the grocery domain model, normalization,
-  selectors, local queue, and reconciliation logic.
-- `src/recipes/cloud.js` is the browser-side Supabase adapter. Components should
-  not call Supabase directly.
-- `src/recipes/ai.js` is the browser-side adapter for the server AI endpoints.
+- `src/recipes/RecipeApp.jsx` coordinates account, recipe, and grocery state.
+- `src/recipes/components/` contains views and their component tests.
+- `src/recipes/library.js` handles recipe validation, search, and local storage.
+- `src/recipes/groceries.js` contains grocery normalization, selectors, offline
+  mutations, and reconciliation.
+- `src/recipes/cloud.js` is the browser-side Supabase adapter.
+- `src/recipes/ai.js` calls the server-side AI endpoints.
+- `api/ai/` contains Vercel functions for recipe parsing, refinement, and cover
+  generation.
+- `server/` contains server-only helpers.
+- `supabase/migrations/` contains append-only database migrations.
 
-Prefer extracting cohesive helpers from the large orchestration files before
-adding more responsibilities to them. Keep pure domain logic independent from
-React so it can be tested without rendering components.
+Components should not call Supabase directly. Keep domain logic outside React
+components when it can be expressed and tested as a pure function.
 
-## Stylesheet order
+## Data
 
-`src/recipes/main.jsx` imports styles in this cascade order:
+Published recipes live in `src/recipes/data/recipes.json`. Guest data uses browser
+storage. Signed-in data is account-owned in Supabase and protected by row-level
+security. Grocery changes use an offline mutation queue and revisioned server
+updates.
 
-1. `recipes-base.css` — tokens, reset, global shell, and shared controls.
-2. `recipes-detail-editor.css` — recipe detail, cooking flow, and editor.
-3. `recipes-overlays.css` — authentication, toasts, and add-recipe flows.
-4. `recipes-grocery.css` — shared actions, grocery list, and modal surfaces.
-5. `recipes-library.css` — the recipe shelf and its responsive overrides.
+After changing published recipes, run `npm run seed:generate` and commit the
+updated `supabase/seed.sql`.
 
-Keep this order stable. Put a selector in the stylesheet for the feature that
-owns it; do not append a second-generation override to the last file merely to
-win the cascade. If a base rule must be overridden, keep the override close to
-the feature and document why.
+## CSS
 
-`npm run lint:css` checks CSS correctness. `npm run css:audit` enforces a modest
-budget for total bytes, rules, files, and `!important` declarations. Increase a
-budget only after reviewing why the added CSS cannot replace or extend an
-existing rule.
+Styles load in this order:
 
-## Server and data boundaries
+1. `recipes-base.css`
+2. `recipes-detail-editor.css`
+3. `recipes-overlays.css`
+4. `recipes-grocery.css`
+5. `recipes-library.css`
 
-- `api/` contains Vercel request handlers. Secrets belong here, never in a
-  `VITE_` environment variable.
-- `server/` contains server-only helpers shared by request handlers and their
-  tests. Browser code must not import from this directory.
-- `supabase/migrations/` is append-only. Add a new timestamped migration instead
-  of editing a migration that may already have run.
-- `supabase/seed.sql` is generated from the system recipe data. After changing
-  `src/recipes/data/recipes.json`, run `npm run seed:generate` and commit both
-  changes together.
+Keep styles in the file that owns the feature and preserve this import order.
+Avoid adding late overrides solely to win the cascade. `npm run css:audit`
+protects the current CSS size and complexity budget.
 
-## Tests and verification
+## Development
 
-Colocate component tests in `src/recipes/components/`. Keep domain tests beside
-their source modules. Before opening a pull request, run:
-
-```bash
-npm run check
-```
-
-CI runs the same lint, CSS-budget, test, build, and seed-generation checks on
-pull requests to `main`.
-
-## Roadmaps
-
-Future product plans belong in `docs/roadmaps/`, separate from current
-architecture and setup documentation. Roadmaps are not implementation contracts;
-validate them against the current schema and product behavior before starting.
+- Work on feature branches, not `main`.
+- Keep component tests beside their components.
+- Add new database migrations instead of editing applied migrations.
+- Never expose server keys through `VITE_` variables.
+- Run `npm run check` before opening a pull request.
