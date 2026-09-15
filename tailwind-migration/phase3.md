@@ -15,7 +15,7 @@ Migrate modal dialogs and overlays to Tailwind while preserving necessary CSS ex
 - Remove legacy modal classes (`.auth-modal`, `.add-recipe-modal`, `.account-menu`) from legacy stylesheet.
 
 ## Success Criteria
-- [ ] Modals styled with Tailwind utilities.
-- [ ] Dialog backdrop and animations preserved in `special-effects.css`.
-- [ ] Tests pass (155/155).
-- [ ] Clean commit for Phase 3.
+- [x] Modals styled with Tailwind utilities.
+- [x] Dialog backdrop and animations preserved in `special-effects.css`.
+- [x] Tests pass (155/155).
+- [x] Clean commit for Phase 3.
