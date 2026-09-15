@@ -127,18 +127,23 @@ svg {
   width: min(1312px, 100% - 48px);
   margin-inline: auto;
 }
-.app-header {
-  border-bottom: 1px solid var(--line);
-  z-index: 90;
-  background: var(--paper);
-  -webkit-backdrop-filter: blur(12px);
-  justify-content: space-between;
-  align-items: center;
-  height: 76px;
-  transition: background-color 0.2s;
-  display: flex;
+.app-header-wrap {
   position: sticky;
   top: 0;
+  z-index: 90;
+  width: 100%;
+  background: rgba(242, 238, 229, 0.82);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  backdrop-filter: blur(20px) saturate(180%);
+  border-bottom: 1px solid rgba(36, 35, 31, 0.08);
+  box-shadow: 0 4px 20px -2px rgba(36, 35, 31, 0.04);
+  transition: background-color 0.2s ease, box-shadow 0.2s ease;
+}
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 76px;
 }
 .mise-brand {
   font: 500 42px/0.9 var(--serif);

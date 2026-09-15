@@ -1,6 +1,5 @@
-import { Bookmark, Clock, Users } from "lucide-react";
-import RecipeArtwork from "./RecipeArtwork";
-import { totalMinutes } from "../library";
+import { ArrowRight, Bookmark, Clock, Users } from "lucide-react";
+import { RECIPE_IMAGES, totalMinutes } from "../library";
 
 export function formatShelfTime(recipe) {
   const total = totalMinutes(recipe);
@@ -20,6 +19,15 @@ export default function RecipeCard({
 }) {
   const compact = variant === "compact";
   const timeStr = formatShelfTime(recipe);
+  const imageUrl =
+    RECIPE_IMAGES[recipe.artwork] ||
+    (typeof recipe.artwork === "string" &&
+    (recipe.artwork.startsWith("http://") ||
+      recipe.artwork.startsWith("https://") ||
+      recipe.artwork.startsWith("data:image/") ||
+      recipe.artwork.startsWith("/"))
+      ? recipe.artwork
+      : "/recipe/art/cookbook-banner.webp");
 
   return (
     <article
@@ -30,30 +38,39 @@ export default function RecipeCard({
         href={`#/recipe/${recipe.id}`}
         aria-label={`Cook ${recipe.title}`}
       >
-        <RecipeArtwork artwork={recipe.artwork} title={recipe.title} />
+        <div
+          className="recipe-card__bg"
+          style={{ backgroundImage: `url(${imageUrl})` }}
+        />
+        <div className="recipe-card__gradient" />
+
         <div className="recipe-card__body">
-          <div className="recipe-card__header">
-            <h2 className="recipe-card__title">{recipe.title}</h2>
-            {recipe.category && (
-              <span className="recipe-card__category">{recipe.category}</span>
-            )}
-          </div>
+          {recipe.category && (
+            <span className="recipe-card__category">{recipe.category}</span>
+          )}
+          <h2 className="recipe-card__title">{recipe.title}</h2>
           {!compact && recipe.description && (
             <p className="recipe-card__description">{recipe.description}</p>
           )}
           <div className="recipe-card__meta">
             {timeStr && (
               <span className="recipe-card__meta-item">
-                <Clock size={13} strokeWidth={1.75} />
+                <Clock size={13} strokeWidth={2} />
                 <span>{timeStr}</span>
               </span>
             )}
             {recipe.servings && (
               <span className="recipe-card__meta-item">
-                <Users size={13} strokeWidth={1.75} />
-                <span>{recipe.servings}</span>
+                <Users size={13} strokeWidth={2} />
+                <span>
+                  {recipe.servings} {recipe.servings === 1 ? "serving" : "servings"}
+                </span>
               </span>
             )}
+          </div>
+          <div className="recipe-card__action">
+            <span>See Recipe</span>
+            <ArrowRight size={15} strokeWidth={2.2} />
           </div>
         </div>
       </a>
@@ -69,7 +86,7 @@ export default function RecipeCard({
         aria-pressed={favorite}
         title={favorite ? "Remove from favorites" : "Save to favorites"}
       >
-        <Bookmark size={16} fill={favorite ? "currentColor" : "none"} />
+        <Bookmark size={18} strokeWidth={2} fill={favorite ? "currentColor" : "none"} />
       </button>
     </article>
   );

@@ -1,7 +1,19 @@
 export default {
   ignoreFiles: ["dist/**", "node_modules/**", ".vercel/**"],
   rules: {
-    "at-rule-no-unknown": true,
+    "at-rule-no-unknown": [
+      true,
+      {
+        ignoreAtRules: [
+          "theme",
+          "source",
+          "utility",
+          "variant",
+          "custom-variant",
+          "plugin",
+        ],
+      },
+    ],
     "block-no-empty": true,
     "color-no-invalid-hex": true,
     "custom-property-no-missing-var-function": true,

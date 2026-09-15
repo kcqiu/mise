@@ -1,7 +1,15 @@
 import { useMemo } from "react";
-import { BookOpen, Search, X } from "lucide-react";
+import { BookOpen, X } from "lucide-react";
+import { PlaceholdersAndVanishInput } from "../../components/ui/placeholders-and-vanish-input";
 import { createSearch, getCategories, totalMinutes } from "../library";
 import RecipeCard from "./RecipeCard";
+
+const SEARCH_PLACEHOLDERS = [
+  "Search recipes, ingredients, and notes",
+  "Find a quick weeknight dinner",
+  "Look for pasta, mushrooms, or matcha",
+  "Return to a recipe you loved",
+];
 
 export default function RecipeLibrary({
   recipes,
@@ -65,26 +73,12 @@ export default function RecipeLibrary({
       <section className="shelf-content" aria-label="Recipes">
         <div className="shelf-tools">
           <div className="search-row">
-            <div className="search-field">
-              <Search size={18} />
-              <input
-                type="search"
-                value={query}
-                onChange={(event) => set({ query: event.target.value })}
-                placeholder="Search your recipes, ingredients, notes..."
-                aria-label="Search recipes"
-              />
-              {query && (
-                <button
-                  type="button"
-                  className="icon-button"
-                  onClick={() => set({ query: "" })}
-                  aria-label="Clear search"
-                >
-                  <X size={16} />
-                </button>
-              )}
-            </div>
+            <PlaceholdersAndVanishInput
+              placeholders={SEARCH_PLACEHOLDERS}
+              value={query}
+              onChange={(event) => set({ query: event.target.value })}
+              onClear={() => set({ query: "" })}
+            />
             <nav className="collection-tabs" aria-label="Recipe collections">
               <button
                 type="button"
