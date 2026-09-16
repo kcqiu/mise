@@ -36,14 +36,19 @@ export function watchSession(callback) {
   return () => data.subscription.unsubscribe();
 }
 
-export async function signInWithGoogle() {
+export async function signInWithGoogle({ idToken, nonce } = {}) {
   const client = customClient || supabase;
   if (!client) return;
-  const { error } = await client.auth.signInWithOAuth({
+  if (!idToken) {
+    throw new Error("Google did not return a sign-in credential.");
+  }
+  const { data, error } = await client.auth.signInWithIdToken({
     provider: "google",
-    options: { redirectTo: window.location.origin },
+    token: idToken,
+    nonce,
   });
   if (error) throw error;
+  return data;
 }
 
 export function extractAuthErrorFromUrl() {

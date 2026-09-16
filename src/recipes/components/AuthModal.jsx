@@ -1,48 +1,16 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   AlertCircle,
   Bookmark,
   CheckCircle2,
   Cloud,
-  Loader2,
   Lock,
   Sparkles,
   Utensils,
   X,
 } from "lucide-react";
 import IconButton from "../../components/ui/IconButton";
-
-/**
- * Google "G" brand icon SVG (official branding guidelines)
- */
-function GoogleIcon({ size = 18 }) {
-  return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      aria-hidden="true"
-      style={{ flexShrink: 0 }}
-    >
-      <path
-        fill="#4285F4"
-        d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"
-      />
-      <path
-        fill="#34A853"
-        d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.34 24 12 24z"
-      />
-      <path
-        fill="#FBBC05"
-        d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.99 0 12s.45 3.82 1.25 5.42l4.03-3.15z"
-      />
-      <path
-        fill="#EA4335"
-        d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.34 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"
-      />
-    </svg>
-  );
-}
+import GoogleIdentityButton from "./GoogleIdentityButton";
 
 export default function AuthModal({
   isOpen,
@@ -50,10 +18,11 @@ export default function AuthModal({
   onSignIn,
   loading = false,
   errorMessage = "",
+  googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID?.trim(),
   initialIntent = "signin", // 'signin' | 'create' | 'favorite' | 'sync'
 }) {
   const dialogRef = useRef(null);
-  const [connecting, setConnecting] = useState(false);
+  const [clientError, setClientError] = useState("");
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -86,18 +55,17 @@ export default function AuthModal({
       if (dialog.open) {
         dialog.close();
       }
-      setConnecting(false);
+      setClientError("");
     }
   }, [isOpen, onClose]);
 
-  const handleSignIn = async () => {
-    setConnecting(true);
-    try {
-      await onSignIn();
-    } catch {
-      setConnecting(false);
-    }
-  };
+  const handleSignIn = useCallback(
+    (idToken, nonce) => onSignIn({ idToken, nonce }),
+    [onSignIn],
+  );
+  const handleGoogleError = useCallback((error) => {
+    setClientError(error?.message || "Google sign-in could not be loaded.");
+  }, []);
 
   if (!isOpen) return null;
 
@@ -202,36 +170,23 @@ export default function AuthModal({
             </div>
           </div>
 
-          {errorMessage && (
+          {(errorMessage || clientError) && (
             <div className="auth-modal__error flex items-start gap-2.5 p-3.5 mb-5 rounded-lg bg-[#fdf2f0] border border-[#f7ceca] text-[#99281a] text-[13px] leading-[1.45]" role="alert">
               <AlertCircle size={16} className="shrink-0 mt-0.5" />
               <div>
                 <strong className="block uppercase tracking-[0.03em] text-xs mb-0.5">Authentication Notice</strong>
-                <p className="m-0">{errorMessage}</p>
+                <p className="m-0">{errorMessage || clientError}</p>
               </div>
             </div>
           )}
 
           <div className="auth-modal__actions flex flex-col gap-2.5">
-            <button
-              type="button"
-              className="google-sign-in-button w-full min-h-[48px] p-0 rounded-lg border border-[#dadce0] bg-white text-[#3c4043] text-[15px] font-[550] flex items-center justify-center gap-3 shadow-[0_1px_3px_rgba(60,64,67,0.08)] hover:bg-[#f8f9fa] hover:border-[#c6c9ce] hover:-translate-y-px hover:shadow-[0_2px_8px_rgba(60,64,67,0.16)] active:translate-y-0 focus-visible:outline-2 focus-visible:outline-ink focus-visible:outline-offset-2 transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:translate-y-0"
-              onClick={handleSignIn}
-              disabled={loading || connecting}
-              aria-label="Continue with Google"
-            >
-              {connecting || loading ? (
-                <>
-                  <Loader2 size={18} className="spin-icon" />
-                  <span>Connecting to Google...</span>
-                </>
-              ) : (
-                <>
-                  <GoogleIcon size={19} />
-                  <span>Continue with Google</span>
-                </>
-              )}
-            </button>
+            <GoogleIdentityButton
+              clientId={googleClientId}
+              onCredential={handleSignIn}
+              onError={handleGoogleError}
+              disabled={loading}
+            />
 
             <button
               type="button"

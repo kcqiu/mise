@@ -1,4 +1,10 @@
 {
+  "rewrites": [
+    {
+      "source": "/privacy",
+      "destination": "/index.html"
+    }
+  ],
   "headers": [
     {
       "source": "/(.*)",

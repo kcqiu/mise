@@ -1,9 +1,11 @@
 import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import AuthModal from "./AuthModal";
 import ToastStack from "./ToastStack";
 import { extractAuthErrorFromUrl } from "../cloud";
+
+let googleCallback;
 
 beforeEach(() => {
   HTMLDialogElement.prototype.showModal = function () {
@@ -12,16 +14,35 @@ beforeEach(() => {
   HTMLDialogElement.prototype.close = function () {
     this.removeAttribute("open");
   };
+  window.google = {
+    accounts: {
+      id: {
+        initialize: vi.fn((options) => {
+          googleCallback = options.callback;
+        }),
+        renderButton: vi.fn((container) => {
+          const button = document.createElement("button");
+          button.textContent = "Continue with Google";
+          container.appendChild(button);
+        }),
+      },
+    },
+  };
 });
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  googleCallback = undefined;
+  delete window.google;
+});
 
 describe("AuthModal component", () => {
-  it("renders when open and displays title and benefits", () => {
+  it("renders when open and displays title and benefits", async () => {
     render(
       <AuthModal
         isOpen={true}
         onClose={vi.fn()}
         onSignIn={vi.fn()}
+        googleClientId="mise-client.apps.googleusercontent.com"
         initialIntent="signin"
       />,
     );
@@ -30,15 +51,14 @@ describe("AuthModal component", () => {
       screen.getByRole("heading", { name: "Welcome to your kitchen shelf" }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: /Continue with Google/i }),
+      await screen.findByRole("button", { name: /Continue with Google/i }),
     ).toBeInTheDocument();
     expect(screen.getByText("Private Cookbook")).toBeInTheDocument();
     expect(screen.getByText("Cross-Device Sync")).toBeInTheDocument();
     expect(screen.getByText("Cooking Progress")).toBeInTheDocument();
   });
 
-  it("calls onSignIn when Google button is clicked", async () => {
-    const user = userEvent.setup();
+  it("passes the Google credential to onSignIn", async () => {
     const handleSignIn = vi.fn().mockResolvedValue();
 
     render(
@@ -46,13 +66,18 @@ describe("AuthModal component", () => {
         isOpen={true}
         onClose={vi.fn()}
         onSignIn={handleSignIn}
+        googleClientId="mise-client.apps.googleusercontent.com"
       />,
     );
 
-    await user.click(
-      screen.getByRole("button", { name: /Continue with Google/i }),
-    );
-    expect(handleSignIn).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(googleCallback).toEqual(expect.any(Function)));
+    await googleCallback({ credential: "google-id-token" });
+
+    await waitFor(() => expect(handleSignIn).toHaveBeenCalledTimes(1));
+    expect(handleSignIn).toHaveBeenCalledWith({
+      idToken: "google-id-token",
+      nonce: expect.any(String),
+    });
   });
 
   it("calls onClose when close button is clicked", async () => {
@@ -64,6 +89,7 @@ describe("AuthModal component", () => {
         isOpen={true}
         onClose={handleClose}
         onSignIn={vi.fn()}
+        googleClientId="mise-client.apps.googleusercontent.com"
       />,
     );
 
@@ -77,6 +103,7 @@ describe("AuthModal component", () => {
         isOpen={true}
         onClose={vi.fn()}
         onSignIn={vi.fn()}
+        googleClientId="mise-client.apps.googleusercontent.com"
         errorMessage="This account is not approved for MISE."
       />,
     );
@@ -93,6 +120,7 @@ describe("AuthModal component", () => {
         isOpen={true}
         onClose={vi.fn()}
         onSignIn={vi.fn()}
+        googleClientId="mise-client.apps.googleusercontent.com"
         initialIntent="favorite"
       />,
     );
@@ -113,6 +141,7 @@ describe("AuthModal component", () => {
         isOpen={true}
         onClose={vi.fn()}
         onSignIn={vi.fn()}
+        googleClientId="mise-client.apps.googleusercontent.com"
         initialIntent="groceries"
       />,
     );

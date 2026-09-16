@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import { AppHeader } from "./AppShell";
+import { AppFooter, AppHeader } from "./AppShell";
 
 describe("AppHeader", () => {
   it("attaches the grocery count to the bag icon", () => {
@@ -28,5 +28,16 @@ describe("AppHeader", () => {
 
     expect(icon).not.toBeNull();
     expect(icon.querySelector(".groceries-badge")).toHaveTextContent("1");
+  });
+});
+
+describe("AppFooter", () => {
+  it("gives users a public route to the privacy policy", () => {
+    render(<AppFooter />);
+
+    expect(screen.getByRole("link", { name: "Privacy" })).toHaveAttribute(
+      "href",
+      "/privacy",
+    );
   });
 });

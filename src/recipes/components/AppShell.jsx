@@ -158,7 +158,13 @@ export function AppFooter() {
         mise<span className="text-terracotta">.</span>
       </a>
       <span className="text-[11px]">A little less searching. A little more cooking.</span>
-      <Sprout size={23} strokeWidth={1.3} aria-hidden="true" className="ml-auto" />
+      <a
+        href="/privacy"
+        className="ml-auto text-[11px] font-medium underline decoration-line underline-offset-4 transition-colors hover:text-ink"
+      >
+        Privacy
+      </a>
+      <Sprout size={23} strokeWidth={1.3} aria-hidden="true" />
     </footer>
   );
 }
