@@ -394,10 +394,10 @@ export default function GroceryListView({
   };
 
   return (
-    <main className="grocery-page w-full max-w-[1080px] mx-auto px-4 sm:px-6 md:px-9 py-6 pb-24" id="recipe-main">
+    <main className="grocery-page w-[min(1080px,calc(100%-72px))] max-[801px]:w-[calc(100%-36px)] mx-auto py-6 max-[801px]:pt-4 pb-24" id="recipe-main">
       {/* Top navigation toolbar */}
-      <div className="detail-toolbar flex items-center justify-between mb-7 pb-4 border-b border-line">
-        <a className="back-link inline-flex items-center gap-2 text-muted hover:text-ink text-sm font-medium transition-colors" href="#/">
+      <div className="detail-toolbar flex items-center justify-between gap-5 max-[581px]:gap-2.5 mt-[25px] max-[581px]:mt-[15px] mb-[34px] max-[801px]:mb-6 max-[581px]:mb-5">
+        <a className="back-link inline-flex items-center gap-[9px] min-h-[44px] text-[13px] max-[581px]:text-xs text-muted hover:text-terracotta transition-colors duration-150 select-none" href="#/">
           <ArrowLeft size={17} />
           Back to recipes
         </a>
@@ -451,16 +451,14 @@ export default function GroceryListView({
             <button
               type="button"
               className={cn(
-                "awake-toggle grocery-awake-btn inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-medium cursor-pointer transition-colors",
-                awake.enabled
-                  ? "active border-ink bg-ink text-white"
-                  : "border-line bg-white text-muted hover:text-ink"
+                "awake-toggle grocery-awake-btn bg-transparent border-0 inline-flex items-center gap-[9px] max-[801px]:gap-1.5 max-[581px]:py-1 min-h-[44px] text-[11px] max-[581px]:text-[10px] text-ink cursor-pointer select-none",
+                awake.enabled && "active"
               )}
               onClick={awake.toggle}
               aria-pressed={awake.enabled}
               title="Keep screen awake while shopping"
             >
-              <Sun size={15} />
+              <Sun size={15} className="max-[581px]:hidden" />
               <span>{awake.enabled ? "Screen awake" : "Keep awake"}</span>
             </button>
           )}
@@ -485,9 +483,9 @@ export default function GroceryListView({
       )}
 
       {/* Main Header */}
-      <header className="grocery-header my-7">
+      <header className="grocery-header mt-7 mb-6">
         <div className="grocery-title-area">
-          <div className="eyebrow flex items-center gap-2 mb-2 text-terracotta text-xs font-semibold uppercase tracking-wider">
+          <div className="eyebrow flex items-center gap-2.5 text-terracotta text-[10px] leading-[1.5] font-semibold uppercase tracking-[0.08em]">
             Market Bag
           </div>
           <h1 className="font-serif text-ink my-1.5 mb-2 text-[clamp(32px,4vw,44px)] leading-[1.1] font-normal">
@@ -589,7 +587,7 @@ export default function GroceryListView({
             type="submit"
             variant="light"
             size="action"
-            className="grocery-add-submit rounded-xl gap-1.5 px-5"
+            className="grocery-add-submit rounded-xl gap-1.5 px-5 !py-0 !text-[13px] !leading-[1.5] !font-semibold"
             disabled={!customInput.trim()}
           >
             <Plus size={16} />
@@ -604,8 +602,8 @@ export default function GroceryListView({
           <div className="grocery-empty-icon flex items-center justify-center w-20 h-20 mx-auto mb-5 rounded-full bg-[#f4f0e6]/80 text-ink">
             <ShoppingBag size={48} strokeWidth={1.2} />
           </div>
-          <h2 className="font-serif text-ink text-2xl m-0 mb-2 font-normal">Your grocery list is empty</h2>
-          <p className="text-muted text-sm leading-relaxed m-0 mb-6">
+          <h2 className="font-serif text-ink text-2xl leading-[1.5] m-0 mb-2 font-normal">Your grocery list is empty</h2>
+          <p className="text-muted text-sm leading-[1.5] m-0 mb-6">
             Browse recipes on your shelf and tap <strong>&quot;Add to Groceries&quot;</strong> to
             automatically consolidate ingredients by aisle.
           </p>

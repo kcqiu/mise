@@ -186,7 +186,7 @@ export default function RecipeDetail({
   return (
     <main
       id="recipe-main"
-      className="recipe-detail mx-auto pb-24 w-[calc(100%-36px)] min-[581px]:w-[calc(100%-48px)] min-[801px]:w-[calc(100%-72px)] min-[1151px]:w-[min(1080px,calc(100%-72px))] min-[1500px]:w-[min(1360px,calc(100%-160px))] outline-none"
+      className="recipe-detail mx-auto pb-24 w-[calc(100%-36px)] min-[581px]:w-[calc(100%-48px)] min-[801px]:w-[calc(100%-72px)] min-[1151px]:w-[min(1312px,calc(100%-48px))] min-[1500px]:w-[min(1360px,calc(100%-160px))] outline-none"
       tabIndex={-1}
     >
       <div className="detail-toolbar flex items-center justify-between gap-5 max-[580px]:gap-2.5 mt-[25px] max-[580px]:mt-[15px] mb-[34px] max-[800px]:mb-6 max-[580px]:mb-5">
@@ -209,7 +209,7 @@ export default function RecipeDetail({
       </div>
       <header className="detail-header grid grid-cols-[1.12fr_1fr] max-[800px]:grid-cols-[1.1fr_1fr] max-[580px]:flex max-[580px]:flex-col items-center max-[800px]:items-start gap-[72px] max-[1150px]:gap-[38px] max-[800px]:gap-[25px] max-[580px]:gap-6 pb-[42px] max-[580px]:pb-[25px]">
         <div className="detail-heading max-[580px]:order-1 max-[580px]:w-full">
-          <div className="eyebrow flex items-center gap-1.5 text-[10px] max-[580px]:text-[9px] font-semibold tracking-[0.08em] uppercase text-muted">
+          <div className="eyebrow flex items-center gap-2.5 text-[10px] max-[580px]:text-[9px] font-semibold tracking-[0.08em] uppercase text-muted">
             {recipe.category}
             {recipe.cuisine && (
               <>
@@ -221,7 +221,7 @@ export default function RecipeDetail({
           <h1
             ref={titleRef}
             tabIndex={-1}
-            className="font-serif font-normal text-[52px] leading-[1.08] max-[1150px]:text-[43px] max-[800px]:text-[36px] max-[580px]:text-[39px] max-[580px]:leading-[1.12] max-[370px]:text-[34px] break-words outline-none max-w-[530px] max-[580px]:max-w-full my-[21px] max-[580px]:my-3.5 mb-[23px] max-[580px]:mb-[17px] text-ink"
+            className="font-serif font-normal text-[52px] leading-[1.08] max-[1150px]:text-[43px] max-[800px]:text-[36px] max-[580px]:text-[39px] max-[580px]:leading-[1.12] max-[370px]:text-[34px] break-words outline-none max-w-[530px] max-[580px]:max-w-full my-[21px] max-[580px]:mt-[13px] mb-[23px] max-[580px]:mb-[17px] text-ink"
           >
             {recipe.title}
           </h1>
@@ -232,7 +232,7 @@ export default function RecipeDetail({
             {recipe.tags.map((tag) => (
               <span
                 key={tag}
-                className="text-[#586d58] bg-[#e9eee5] rounded-[3px] px-[9px] py-[5px] text-[10px] font-medium"
+                className="text-[#586d58] bg-[#e9eee5] rounded-[3px] px-[9px] py-[5px] text-[10px]"
               >
                 {tag}
               </span>
@@ -244,8 +244,8 @@ export default function RecipeDetail({
                 size={18}
                 className="w-[18px] h-[18px] max-[1150px]:w-[15px] max-[1150px]:h-[15px] max-[800px]:hidden max-[580px]:block max-[580px]:w-4 max-[580px]:h-4 max-[370px]:!hidden shrink-0"
               />
-              <span className="flex flex-col gap-[5px] text-[10px] leading-tight">
-                Prep<strong className="text-ink text-[13px] max-[1150px]:text-xs max-[580px]:text-[13px] font-[550]">{recipe.prepMinutes} min</strong>
+              <span className="flex flex-col gap-[5px] text-[10px]">
+                Prep<strong className="text-ink text-[13px] max-[1150px]:text-xs max-[580px]:text-[13px] leading-[1.5] font-[550]">{recipe.prepMinutes} min</strong>
               </span>
             </div>
             <div className="text-muted flex items-center gap-[9px] max-[1150px]:gap-1.5 max-[580px]:gap-2">
@@ -253,8 +253,8 @@ export default function RecipeDetail({
                 size={18}
                 className="w-[18px] h-[18px] max-[1150px]:w-[15px] max-[1150px]:h-[15px] max-[800px]:hidden max-[580px]:block max-[580px]:w-4 max-[580px]:h-4 max-[370px]:!hidden shrink-0"
               />
-              <span className="flex flex-col gap-[5px] text-[10px] leading-tight">
-                Cook<strong className="text-ink text-[13px] max-[1150px]:text-xs max-[580px]:text-[13px] font-[550]">{recipe.cookMinutes} min</strong>
+              <span className="flex flex-col gap-[5px] text-[10px]">
+                Cook<strong className="text-ink text-[13px] max-[1150px]:text-xs max-[580px]:text-[13px] leading-[1.5] font-[550]">{recipe.cookMinutes} min</strong>
               </span>
             </div>
             <div className="text-muted flex items-center gap-[9px] max-[1150px]:gap-1.5 max-[580px]:gap-2">
@@ -262,9 +262,9 @@ export default function RecipeDetail({
                 size={18}
                 className="w-[18px] h-[18px] max-[1150px]:w-[15px] max-[1150px]:h-[15px] max-[800px]:hidden max-[580px]:block max-[580px]:w-4 max-[580px]:h-4 max-[370px]:!hidden shrink-0"
               />
-              <span className="flex flex-col gap-[5px] text-[10px] leading-tight">
+              <span className="flex flex-col gap-[5px] text-[10px]">
                 Total
-                <strong className="text-ink text-[13px] max-[1150px]:text-xs max-[580px]:text-[13px] font-[550]">{totalMinutes(recipe)} min</strong>
+                <strong className="text-ink text-[13px] max-[1150px]:text-xs max-[580px]:text-[13px] leading-[1.5] font-[550]">{totalMinutes(recipe)} min</strong>
               </span>
             </div>
             <div className="text-muted flex items-center gap-[9px] max-[1150px]:gap-1.5 max-[580px]:gap-2">
@@ -272,8 +272,8 @@ export default function RecipeDetail({
                 size={18}
                 className="w-[18px] h-[18px] max-[1150px]:w-[15px] max-[1150px]:h-[15px] max-[800px]:hidden max-[580px]:block max-[580px]:w-4 max-[580px]:h-4 max-[370px]:!hidden shrink-0"
               />
-              <span className="flex flex-col gap-[5px] text-[10px] leading-tight">
-                Serves<strong className="text-ink text-[13px] max-[1150px]:text-xs max-[580px]:text-[13px] font-[550]">{recipe.servings}</strong>
+              <span className="flex flex-col gap-[5px] text-[10px]">
+                Serves<strong className="text-ink text-[13px] max-[1150px]:text-xs max-[580px]:text-[13px] leading-[1.5] font-[550]">{recipe.servings}</strong>
               </span>
             </div>
           </div>
@@ -305,7 +305,7 @@ export default function RecipeDetail({
           >
             <Bookmark size={20} fill={favorite ? "currentColor" : "none"} />
           </button>
-          <span className="detail-art-caption text-muted font-serif italic text-xs text-right mt-2.5 block max-[580px]:hidden">
+          <span className="detail-art-caption text-muted font-serif italic text-[12px] [line-height:normal] text-right mt-2.5 block max-[580px]:hidden">
             {recipe.example ? "From the starter collection" : "From my kitchen"}
           </span>
         </div>
@@ -388,9 +388,7 @@ export default function RecipeDetail({
               <h2 className="font-serif font-normal text-[31px] max-[800px]:text-[26px] max-[580px]:text-[30px] leading-[1.2] m-0 text-ink">
                 Ingredients
               </h2>
-              <span className="text-muted whitespace-nowrap text-[10px] max-[580px]:text-[11px] block mt-0.5">
-                {recipe.ingredients.length} items
-              </span>
+              <span>{recipe.ingredients.length} items</span>
             </div>
             {onToggleGroceries && (
               <button

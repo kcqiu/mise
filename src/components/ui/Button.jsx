@@ -16,7 +16,7 @@ export const Button = React.forwardRef(function Button(
   const Comp = href ? "a" : Component;
 
   const baseStyles =
-    "inline-flex items-center justify-center font-medium font-sans transition-all duration-150 disabled:opacity-40 disabled:cursor-not-allowed select-none no-underline cursor-pointer";
+    "inline-flex items-center justify-center font-[550] font-sans transition-all duration-150 disabled:opacity-40 disabled:cursor-not-allowed select-none no-underline cursor-pointer";
 
   const sizeStyles = {
     default: "min-h-[44px] px-[19px] py-3 text-[13px] gap-[9px] rounded-[4px]",

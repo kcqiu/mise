@@ -48,23 +48,23 @@ export default function RecipeLibrary({
   const set = (patch) => onState({ ...state, ...patch });
 
   return (
-    <main id="recipe-main" className="shelf w-full max-w-[1312px] mx-auto px-4 md:px-6" tabIndex={-1}>
+    <main id="recipe-main" className="shelf w-[min(1312px,calc(100%-48px))] min-[1500px]:w-[min(1360px,calc(100%-160px))] max-[1151px]:w-[calc(100%-72px)] max-[801px]:w-[calc(100%-48px)] max-[581px]:w-[calc(100%-36px)] mx-auto" tabIndex={-1}>
       <section
-        className="shelf-banner grid grid-cols-1 md:grid-cols-[minmax(0,0.484fr)_minmax(0,1fr)] xl:grid-cols-[420px_868px] items-center gap-[18px] md:gap-5 xl:gap-6 w-full max-w-[1312px] mx-auto mb-6 md:mb-9 pt-4 md:pt-6"
+        className="shelf-banner grid grid-cols-[420px_868px] min-[769px]:max-[1361px]:grid-cols-[minmax(0,0.484fr)_minmax(0,1fr)] max-[769px]:grid-cols-1 items-center gap-6 min-[769px]:max-[1361px]:gap-5 max-[769px]:gap-[18px] w-full max-w-[1312px] mx-auto mb-9 max-[769px]:mb-6 pt-6 max-[769px]:pt-4"
         aria-label="Cookbook overview"
       >
         <div className="shelf-banner__left flex flex-col justify-center min-w-0">
-          <div className="shelf-banner__eyebrow flex items-center gap-2 mb-3 text-terracotta text-xs font-semibold uppercase tracking-wider">
+          <div className="shelf-banner__eyebrow flex items-center gap-2.5 mb-3 text-terracotta text-[10px] leading-[1.5] font-semibold uppercase tracking-wider">
             <span className="little-rule inline-block w-[23px] h-px bg-current shrink-0" /> A personal cookbook
           </div>
-          <h1 className="shelf-banner__title font-serif font-normal text-[34px] md:text-5xl leading-[1.08] tracking-[-0.02em] text-ink m-0 mb-2.5">
-            The recipe <em className="text-ink not-italic italic font-normal">shelf.</em>
+          <h1 className="shelf-banner__title font-serif font-normal text-5xl max-[769px]:text-[34px] leading-[1.08] tracking-[-0.02em] text-ink m-0 mb-2.5">
+            The recipe <em className="text-ink italic font-normal">shelf.</em>
           </h1>
-          <p className="shelf-banner__subtitle text-muted text-sm leading-relaxed m-0">
+          <p className="shelf-banner__subtitle text-muted text-sm leading-[1.5] m-0">
             Good things to make. And make again.
           </p>
         </div>
-        <div className="shelf-banner__image-wrap shrink-0 w-full xl:w-[868px] h-auto xl:h-[220px] aspect-[868/220] rounded-xl md:rounded-2xl overflow-hidden bg-[#e8ede3]">
+        <div className="shelf-banner__image-wrap shrink-0 w-[868px] min-[769px]:max-[1361px]:w-full h-[220px] min-[769px]:max-[1361px]:h-auto min-[769px]:max-[1361px]:aspect-[868/220] max-[769px]:w-full max-[769px]:h-auto max-[769px]:aspect-[868/220] rounded-2xl max-[769px]:rounded-xl overflow-hidden bg-[#e8ede3]">
           <img
             src="/recipe/art/cookbook-banner.webp"
             alt="Artisanal kitchen counter with fresh lemons and olive oil"
@@ -76,15 +76,15 @@ export default function RecipeLibrary({
         </div>
       </section>
       <section className="shelf-content" aria-label="Recipes">
-        <div className="shelf-tools mb-6 md:mb-7 pt-1 md:pt-1.5 pb-4 md:pb-5 border-b border-line">
-          <div className="search-row flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3.5 md:gap-6">
+        <div className="shelf-tools mb-7 max-[769px]:mb-6 pt-1.5 max-[769px]:pt-1 pb-4 max-[769px]:pb-5 border-b border-line">
+          <div className="search-row flex max-[769px]:flex-col items-center max-[769px]:items-stretch justify-between gap-6 max-[769px]:gap-3.5">
             <PlaceholdersAndVanishInput
               placeholders={SEARCH_PLACEHOLDERS}
               value={query}
               onChange={(event) => set({ query: event.target.value })}
               onClear={() => set({ query: "" })}
             />
-            <nav className="collection-tabs flex shrink-0 items-center gap-5 md:gap-6 md:ml-auto pt-0.5 pb-1 md:py-0" aria-label="Recipe collections">
+            <nav className="collection-tabs flex shrink-0 items-center gap-6 max-[769px]:gap-5 ml-auto max-[769px]:ml-0 max-[769px]:pt-0.5 max-[769px]:pb-1" aria-label="Recipe collections">
               <button
                 type="button"
                 className={cn(
@@ -113,8 +113,8 @@ export default function RecipeLibrary({
               </button>
             </nav>
           </div>
-          <div className="category-panel flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 md:gap-4 mt-3 md:mt-3.5">
-            <nav className="category-nav flex flex-nowrap md:flex-wrap items-center gap-2 m-0 p-0 overflow-x-auto max-[768px]:pb-2 max-[768px]:[scrollbar-width:none] max-[768px]:[&::-webkit-scrollbar]:hidden" aria-label="Recipe categories">
+          <div className="category-panel flex max-[769px]:flex-col items-center max-[769px]:items-stretch justify-between gap-4 max-[769px]:gap-3 mt-3.5 max-[769px]:mt-3">
+            <nav className="category-nav flex flex-wrap max-[769px]:flex-nowrap items-center gap-2 m-0 p-0 max-[769px]:overflow-x-auto max-[769px]:px-0.5 max-[769px]:pt-1 max-[769px]:pb-2 max-[769px]:[scrollbar-width:none] max-[769px]:[&::-webkit-scrollbar]:hidden" aria-label="Recipe categories">
               <button
                 type="button"
                 className={cn(
@@ -153,7 +153,7 @@ export default function RecipeLibrary({
                 );
               })}
             </nav>
-            <label className="sort-control inline-flex shrink-0 items-center max-[768px]:justify-end ml-auto">
+            <label className="sort-control inline-flex shrink-0 items-center max-[769px]:justify-end ml-auto">
               <span className="sr-only">Sort recipes</span>
               <select
                 className="h-8 min-h-[32px] pl-1.5 pr-4 border-0 outline-none bg-transparent text-muted hover:text-ink text-[11px] font-semibold tracking-[0.05em] uppercase cursor-pointer transition-colors"
@@ -195,7 +195,7 @@ export default function RecipeLibrary({
           </div>
         )}
         {results.length ? (
-          <div className="recipe-grid--shelf grid grid-cols-1 max-[600px]:grid-cols-1 min-[601px]:grid-cols-2 min-[1151px]:grid-cols-3 gap-5 min-[601px]:gap-[28px_18px] min-[1151px]:gap-[32px_24px] w-full">
+          <div className="recipe-grid--shelf grid grid-cols-3 max-[1151px]:grid-cols-2 max-[601px]:grid-cols-1 gap-[32px_24px] max-[1151px]:gap-[28px_18px] max-[601px]:gap-5 w-full">
             {results.map((recipe) => (
               <RecipeCard
                 key={recipe.id}

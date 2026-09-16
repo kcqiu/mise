@@ -31,6 +31,15 @@ async function route(id) {
 }
 
 describe("personal recipe workflows", () => {
+  it("keeps the production header free of the retired caption", () => {
+    render(<RecipeApp />);
+
+    expect(
+      screen.getByRole("link", { name: "mise. recipe shelf" }),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("Recipes, kept close.")).not.toBeInTheDocument();
+  });
+
   it("filters immediately and saves a favorite across reloads", async () => {
     const user = userEvent.setup();
     const view = render(<RecipeApp />);

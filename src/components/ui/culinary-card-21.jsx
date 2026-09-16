@@ -24,8 +24,8 @@ export function CulinaryGlassCard({
   const imageUrl = recipe.artwork?.url || recipe.artwork || "/recipe/art/cookbook-banner.webp";
 
   return (
-    <div className={cn("culinary-glass-card-wrapper group relative w-full h-full min-h-[480px] max-[600px]:min-h-[420px]", className)}>
-      <div className="culinary-glass-card relative block w-full h-full min-h-[480px] max-[600px]:min-h-[420px] rounded-[20px] overflow-hidden bg-[#24231f] shadow-[0_16px_36px_-8px_rgba(36,35,31,0.28)] transition-all duration-[450ms] [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] group-hover:-translate-y-1 group-hover:scale-[1.02] group-hover:shadow-[0_24px_50px_-10px_rgba(36,35,31,0.42)]">
+    <div className={cn("culinary-glass-card-wrapper group relative w-full h-full min-h-[480px] max-[601px]:min-h-[420px]", className)}>
+      <div className="culinary-glass-card relative block w-full h-full min-h-[480px] max-[601px]:min-h-[420px] rounded-[20px] overflow-hidden bg-[#24231f] shadow-[0_16px_36px_-8px_rgba(36,35,31,0.28)] transition-all duration-[450ms] [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] group-hover:-translate-y-1 group-hover:scale-[1.02] group-hover:shadow-[0_24px_50px_-10px_rgba(36,35,31,0.42)]">
         {/* Full-bleed photography background */}
         <div
           className="culinary-glass-card__bg absolute inset-0 bg-cover [background-position:center_30%] transition-transform duration-600 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] group-hover:scale-108"
@@ -64,7 +64,7 @@ export function CulinaryGlassCard({
         {/* Link & Content area */}
         <a
           href={targetHref}
-          className="culinary-glass-card__content relative z-[2] flex flex-col justify-end h-full p-6 max-[600px]:p-[18px] text-white no-underline box-border focus-visible:outline-2 focus-visible:outline-white focus-visible:-outline-offset-2"
+          className="culinary-glass-card__content relative z-[2] flex flex-col justify-end h-full p-6 max-[601px]:p-[18px] text-white no-underline box-border focus-visible:outline-2 focus-visible:outline-white focus-visible:-outline-offset-2"
           aria-label={`View recipe for ${recipe.title}`}
         >
           {recipe.category && (
@@ -73,7 +73,7 @@ export function CulinaryGlassCard({
             </span>
           )}
 
-          <h3 className="culinary-glass-card__title m-0 mb-2 font-serif text-[26px] max-[600px]:text-[22px] font-medium leading-[1.15] tracking-[-0.01em] text-white [text-shadow:0_2px_8px_rgba(0,0,0,0.3)]">
+          <h3 className="culinary-glass-card__title m-0 mb-2 font-serif text-[26px] max-[601px]:text-[22px] font-medium leading-[1.15] tracking-[-0.01em] text-white [text-shadow:0_2px_8px_rgba(0,0,0,0.3)]">
             {recipe.title}
           </h3>
 

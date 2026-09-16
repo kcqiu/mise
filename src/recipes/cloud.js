@@ -37,8 +37,9 @@ export function watchSession(callback) {
 }
 
 export async function signInWithGoogle() {
-  if (!supabase) return;
-  const { error } = await supabase.auth.signInWithOAuth({
+  const client = customClient || supabase;
+  if (!client) return;
+  const { error } = await client.auth.signInWithOAuth({
     provider: "google",
     options: { redirectTo: window.location.origin },
   });

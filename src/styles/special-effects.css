@@ -1,4 +1,15 @@
 /* Dialog Backdrops and Keyframe Animations */
+.recipe-card__gradient,
+.culinary-glass-card__gradient {
+  background: linear-gradient(
+    to top,
+    rgba(36, 35, 31, 0.96) 0%,
+    rgba(36, 35, 31, 0.72) 38%,
+    rgba(36, 35, 31, 0.2) 65%,
+    transparent 85%
+  );
+}
+
 dialog::backdrop {
   -webkit-backdrop-filter: blur(6px);
   backdrop-filter: blur(6px);

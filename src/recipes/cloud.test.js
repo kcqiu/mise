@@ -6,6 +6,20 @@ describe("Groceries Cloud Synchronization Client", () => {
     cloud.setSupabaseClientForTesting(null);
   });
 
+  it("starts Google OAuth with the current application origin", async () => {
+    const signInWithOAuth = vi.fn().mockResolvedValue({ error: null });
+    cloud.setSupabaseClientForTesting({
+      auth: { signInWithOAuth },
+    });
+
+    await cloud.signInWithGoogle();
+
+    expect(signInWithOAuth).toHaveBeenCalledWith({
+      provider: "google",
+      options: { redirectTo: window.location.origin },
+    });
+  });
+
   it("safely handles unauthenticated calls when cloud is disabled or credentials missing", async () => {
     const loadRes = await cloud.loadAccountGrocerySession(null);
     expect(loadRes.success).toBe(false);

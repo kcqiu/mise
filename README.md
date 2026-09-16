@@ -51,6 +51,14 @@ use a preview deployment when testing the functions in `api/`.
 Authentication, recipe data, favorites, progress, grocery sessions, and cover
 storage are protected by Supabase row-level security policies.
 
+### Google sign-in branding
+
+The Google account chooser displays the Supabase Auth hostname unless the auth
+endpoint is branded. Set the OAuth app name and logo to **MISE** in Google Auth
+Platform, then configure a Supabase custom domain. Add both the custom-domain
+and legacy `supabase.co` callback URLs to the Google OAuth client before
+activating the domain, and use the branded URL for `VITE_SUPABASE_URL`.
+
 ## Checks
 
 ```bash

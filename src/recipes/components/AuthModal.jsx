@@ -136,17 +136,17 @@ export default function AuthModal({
       <div className="auth-modal__card relative rounded-[14px] bg-white border border-line p-8 shadow-[0_24px_64px_rgba(22,38,29,0.22)]">
         <header className="auth-modal__header flex items-center justify-between mb-5">
           <div className="auth-modal__brand flex items-center gap-3">
-            <span className="mise-brand text-2xl font-serif tracking-tight font-medium text-ink">
+            <span className="mise-brand font-serif text-[42px] max-[581px]:text-[38px] font-medium leading-[0.9] text-ink pb-1">
               mise<span className="text-terracotta">.</span>
             </span>
-            <span className="auth-modal__badge inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#ebf2eb] text-ink text-[11px] font-semibold uppercase tracking-[0.04em]">
+            <span className="auth-modal__badge inline-flex items-center gap-1.25 px-2.5 py-1 rounded-full bg-[#ebf2eb] text-ink text-[11px] font-semibold uppercase tracking-[0.04em]">
               <Sparkles size={12} />
               Cook&apos;s Account
             </span>
           </div>
           <IconButton
             variant="default"
-            size="sm"
+            size="default"
             className="auth-modal__close rounded-full"
             onClick={onClose}
             aria-label="Close sign-in dialog"
@@ -163,13 +163,13 @@ export default function AuthModal({
             {intentDescriptions[initialIntent] || intentDescriptions.signin}
           </p>
 
-          <div className="auth-modal__benefits grid grid-cols-1 sm:grid-cols-2 gap-3.5 p-4 mb-6 rounded-[10px] bg-[#f8faf7] border border-[#e5ede3]">
+          <div className="auth-modal__benefits grid grid-cols-1 min-[641px]:grid-cols-2 gap-3.5 max-[641px]:gap-2.5 p-4 mb-6 rounded-[10px] bg-[#f8faf7] border border-[#e5ede3]">
             <div className="auth-benefit flex items-start gap-2.5">
               <div className="auth-benefit__icon text-ink shrink-0 mt-0.5">
                 <Utensils size={16} />
               </div>
               <div>
-                <strong className="block text-ink text-xs font-semibold mb-0.5">Private Cookbook</strong>
+                <strong className="block text-ink text-xs leading-[1.5] font-semibold mb-0.5">Private Cookbook</strong>
                 <span className="block text-muted text-[11px] leading-[1.35]">Create, edit, and keep original recipes safe.</span>
               </div>
             </div>
@@ -178,7 +178,7 @@ export default function AuthModal({
                 <Cloud size={16} />
               </div>
               <div>
-                <strong className="block text-ink text-xs font-semibold mb-0.5">Cross-Device Sync</strong>
+                <strong className="block text-ink text-xs leading-[1.5] font-semibold mb-0.5">Cross-Device Sync</strong>
                 <span className="block text-muted text-[11px] leading-[1.35]">Your shelf is always in sync between phone &amp; desktop.</span>
               </div>
             </div>
@@ -187,7 +187,7 @@ export default function AuthModal({
                 <CheckCircle2 size={16} />
               </div>
               <div>
-                <strong className="block text-ink text-xs font-semibold mb-0.5">Cooking Progress</strong>
+                <strong className="block text-ink text-xs leading-[1.5] font-semibold mb-0.5">Cooking Progress</strong>
                 <span className="block text-muted text-[11px] leading-[1.35]">Active checklist states saved as you prep and cook.</span>
               </div>
             </div>
@@ -196,7 +196,7 @@ export default function AuthModal({
                 <Bookmark size={16} />
               </div>
               <div>
-                <strong className="block text-ink text-xs font-semibold mb-0.5">Quick Favorites</strong>
+                <strong className="block text-ink text-xs leading-[1.5] font-semibold mb-0.5">Quick Favorites</strong>
                 <span className="block text-muted text-[11px] leading-[1.35]">Curate your go-to weekday staples in one tap.</span>
               </div>
             </div>
@@ -215,7 +215,7 @@ export default function AuthModal({
           <div className="auth-modal__actions flex flex-col gap-2.5">
             <button
               type="button"
-              className="google-sign-in-button w-full min-h-[48px] px-4 py-3 rounded-lg border border-[#dadce0] bg-white text-[#3c4043] text-[15px] font-medium flex items-center justify-center gap-3 shadow-[0_1px_3px_rgba(60,64,67,0.08)] hover:bg-[#f8f9fa] hover:border-[#c6c9ce] hover:-translate-y-px hover:shadow-[0_2px_8px_rgba(60,64,67,0.16)] active:translate-y-0 focus-visible:outline-2 focus-visible:outline-ink focus-visible:outline-offset-2 transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:translate-y-0"
+              className="google-sign-in-button w-full min-h-[48px] p-0 rounded-lg border border-[#dadce0] bg-white text-[#3c4043] text-[15px] font-[550] flex items-center justify-center gap-3 shadow-[0_1px_3px_rgba(60,64,67,0.08)] hover:bg-[#f8f9fa] hover:border-[#c6c9ce] hover:-translate-y-px hover:shadow-[0_2px_8px_rgba(60,64,67,0.16)] active:translate-y-0 focus-visible:outline-2 focus-visible:outline-ink focus-visible:outline-offset-2 transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:translate-y-0"
               onClick={handleSignIn}
               disabled={loading || connecting}
               aria-label="Continue with Google"
