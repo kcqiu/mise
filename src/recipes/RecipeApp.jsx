@@ -59,6 +59,10 @@ import useHashRoute from "./useHashRoute";
 import { resolveGroceryCompletion } from "./groceryCompletion";
 import { appendToast } from "./toastQueue";
 
+const GROCERY_AUTH_PROMPT_SEEN_KEY =
+  "mise-groceries-auth-prompt-seen-v1";
+const GROCERY_AUTH_PROMPT_DELAY_MS = 10000;
+
 export default function RecipeApp() {
   const [initial] = useState(readLibrary);
   const [library, setLibrary] = useState(initial.library);
@@ -86,6 +90,13 @@ export default function RecipeApp() {
     collection: "all",
     sort: "collection",
   });
+  const [groceryPromptSeen, setGroceryPromptSeen] = useState(
+    () =>
+      typeof window !== "undefined" &&
+      window.localStorage.getItem(GROCERY_AUTH_PROMPT_SEEN_KEY) === "true",
+  );
+  const [groceryPromptDismissedForVisit, setGroceryPromptDismissedForVisit] =
+    useState(false);
   const [editor, setEditor] = useState(null);
   const [addRecipeModalOpen, setAddRecipeModalOpen] = useState(false);
   const [grocerySession, setGrocerySession] = useState(readGrocerySession);
@@ -369,20 +380,49 @@ export default function RecipeApp() {
     };
   }, []);
 
-  // Bug 7: Lock groceries cart behind login:
-  // Guests can click "Add to Groceries", but once on #/groceries, trigger login/signup after 10 seconds
   useEffect(() => {
-    if (route === "groceries" && !account.session && !account.loading) {
-      const timer = setTimeout(() => {
-        setAuthModal({
-          open: true,
-          intent: "groceries",
-          error: "",
-        });
-      }, 10000);
-      return () => clearTimeout(timer);
+    if (route !== "groceries") {
+      setGroceryPromptDismissedForVisit(false);
+      return undefined;
     }
-  }, [route, account.session, account.loading]);
+
+    if (
+      account.session ||
+      account.loading ||
+      groceryPromptDismissedForVisit ||
+      authModal.open
+    ) {
+      return undefined;
+    }
+
+    const openGroceryAuthPrompt = () => {
+      window.localStorage.setItem(GROCERY_AUTH_PROMPT_SEEN_KEY, "true");
+      setGroceryPromptSeen(true);
+      setAuthModal({
+        open: true,
+        intent: "groceries",
+        error: "",
+      });
+    };
+
+    if (groceryPromptSeen) {
+      openGroceryAuthPrompt();
+      return undefined;
+    }
+
+    const timer = setTimeout(
+      openGroceryAuthPrompt,
+      GROCERY_AUTH_PROMPT_DELAY_MS,
+    );
+    return () => clearTimeout(timer);
+  }, [
+    route,
+    account.session,
+    account.loading,
+    authModal.open,
+    groceryPromptSeen,
+    groceryPromptDismissedForVisit,
+  ]);
 
   useEffect(() => {
     document.title = current
@@ -888,10 +928,25 @@ export default function RecipeApp() {
     if (window.location.hash === "#/login") {
       window.location.hash = "#/";
     }
-    if (route === "groceries" && !account.session) {
-      window.location.hash = "#/";
-      addToast("Please sign in or create an account to use the Groceries bag.", "info");
+    if (
+      authModal.intent === "groceries" &&
+      route === "groceries" &&
+      !account.session
+    ) {
+      setGroceryPromptDismissedForVisit(true);
     }
+  };
+
+  const searchByTag = (tag) => {
+    const query = tag.trim();
+    if (!query) return;
+    setShelfState((state) => ({
+      ...state,
+      query,
+      category: "",
+      collection: "all",
+    }));
+    window.location.hash = "/";
   };
   const endSession = async () => {
     try {
@@ -1002,6 +1057,7 @@ export default function RecipeApp() {
             progress={activeLibrary.progress[current.id]}
             onProgress={(progress) => updateProgress(current.id, progress)}
             onEdit={(recipe) => openEditor(recipe)}
+            onSearchTag={searchByTag}
             isLocal={personalRecipes.some((recipe) => recipe.id === current.id)}
             inGroceries={(grocerySession.recipes || []).some(
               (r) => r.recipeId === current.id,

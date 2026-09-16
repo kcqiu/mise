@@ -136,6 +136,7 @@ export default function RecipeDetail({
   progress = {},
   onProgress,
   onEdit,
+  onSearchTag,
   isLocal,
   inGroceries = false,
   onToggleGroceries,
@@ -230,12 +231,14 @@ export default function RecipeDetail({
           </p>
           <div className="recipe-tags flex flex-wrap gap-2 max-[580px]:gap-1.5 mb-[31px] max-[580px]:mb-[21px]">
             {recipe.tags.map((tag) => (
-              <span
+              <button
+                type="button"
                 key={tag}
-                className="text-[#586d58] bg-[#e9eee5] rounded-[3px] px-[9px] py-[5px] text-[10px]"
+                className="text-[#586d58] bg-[#e9eee5] hover:bg-[#dfe8db] hover:text-[#3f5742] rounded-[3px] border-0 px-[9px] py-[5px] text-[10px] font-[inherit] leading-[inherit] cursor-pointer transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#586d58]"
+                onClick={() => onSearchTag?.(tag)}
               >
                 {tag}
-              </span>
+              </button>
             ))}
           </div>
           <div className="detail-stats border-t border-line grid grid-cols-4 max-[800px]:grid-cols-4 gap-2.5 pt-[22px] max-[580px]:pt-[18px]">
