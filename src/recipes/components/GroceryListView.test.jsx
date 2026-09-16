@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import GroceryListView from "./GroceryListView";
 import { EMPTY_GROCERY_SESSION } from "../groceries";
 
@@ -27,8 +27,26 @@ describe("GroceryListView Component", () => {
       />
     );
 
-    expect(screen.getByText("Your grocery list is empty")).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Your grocery list is empty." }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("Add a recipe or add an item to start a trip."),
+    ).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Browse recipes" })).toBeInTheDocument();
+  });
+
+  it("labels the custom item form as Add an item", () => {
+    render(
+      <GroceryListView
+        session={EMPTY_GROCERY_SESSION}
+        recipes={sampleRecipes}
+        onUpdateSession={vi.fn()}
+      />
+    );
+
+    expect(screen.getByRole("heading", { name: "Add an item" })).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: "Add an item" })).toBeInTheDocument();
   });
 
   it("renders active recipes and aisle checklist when recipes are present", () => {
@@ -181,6 +199,84 @@ describe("GroceryListView Component", () => {
     );
   });
 
+  it("delegates clear completion without emitting a child success toast", async () => {
+    const onCompleteTrip = vi.fn().mockResolvedValue({ ok: true });
+    const onToast = vi.fn();
+    const session = {
+      ...EMPTY_GROCERY_SESSION,
+      recipes: [{ recipeId: "fajitas", servings: 2, addedAt: 100 }],
+    };
+
+    render(
+      <GroceryListView
+        session={session}
+        recipes={sampleRecipes}
+        onCompleteTrip={onCompleteTrip}
+        onToast={onToast}
+      />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /Complete trip/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Clear entire list" }));
+
+    await waitFor(() => {
+      expect(screen.queryByRole("dialog", { name: "Complete Grocery Trip?" })).not.toBeInTheDocument();
+    });
+    expect(onCompleteTrip).toHaveBeenCalledTimes(1);
+    expect(onCompleteTrip).toHaveBeenCalledWith("clear");
+    expect(onToast).not.toHaveBeenCalled();
+  });
+
+  it("delegates rollover without emitting a child success toast", async () => {
+    const onCompleteTrip = vi.fn().mockResolvedValue({ ok: true });
+    const onToast = vi.fn();
+    const session = {
+      ...EMPTY_GROCERY_SESSION,
+      recipes: [{ recipeId: "fajitas", servings: 2, addedAt: 100 }],
+    };
+
+    render(
+      <GroceryListView
+        session={session}
+        recipes={sampleRecipes}
+        onCompleteTrip={onCompleteTrip}
+        onToast={onToast}
+      />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /Complete trip/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Keep unpurchased items/ }));
+
+    await waitFor(() => {
+      expect(screen.queryByRole("dialog", { name: "Complete Grocery Trip?" })).not.toBeInTheDocument();
+    });
+    expect(onCompleteTrip).toHaveBeenCalledTimes(1);
+    expect(onCompleteTrip).toHaveBeenCalledWith("rollover");
+    expect(onToast).not.toHaveBeenCalled();
+  });
+
+  it("keeps the completion dialog open when the parent operation fails", async () => {
+    const onCompleteTrip = vi.fn().mockResolvedValue({ ok: false });
+    const session = {
+      ...EMPTY_GROCERY_SESSION,
+      recipes: [{ recipeId: "fajitas", servings: 2, addedAt: 100 }],
+    };
+
+    render(
+      <GroceryListView
+        session={session}
+        recipes={sampleRecipes}
+        onCompleteTrip={onCompleteTrip}
+      />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /Complete trip/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Clear entire list" }));
+
+    await waitFor(() => expect(onCompleteTrip).toHaveBeenCalledWith("clear"));
+    expect(screen.getByRole("dialog", { name: "Complete Grocery Trip?" })).toBeInTheDocument();
+  });
+
   it("renders sync status badge properly based on syncStatus prop", () => {
     const { rerender } = render(
       <GroceryListView
@@ -308,4 +404,3 @@ describe("GroceryListView Component", () => {
     expect(screen.queryByRole("button", { name: /Organize aisle order/i })).not.toBeInTheDocument();
   });
 });
-

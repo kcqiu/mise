@@ -110,6 +110,14 @@ dialog::backdrop {
 
 .recipe-editor[open] {
   animation: 0.2s ease-out editorIn;
+  inset: 0;
+  margin: auto;
+}
+
+@media (max-width: 580px) {
+  .recipe-editor[open] {
+    margin: 0;
+  }
 }
 
 /* Keep Awake switch track */

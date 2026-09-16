@@ -12,7 +12,6 @@ import {
   Plus,
   RefreshCw,
   Share2,
-  ShoppingBag,
   Sparkles,
   Sun,
   Trash2,
@@ -344,24 +343,28 @@ export default function GroceryListView({
     inputRef.current?.focus();
   };
 
-  const handleClearAll = () => {
+  const handleClearAll = async () => {
+    let result = { ok: true };
     if (onCompleteTrip) {
-      onCompleteTrip("clear");
+      result = await onCompleteTrip("clear");
     } else if (onUpdateSession) {
       onUpdateSession(resetGrocerySession());
     }
-    setCompleteModalOpen(false);
-    onToast?.("Grocery list cleared", "info");
+    if (result?.ok !== false) {
+      setCompleteModalOpen(false);
+    }
   };
 
-  const handleKeepUnchecked = () => {
+  const handleKeepUnchecked = async () => {
+    let result = { ok: true };
     if (onCompleteTrip) {
-      onCompleteTrip("rollover");
+      result = await onCompleteTrip("rollover");
     } else if (onUpdateSession) {
       onUpdateSession(rolloverGrocerySession(session, recipes));
     }
-    setCompleteModalOpen(false);
-    onToast?.("Completed trip; rolled over remaining items into standalone custom items", "success");
+    if (result?.ok !== false) {
+      setCompleteModalOpen(false);
+    }
   };
 
   // --- Export / Share Handlers ---
@@ -394,18 +397,18 @@ export default function GroceryListView({
   };
 
   return (
-    <main className="grocery-page w-[min(1080px,calc(100%-72px))] max-[801px]:w-[calc(100%-36px)] mx-auto py-6 max-[801px]:pt-4 pb-24" id="recipe-main">
+    <main className="grocery-page mx-auto w-[min(1080px,calc(100%_-_72px))] py-6 pb-24 max-[801px]:w-[calc(100%_-_36px)] max-[801px]:pt-4" id="recipe-main">
       {/* Top navigation toolbar */}
-      <div className="detail-toolbar flex items-center justify-between gap-5 max-[581px]:gap-2.5 mt-[25px] max-[581px]:mt-[15px] mb-[34px] max-[801px]:mb-6 max-[581px]:mb-5">
-        <a className="back-link inline-flex items-center gap-[9px] min-h-[44px] text-[13px] max-[581px]:text-xs text-muted hover:text-terracotta transition-colors duration-150 select-none" href="#/">
+      <div className="detail-toolbar mt-[25px] mb-[34px] flex items-center justify-between gap-4 max-[801px]:mb-6 max-[581px]:mt-[15px] max-[581px]:mb-5 max-[581px]:gap-2">
+        <a className="back-link inline-flex min-h-11 shrink-0 items-center gap-2 text-[13px] text-muted transition-colors duration-150 select-none hover:text-ink" href="#/" aria-label="Back to recipes">
           <ArrowLeft size={17} />
-          Back to recipes
+          <span className="max-[430px]:sr-only">Back to recipes</span>
         </a>
-        <div className="grocery-top-actions flex items-center gap-3.5">
+        <div className="grocery-top-actions flex min-w-0 items-center justify-end gap-2.5 max-[581px]:gap-1.5">
           {/* Realtime Sync Status Badge */}
           <div
             className={cn(
-              "grocery-sync-pill select-none rounded-full inline-flex items-center gap-1.5 px-2.5 py-1 text-[11.5px] font-semibold transition-all",
+              "grocery-sync-pill inline-flex min-h-8 items-center gap-1.5 rounded-full px-2.5 py-1 text-[11.5px] font-semibold transition-all select-none max-[430px]:w-8 max-[430px]:justify-center max-[430px]:px-0",
               syncStatus === "saved" && "grocery-sync-pill--saved text-[#2b6e4e] bg-[#2b6e4e]/10",
               syncStatus === "syncing" && "grocery-sync-pill--syncing text-[#a26514] bg-[#a26514]/10",
               syncStatus === "offline" && "grocery-sync-pill--offline text-[#6e675f] bg-[#6e675f]/10"
@@ -425,7 +428,7 @@ export default function GroceryListView({
             ) : (
               <Cloud size={13} />
             )}
-            <span>
+            <span className="max-[430px]:sr-only">
               {syncStatus === "syncing"
                 ? "Syncing..."
                 : syncStatus === "offline"
@@ -438,7 +441,7 @@ export default function GroceryListView({
           {!isEmpty && (
             <button
               type="button"
-              className="icon-button grocery-top-icon-btn inline-flex items-center justify-center w-8 h-8 rounded-lg border border-[#e3ded4] bg-white text-ink hover:bg-[#e3ded4]/35 hover:border-[#b4aca0]/70 cursor-pointer transition-all"
+              className="icon-button grocery-top-icon-btn inline-flex h-9 w-9 items-center justify-center rounded-md border border-[#e3ded4] bg-transparent text-ink transition-colors hover:border-[#b4aca0]/70 hover:bg-[#e3ded4]/35"
               onClick={() => setShareModalOpen(true)}
               aria-label="Share or export grocery list"
               title="Share or export list"
@@ -451,26 +454,27 @@ export default function GroceryListView({
             <button
               type="button"
               className={cn(
-                "awake-toggle grocery-awake-btn bg-transparent border-0 inline-flex items-center gap-[9px] max-[801px]:gap-1.5 max-[581px]:py-1 min-h-[44px] text-[11px] max-[581px]:text-[10px] text-ink cursor-pointer select-none",
-                awake.enabled && "active"
+                "awake-toggle grocery-awake-btn inline-flex min-h-9 items-center gap-2 rounded-md border border-transparent bg-transparent px-2 text-[11px] text-ink transition-colors select-none hover:bg-[#e3ded4]/35 max-[760px]:h-9 max-[760px]:w-9 max-[760px]:justify-center max-[760px]:px-0",
+                awake.enabled && "active bg-[#dce4dd]"
               )}
               onClick={awake.toggle}
               aria-pressed={awake.enabled}
               title="Keep screen awake while shopping"
             >
-              <Sun size={15} className="max-[581px]:hidden" />
-              <span>{awake.enabled ? "Screen awake" : "Keep awake"}</span>
+              <Sun size={15} />
+              <span className="max-[760px]:sr-only">{awake.enabled ? "Screen awake" : "Keep awake"}</span>
             </button>
           )}
 
           {!isEmpty && (
             <button
               type="button"
-              className="text-button grocery-clear-btn inline-flex items-center gap-1.5 text-[13px] font-medium text-muted hover:text-ink cursor-pointer transition-colors"
+              className="grocery-clear-btn inline-flex min-h-10 items-center gap-1.5 rounded-[5px] border border-ink bg-ink px-3 text-[12px] font-semibold text-white transition-colors hover:bg-[#383630] max-[560px]:h-10 max-[560px]:w-10 max-[560px]:justify-center max-[560px]:px-0"
               onClick={() => setCompleteModalOpen(true)}
+              aria-label="Complete trip"
             >
               <CheckCheck size={16} />
-              <span>Complete trip</span>
+              <span className="max-[560px]:sr-only">Complete trip</span>
             </button>
           )}
         </div>
@@ -502,6 +506,7 @@ export default function GroceryListView({
           <div
             className="grocery-progress-bar bg-[#e3ded4]/70 rounded-full w-full h-1.5 mt-3.5 overflow-hidden"
             role="progressbar"
+            aria-label="Grocery trip progress"
             aria-valuenow={derived.progressPercent}
             aria-valuemin={0}
             aria-valuemax={100}
@@ -516,7 +521,7 @@ export default function GroceryListView({
 
       {/* Active Recipes Bar */}
       {derived.activeRecipes.length > 0 && (
-        <section className="grocery-recipes-section border border-[#e3ded4] bg-[#f6f2e9]/70 rounded-2xl mb-6 p-4 md:px-5" aria-label="Recipes in list">
+        <section className="grocery-recipes-section mb-7 border-y border-[#e3ded4] py-4" aria-label="Recipes in list">
           <div className="grocery-section-heading flex items-baseline justify-between mb-3">
             <h2 className="text-ink text-[15px] font-semibold m-0">Recipes in list</h2>
             <span className="text-muted text-xs">
@@ -526,7 +531,7 @@ export default function GroceryListView({
           </div>
           <div className="grocery-recipes-scroller flex gap-3 pb-1.5 overflow-x-auto [scrollbar-width:thin]">
             {derived.activeRecipes.map((r) => (
-              <div className="grocery-recipe-chip flex shrink-0 items-center gap-2.5 min-w-[220px] p-2 md:px-3 rounded-xl border border-[#e3ded4] bg-white shadow-[0_1px_3px_rgba(0,0,0,0.04)]" key={r.recipeId}>
+              <div className="grocery-recipe-chip flex min-w-[220px] shrink-0 items-center gap-2.5 border-r border-[#e3ded4] py-1 pr-4 last:border-r-0" key={r.recipeId}>
                 <div className="grocery-recipe-chip__art shrink-0 w-[38px] h-[38px] rounded-lg overflow-hidden">
                   <RecipeArtwork artwork={r.artwork} title={r.title} />
                 </div>
@@ -572,13 +577,14 @@ export default function GroceryListView({
       )}
 
       {/* Add Custom Ad-hoc Item Input */}
-      <section className="grocery-add-section mb-7" aria-label="Add grocery item">
+      <section className="grocery-add-section mb-8" aria-labelledby="grocery-add-heading">
+        <h2 id="grocery-add-heading" className="mb-2.5 text-sm font-semibold text-ink">Add an item</h2>
         <form className="grocery-add-form flex gap-2.5" onSubmit={handleAddCustomItem}>
           <input
             ref={inputRef}
             type="text"
             className="grocery-add-input flex-1 px-4 py-3 rounded-xl border border-[#e3ded4] bg-white text-ink text-[15px] outline-none shadow-[0_1px_3px_rgba(0,0,0,0.03)] transition-colors focus:border-ink"
-            placeholder="Add an item (e.g. coffee beans, sparkling water, paper towels)..."
+            placeholder="Coffee beans, sparkling water, paper towels…"
             value={customInput}
             onChange={(e) => setCustomInput(e.target.value)}
             aria-label="New grocery item"
@@ -598,14 +604,10 @@ export default function GroceryListView({
 
       {/* Empty State */}
       {isEmpty ? (
-        <div className="grocery-empty-state text-center max-w-[440px] mx-auto py-16 px-5">
-          <div className="grocery-empty-icon flex items-center justify-center w-20 h-20 mx-auto mb-5 rounded-full bg-[#f4f0e6]/80 text-ink">
-            <ShoppingBag size={48} strokeWidth={1.2} />
-          </div>
-          <h2 className="font-serif text-ink text-2xl leading-[1.5] m-0 mb-2 font-normal">Your grocery list is empty</h2>
-          <p className="text-muted text-sm leading-[1.5] m-0 mb-6">
-            Browse recipes on your shelf and tap <strong>&quot;Add to Groceries&quot;</strong> to
-            automatically consolidate ingredients by aisle.
+        <div className="grocery-empty-state max-w-[440px] border-t border-[#e3ded4] py-10">
+          <h2 className="m-0 mb-2 font-serif text-2xl leading-[1.3] font-normal text-ink">Your grocery list is empty.</h2>
+          <p className="m-0 mb-6 text-sm leading-[1.6] text-muted">
+            Add a recipe or add an item to start a trip.
           </p>
           <Button as="a" href="#/" variant="primary" size="default" className="grocery-browse-btn inline-flex">
             Browse recipes

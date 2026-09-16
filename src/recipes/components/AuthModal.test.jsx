@@ -150,6 +150,20 @@ describe("ToastStack component", () => {
     await user.click(closeButtons[0]);
     expect(handleDismiss).toHaveBeenCalledWith("1");
   });
+
+  it("centers notifications above the mobile safe area and restores desktop right alignment", () => {
+    render(
+      <ToastStack
+        toasts={[{ id: "1", message: "Saved", type: "success" }]}
+        onDismiss={vi.fn()}
+      />,
+    );
+
+    const stack = screen.getByLabelText("Notifications");
+    expect(stack).toHaveClass("left-1/2", "-translate-x-1/2");
+    expect(stack.className).toContain("env(safe-area-inset-bottom)");
+    expect(stack).toHaveClass("sm:left-auto", "sm:right-6", "sm:translate-x-0");
+  });
 });
 
 describe("extractAuthErrorFromUrl helper", () => {

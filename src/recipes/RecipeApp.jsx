@@ -45,8 +45,6 @@ import {
   mergeGuestIntoAccountSession,
   generateUUID,
   getDeviceId,
-  resetGrocerySession,
-  rolloverGrocerySession,
   EMPTY_GROCERY_SESSION,
 } from "./groceries";
 import RecipeLibrary from "./components/RecipeLibrary";
@@ -58,6 +56,8 @@ import ToastStack from "./components/ToastStack";
 import GroceryListView from "./components/GroceryListView";
 import { AppFooter, AppHeader } from "./components/AppShell";
 import useHashRoute from "./useHashRoute";
+import { resolveGroceryCompletion } from "./groceryCompletion";
+import { appendToast } from "./toastQueue";
 
 export default function RecipeApp() {
   const [initial] = useState(readLibrary);
@@ -124,15 +124,16 @@ export default function RecipeApp() {
 
   const addToast = (message, type = "info", title = "") => {
     if (!message) return;
-    setToasts((prev) => [
-      ...prev.slice(-4),
-      {
-        id: `toast-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    const createdAt = Date.now();
+    setToasts((prev) =>
+      appendToast(prev, {
+        id: `toast-${createdAt}-${Math.random().toString(36).slice(2, 6)}`,
         message,
         type,
         title,
-      },
-    ]);
+        createdAt,
+      }),
+    );
   };
   const dismissToast = (id) => {
     setToasts((prev) => prev.filter((t) => t.id !== id));
@@ -262,100 +263,45 @@ export default function RecipeApp() {
 
   const handleCompleteTrip = async (action) => {
     const userId = account.session?.user?.id || null;
-    if (!userId) {
-      const nextSession =
-        action === "clear"
-          ? resetGrocerySession()
-          : rolloverGrocerySession(grocerySession, recipes);
-      setGrocerySession(nextSession);
-      saveGrocerySession(nextSession, null);
-      addToast(
-        action === "clear"
-          ? "Grocery list cleared"
-          : "Completed trip; unpurchased items rolled over",
-        "success",
-      );
-      return;
-    }
-
-    if (typeof navigator !== "undefined" && !navigator.onLine) {
-      addToast("Internet connection required to complete trip", "error");
-      return;
-    }
-
-    setSyncStatus("syncing");
     const newSessionId = generateUUID();
-    let rolloverCustom = [];
-    if (action === "rollover") {
-      const rolled = rolloverGrocerySession(
-        grocerySession,
-        recipes,
-        newSessionId,
-      );
-      rolloverCustom = rolled.customItems || [];
-    }
+    const isOnline = typeof navigator === "undefined" || navigator.onLine;
 
-    try {
-      const res = await completeAccountGrocerySession(
-        userId,
-        grocerySession.id,
-        action,
-        rolloverCustom,
-        newSessionId,
-        grocerySession.revision,
-      );
+    if (userId && isOnline) setSyncStatus("syncing");
 
-      if (res && res.success) {
-        const nextActive = res.activeSession || EMPTY_GROCERY_SESSION;
-        clearGroceryQueue(userId);
-        setGrocerySession(nextActive);
-        saveGrocerySession(nextActive, userId);
-        setSyncStatus("saved");
+    const result = await resolveGroceryCompletion({
+      action,
+      userId,
+      isOnline,
+      session: grocerySession,
+      recipes,
+      newSessionId,
+      completeRemote: completeAccountGrocerySession,
+    });
 
-        broadcastGroceryMutations(grocerySession.id, {
-          completedSessionId: grocerySession.id,
-          activeSession: nextActive,
-        });
-
-        addToast(
-          action === "clear"
-            ? "Grocery list cleared"
-            : "Completed trip; unpurchased items rolled over",
-          "success",
-        );
-        return;
-      } else if (res && res.code === "REVISION_CONFLICT") {
-        setSyncStatus("saved");
-        addToast(
-          "Could not complete trip: your list was updated on another device. Please review the latest list.",
-          "error",
-        );
-        if (res.session) {
-          setGrocerySession(res.session);
-          saveGrocerySession(res.session, userId);
-        }
-        return;
+    if (!result.ok) {
+      setSyncStatus(isOnline ? "saved" : "offline");
+      if (result.latestSession) {
+        setGrocerySession(result.latestSession);
+        saveGrocerySession(result.latestSession, userId);
       }
-    } catch {
-      // Graceful fallback below
+      addToast(result.error, "error");
+      return result;
     }
 
-    // Fallback: If cloud RPC fails or table/RPC is not yet migrated,
-    // finalize trip locally in localStorage so user's cart is never stuck
-    const nextSession =
-      action === "clear"
-        ? resetGrocerySession(newSessionId)
-        : rolloverGrocerySession(grocerySession, recipes, newSessionId);
-    clearGroceryQueue(userId);
-    setGrocerySession(nextSession);
-    saveGrocerySession(nextSession, userId);
+    if (result.clearQueue) clearGroceryQueue(userId);
+    setGrocerySession(result.nextSession);
+    saveGrocerySession(result.nextSession, userId);
     setSyncStatus("saved");
-    addToast(
-      action === "clear"
-        ? "Grocery list cleared"
-        : "Completed trip; unpurchased items rolled over",
-      "success",
-    );
+
+    if (result.broadcast) {
+      broadcastGroceryMutations(grocerySession.id, {
+        completedSessionId: grocerySession.id,
+        activeSession: result.nextSession,
+      });
+    }
+
+    addToast(result.message, "success");
+    return result;
   };
 
   const toggleRecipeInGroceries = (recipeId, servings) => {

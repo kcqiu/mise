@@ -22,7 +22,7 @@ export default function ToastStack({ toasts, onDismiss }) {
 
   return (
     <aside
-      className="toast-stack fixed bottom-4 right-4 sm:bottom-6 sm:right-6 left-4 sm:left-auto z-[1000] flex flex-col gap-2.5 w-auto sm:w-[calc(100%-48px)] sm:max-w-[420px] pointer-events-none"
+      className="toast-stack fixed bottom-[max(1rem,env(safe-area-inset-bottom))] left-1/2 right-auto -translate-x-1/2 sm:bottom-6 sm:left-auto sm:right-6 sm:translate-x-0 z-[1000] flex w-[calc(100%-2rem)] max-w-[420px] flex-col gap-2.5 pointer-events-none sm:w-auto sm:min-w-[320px]"
       aria-label="Notifications"
       aria-live="polite"
     >

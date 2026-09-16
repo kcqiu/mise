@@ -10,6 +10,7 @@ import {
 import userEvent from "@testing-library/user-event";
 import RecipeApp from "./RecipeApp";
 import { STORAGE_KEY } from "./library";
+import { STORAGE_KEY_GROCERIES } from "./groceries";
 
 beforeEach(() => {
   window.localStorage.clear();
@@ -62,6 +63,38 @@ describe("personal recipe workflows", () => {
     expect(
       screen.getByRole("heading", { name: "Garlic butter ribeye" }),
     ).toBeInTheDocument();
+  });
+
+  it("explains an empty favorites shelf and offers the next action", async () => {
+    const user = userEvent.setup();
+    render(<RecipeApp />);
+
+    await user.click(screen.getByRole("button", { name: "Favorites" }));
+
+    expect(
+      screen.getByRole("heading", { name: "No favorites yet." }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("Save a recipe with the bookmark to keep it here."),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Browse all recipes" }),
+    ).toBeInTheDocument();
+  });
+
+  it("offers to clear filters when a search has no results", async () => {
+    const user = userEvent.setup();
+    render(<RecipeApp />);
+
+    await user.type(screen.getByRole("searchbox"), "definitely-not-a-recipe");
+
+    expect(
+      screen.getByRole("heading", { name: "No recipes found." }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("Try another ingredient or clear your filters."),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Clear filters" })).toBeInTheDocument();
   });
   it("scales ingredients and remembers cooking checklists", async () => {
     const user = userEvent.setup();
@@ -263,5 +296,74 @@ describe("personal recipe workflows", () => {
     expect(window.location.hash).toBe("#/");
 
     vi.useRealTimers();
+  });
+
+  it("emits exactly one toast when a guest clears a grocery trip", async () => {
+    const user = userEvent.setup();
+    window.localStorage.setItem(
+      STORAGE_KEY_GROCERIES,
+      JSON.stringify({
+        id: "guest-trip",
+        status: "active",
+        revision: 1,
+        recipes: [],
+        customItems: [
+          {
+            id: "coffee",
+            name: "Coffee beans",
+            quantity: null,
+            unit: "",
+            category: "Pantry",
+            note: "",
+            status: "unchecked",
+            updatedAt: 1,
+          },
+        ],
+        itemOverrides: {},
+      }),
+    );
+    window.history.replaceState(null, "", "/recipe/#/groceries");
+
+    render(<RecipeApp />);
+    await user.click(screen.getByRole("button", { name: /Complete trip/ }));
+    await user.click(screen.getByRole("button", { name: "Clear entire list" }));
+
+    expect(await screen.findByText("Grocery list cleared")).toBeInTheDocument();
+    expect(screen.getAllByText("Grocery list cleared")).toHaveLength(1);
+  });
+
+  it("emits exactly one toast when a guest rolls over remaining items", async () => {
+    const user = userEvent.setup();
+    window.localStorage.setItem(
+      STORAGE_KEY_GROCERIES,
+      JSON.stringify({
+        id: "guest-trip",
+        status: "active",
+        revision: 1,
+        recipes: [],
+        customItems: [
+          {
+            id: "coffee",
+            name: "Coffee beans",
+            quantity: null,
+            unit: "",
+            category: "Pantry",
+            note: "",
+            status: "unchecked",
+            updatedAt: 1,
+          },
+        ],
+        itemOverrides: {},
+      }),
+    );
+    window.history.replaceState(null, "", "/recipe/#/groceries");
+
+    render(<RecipeApp />);
+    await user.click(screen.getByRole("button", { name: /Complete trip/ }));
+    await user.click(screen.getByRole("button", { name: /Keep unpurchased items/ }));
+
+    const message = "Completed trip; unpurchased items rolled over";
+    expect(await screen.findByText(message)).toBeInTheDocument();
+    expect(screen.getAllByText(message)).toHaveLength(1);
   });
 });

@@ -321,10 +321,10 @@ export default function RecipeEditor({
     <dialog
       ref={dialog}
       className={cn(
-        "recipe-editor text-ink bg-paper border border-line rounded-lg p-0 shadow-[0_25px_100px_#10241b33]",
-        "w-[min(720px,calc(100%-32px))] max-h-[90svh] overflow-y-auto",
-        "max-[580px]:w-full max-[580px]:max-w-none max-[580px]:h-[100svh] max-[580px]:max-h-[100svh] max-[580px]:m-0 max-[580px]:rounded-none max-[580px]:border-0"
+        "recipe-editor m-auto w-[min(920px,calc(100vw_-_48px))] max-w-none max-h-[calc(100svh_-_48px)] overflow-hidden rounded-lg border border-line bg-paper p-0 text-ink shadow-[0_25px_100px_#10241b33]",
+        "max-[580px]:m-0 max-[580px]:h-[100svh] max-[580px]:max-h-[100svh] max-[580px]:w-screen max-[580px]:rounded-none max-[580px]:border-0"
       )}
+      data-layout="centered-workspace"
       aria-labelledby="editor-title"
       onCancel={(event) => {
         if (filePickerActiveRef.current || event.target !== dialog.current) {
@@ -335,8 +335,12 @@ export default function RecipeEditor({
         onClose();
       }}
     >
-      <form onSubmit={submit}>
-        <div className="editor-header sticky top-0 z-[2] bg-paper border-b border-line flex items-center justify-between gap-3.5 px-8 pt-6 pb-5 max-[580px]:px-5 max-[580px]:pt-[22px] max-[580px]:pb-[17px]">
+      <form
+        className="flex max-h-[inherit] min-h-0 flex-col max-[580px]:h-full"
+        aria-label="Recipe editor form"
+        onSubmit={submit}
+      >
+        <div className="editor-header z-[2] flex shrink-0 items-center justify-between gap-3.5 border-b border-line bg-paper px-8 pt-6 pb-5 max-[580px]:px-5 max-[580px]:pt-[max(22px,env(safe-area-inset-top))] max-[580px]:pb-[17px]">
           <div>
             <span className="eyebrow block text-[10px] font-semibold tracking-[0.08em] uppercase text-muted">
               From your kitchen
@@ -385,7 +389,11 @@ export default function RecipeEditor({
             {polishNotice}
           </div>
         )}
-        <div className="editor-content px-8 pt-[26px] pb-[30px] max-[580px]:px-5 max-[580px]:py-[23px]">
+        <div
+          className="editor-content min-h-0 flex-1 overflow-y-auto overscroll-contain px-8 pt-[26px] pb-[30px] max-[580px]:px-5 max-[580px]:py-[23px]"
+          role="region"
+          aria-label="Recipe fields"
+        >
           <label className="block mb-[19px] text-xs font-[550] leading-[1.6]">
             Recipe name
             <input
@@ -712,7 +720,7 @@ export default function RecipeEditor({
                     onChange={(event) =>
                       setItem("ingredients", index, "note", event.target.value)
                     }
-                    className="w-full min-h-[35px] text-ink bg-transparent border border-[#e1e6dd] rounded-[4px] m-0 px-3 py-1 text-xs max-[580px]:text-sm placeholder:text-[#929b90] focus:outline-none focus:border-ink/50 transition-colors"
+                    className="m-0 min-h-[40px] w-full rounded-[4px] border border-[#e1e6dd] bg-transparent px-3 py-1.5 text-sm text-ink transition-colors placeholder:text-[#929b90] focus:border-ink/50 focus:outline-none max-[580px]:text-base"
                   />
                 </label>
                 <label className="col-span-3 mb-2">
@@ -724,7 +732,7 @@ export default function RecipeEditor({
                     onChange={(event) =>
                       setItem("ingredients", index, "group", event.target.value)
                     }
-                    className="w-full min-h-[35px] text-ink bg-transparent border border-[#e1e6dd] rounded-[4px] m-0 px-3 py-1 text-xs max-[580px]:text-sm placeholder:text-[#929b90] focus:outline-none focus:border-ink/50 transition-colors"
+                    className="m-0 min-h-[40px] w-full rounded-[4px] border border-[#e1e6dd] bg-transparent px-3 py-1.5 text-sm text-ink transition-colors placeholder:text-[#929b90] focus:border-ink/50 focus:outline-none max-[580px]:text-base"
                   />
                 </label>
               </div>
@@ -864,9 +872,13 @@ export default function RecipeEditor({
             </label>
           </details>
           {isLocal && (
-            <div className="delete-recipe flex flex-wrap items-center gap-[15px] mt-[25px] text-xs">
+            <div className="delete-recipe mt-8 flex flex-wrap items-center justify-between gap-4 border-t border-[#ecd3ce] pt-5 text-xs">
+              <div>
+                <span className="mb-1 block text-[10px] font-semibold uppercase tracking-[0.08em] text-[#a5382b]">Danger zone</span>
+                <p className="m-0 text-[13px] text-muted">Remove this recipe permanently.</p>
+              </div>
               {confirmDelete ? (
-                <>
+                <div className="flex flex-wrap items-center justify-end gap-3">
                   <span className="text-ink">
                     {isCloud
                       ? "Delete this recipe from your cookbook?"
@@ -886,7 +898,7 @@ export default function RecipeEditor({
                   >
                     Keep it
                   </TextButton>
-                </>
+                </div>
               ) : (
                 <TextButton
                   type="button"
@@ -900,7 +912,11 @@ export default function RecipeEditor({
             </div>
           )}
         </div>
-        <div className="editor-footer sticky bottom-0 z-[2] bg-paper border-t border-line flex flex-wrap items-center justify-between gap-3 px-8 py-[17px] max-[580px]:px-5 max-[580px]:py-3.5 max-[580px]:pb-[max(14px,env(safe-area-inset-bottom))] max-[580px]:gap-2.5">
+        <div
+          className="editor-footer z-[2] flex shrink-0 flex-wrap items-center justify-between gap-3 border-t border-line bg-paper px-8 py-[17px] max-[580px]:gap-2.5 max-[580px]:px-5 max-[580px]:py-3.5 max-[580px]:pb-[max(14px,env(safe-area-inset-bottom))]"
+          role="group"
+          aria-label="Editor actions"
+        >
           {error && (
             <p className="form-error w-full max-w-none text-xs text-[#a5382b] m-0" role="alert">
               {error}

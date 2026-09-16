@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { BookOpen, X } from "lucide-react";
+import { X } from "lucide-react";
 import { PlaceholdersAndVanishInput } from "../../components/ui/placeholders-and-vanish-input";
 import Button from "../../components/ui/Button";
 import { createSearch, getCategories, totalMinutes } from "../library";
@@ -46,6 +46,9 @@ export default function RecipeLibrary({
     return selected;
   }, [search, query, category, collection, favorites, sort]);
   const set = (patch) => onState({ ...state, ...patch });
+  const isEmptyFavorites =
+    collection === "favorites" && !query && !category;
+  const hasActiveFilters = Boolean(query || category);
 
   return (
     <main id="recipe-main" className="shelf w-[min(1312px,calc(100%-48px))] min-[1500px]:w-[min(1360px,calc(100%-160px))] max-[1151px]:w-[calc(100%-72px)] max-[801px]:w-[calc(100%-48px)] max-[581px]:w-[calc(100%-36px)] mx-auto" tabIndex={-1}>
@@ -207,17 +210,14 @@ export default function RecipeLibrary({
             ))}
           </div>
         ) : (
-          <div className="empty-state flex flex-col items-center pt-[76px] px-[22px] pb-[100px] text-muted text-center">
-            <BookOpen size={38} strokeWidth={1.2} className="text-muted" />
-            <h2 className="font-serif font-normal text-[30px] leading-[1.2] text-ink my-6 mb-3">
-              {collection === "favorites" && !query && !category
-                ? "A shelf for your favorites."
-                : "Nothing on the shelf. Yet."}
+          <div className="empty-state flex max-w-[460px] flex-col items-start border-t border-line pt-10 pb-24 text-left text-muted">
+            <h2 className="mt-0 mb-3 font-serif text-[30px] leading-[1.2] font-normal text-ink">
+              {isEmptyFavorites ? "No favorites yet." : "No recipes found."}
             </h2>
-            <p className="max-w-[390px] text-sm leading-[1.6] text-muted mb-2.5">
-              {collection === "favorites" && !query && !category
+            <p className="mb-2.5 max-w-[390px] text-sm leading-[1.6] text-muted">
+              {isEmptyFavorites
                 ? "Save a recipe with the bookmark to keep it here."
-                : "Try another ingredient, or clear your filters."}
+                : "Try another ingredient or clear your filters."}
             </p>
             <Button
               variant="light"
@@ -227,7 +227,7 @@ export default function RecipeLibrary({
                 set({ query: "", category: "", collection: "all" })
               }
             >
-              Browse all recipes
+              {hasActiveFilters ? "Clear filters" : "Browse all recipes"}
             </Button>
           </div>
         )}
