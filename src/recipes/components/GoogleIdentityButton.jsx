@@ -21,11 +21,13 @@ function loadGoogleIdentityServices() {
         resolve(window.google);
       } else {
         googleScriptPromise = undefined;
+        script.remove();
         reject(new Error("Google sign-in could not be loaded."));
       }
     };
     const handleError = () => {
       googleScriptPromise = undefined;
+      script.remove();
       reject(new Error("Google sign-in could not be loaded."));
     };
 

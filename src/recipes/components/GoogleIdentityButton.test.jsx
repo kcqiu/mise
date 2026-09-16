@@ -5,6 +5,7 @@ import GoogleIdentityButton from "./GoogleIdentityButton";
 afterEach(() => {
   cleanup();
   delete window.google;
+  document.getElementById("google-identity-services")?.remove();
 });
 
 describe("GoogleIdentityButton", () => {
@@ -60,5 +61,37 @@ describe("GoogleIdentityButton", () => {
       screen.getByText("Google sign-in is not configured."),
     ).toBeInTheDocument();
     expect(onError).not.toHaveBeenCalled();
+  });
+
+  it("replaces a failed Google script so sign-in can retry", async () => {
+    const firstError = vi.fn();
+    const firstRender = render(
+      <GoogleIdentityButton
+        clientId="mise-client.apps.googleusercontent.com"
+        onCredential={vi.fn()}
+        onError={firstError}
+      />,
+    );
+
+    const failedScript = document.getElementById("google-identity-services");
+    expect(failedScript).not.toBeNull();
+    failedScript.dispatchEvent(new Event("error"));
+
+    await waitFor(() => expect(firstError).toHaveBeenCalledTimes(1));
+    firstRender.unmount();
+
+    render(
+      <GoogleIdentityButton
+        clientId="mise-client.apps.googleusercontent.com"
+        onCredential={vi.fn()}
+        onError={vi.fn()}
+      />,
+    );
+
+    await waitFor(() => {
+      const retryScript = document.getElementById("google-identity-services");
+      expect(retryScript).not.toBeNull();
+      expect(retryScript).not.toBe(failedScript);
+    });
   });
 });

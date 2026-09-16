@@ -19,5 +19,9 @@ describe("PrivacyPolicy", () => {
       "href",
       "/#/",
     );
+    expect(screen.getByRole("link", { name: "Terms" })).toHaveAttribute(
+      "href",
+      "/terms",
+    );
   });
 });

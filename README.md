@@ -58,8 +58,9 @@ MISE uses Google Identity Services to obtain a Google ID token, then exchanges
 that token for the existing Supabase session. In Google Auth Platform:
 
 1. Add the app's deployment URL as an Authorized JavaScript Origin.
-2. Set the OAuth app name and logo to **MISE**, then verify and publish the
-   branding.
+2. Set the OAuth app name and logo to **MISE**. Use the public homepage,
+   `/privacy`, and `/terms` URLs from the same verified deployment domain,
+   then verify and publish the branding.
 3. Use the same Web OAuth client ID configured for the Supabase Google provider
    as `VITE_GOOGLE_CLIENT_ID`. Keep the client secret server-side in Supabase.
 

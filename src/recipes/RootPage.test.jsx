@@ -9,5 +9,15 @@ describe("RootPage", () => {
     expect(
       screen.getByRole("heading", { name: "Privacy policy." }),
     ).toBeInTheDocument();
+    expect(document.title).toBe("Privacy policy | mise.");
+  });
+
+  it("serves the terms at the public terms path", () => {
+    render(<RootPage pathname="/terms" />);
+
+    expect(
+      screen.getByRole("heading", { name: "Terms of service." }),
+    ).toBeInTheDocument();
+    expect(document.title).toBe("Terms of service | mise.");
   });
 });

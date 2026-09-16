@@ -182,6 +182,12 @@ export default function PrivacyPolicy() {
             mise<span className="text-terracotta">.</span>
           </span>
           <span>A personal cookbook, kept close.</span>
+          <a
+            href="/terms"
+            className="ml-auto font-medium underline decoration-line underline-offset-4 transition-colors hover:text-ink"
+          >
+            Terms
+          </a>
         </div>
       </footer>
     </div>

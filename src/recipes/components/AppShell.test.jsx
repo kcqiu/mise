@@ -39,5 +39,9 @@ describe("AppFooter", () => {
       "href",
       "/privacy",
     );
+    expect(screen.getByRole("link", { name: "Terms" })).toHaveAttribute(
+      "href",
+      "/terms",
+    );
   });
 });
