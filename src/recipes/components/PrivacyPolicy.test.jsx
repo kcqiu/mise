@@ -23,5 +23,8 @@ describe("PrivacyPolicy", () => {
       "href",
       "/terms",
     );
+    expect(
+      screen.getByRole("link", { name: "privacy@kecheng.dev" }),
+    ).toHaveAttribute("href", "mailto:privacy@kecheng.dev");
   });
 });

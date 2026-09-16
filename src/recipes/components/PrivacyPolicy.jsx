@@ -156,9 +156,14 @@ export default function PrivacyPolicy() {
               </p>
               <p>
                 To request deletion of your MISE account profile and remaining
-                cloud data, use the support contact shown on the MISE Google
-                sign-in consent screen. Privacy questions and deletion requests
-                are handled through that same contact.
+                cloud data, or to ask a privacy question, email{" "}
+                <a
+                  href="mailto:privacy@kecheng.dev"
+                  className="font-medium text-ink underline decoration-line underline-offset-4"
+                >
+                  privacy@kecheng.dev
+                </a>
+                .
               </p>
             </div>
           </section>
