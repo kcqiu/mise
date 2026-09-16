@@ -147,7 +147,7 @@ export default function AuthModal({
           <IconButton
             variant="default"
             size="default"
-            className="auth-modal__close rounded-full"
+            className="auth-modal__close rounded-full focus-visible:outline-none focus-visible:bg-ink/[0.08]"
             onClick={onClose}
             aria-label="Close sign-in dialog"
           >
