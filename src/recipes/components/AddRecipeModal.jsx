@@ -19,6 +19,8 @@ import {
   parseRecipeFromText,
   parseRecipeFromUrl,
 } from "../ai";
+import Button from "../../components/ui/Button";
+import IconButton from "../../components/ui/IconButton";
 
 export default function AddRecipeModal({
   isOpen,
@@ -201,7 +203,7 @@ export default function AddRecipeModal({
   return (
     <dialog
       ref={dialogRef}
-      className="add-recipe-modal"
+      className="add-recipe-modal w-[min(94vw,620px)] max-w-[620px] text-ink bg-transparent border-0 m-auto p-0"
       onCancel={(e) => {
         e.stopPropagation();
         if (filePickerActiveRef.current) {
@@ -211,12 +213,13 @@ export default function AddRecipeModal({
         onClose();
       }}
     >
-      <div className="add-recipe-modal__box">
-        <header className="add-recipe-modal__header">
+      <div className="add-recipe-modal__box border border-line bg-white rounded-[18px] max-h-[90vh] p-7 md:px-[30px] relative overflow-y-auto shadow-[0_28px_72px_rgba(22,38,29,0.25)] animate-modal-enter">
+        <header className="add-recipe-modal__header flex items-start gap-3.5 mb-5 relative">
           {view !== "menu" ? (
-            <button
-              type="button"
-              className="icon-button add-recipe-modal__back"
+            <IconButton
+              variant="default"
+              size="default"
+              className="add-recipe-modal__back shrink-0 mt-0.5"
               onClick={() => {
                 setView("menu");
                 setErrorMsg("");
@@ -225,16 +228,16 @@ export default function AddRecipeModal({
               aria-label="Back to creation options"
             >
               <ArrowLeft size={18} />
-            </button>
+            </IconButton>
           ) : (
-            <div className="add-recipe-modal__brand-icon">
+            <div className="add-recipe-modal__brand-icon w-10 h-10 text-ink bg-[#ebf2eb] rounded-[10px] shrink-0 flex items-center justify-center">
               <ChefHat size={20} strokeWidth={1.4} />
             </div>
           )}
 
-          <div className="add-recipe-modal__titles">
-            <span className="eyebrow add-recipe-modal__eyebrow">
-              <Sparkles size={13} className="sparkle-gold" />
+          <div className="add-recipe-modal__titles flex-1 min-w-0">
+            <span className="add-recipe-modal__eyebrow inline-flex items-center gap-1.5 uppercase tracking-[0.04em] text-ink text-[11px] font-semibold mb-1">
+              <Sparkles size={13} className="text-[#c98a28]" />
               {view === "menu"
                 ? "Add to your cookbook"
                 : view === "photo"
@@ -245,7 +248,7 @@ export default function AddRecipeModal({
                 ? "Web Recipe Importer"
                 : "Social Video Extractor"}
             </span>
-            <h2>
+            <h2 className="font-serif font-normal text-2xl leading-[1.2] text-ink m-0">
               {view === "menu"
                 ? "The recipe intake."
                 : view === "photo"
@@ -258,20 +261,21 @@ export default function AddRecipeModal({
             </h2>
           </div>
 
-          <button
-            type="button"
-            className="icon-button add-recipe-modal__close"
+          <IconButton
+            variant="default"
+            size="default"
+            className="add-recipe-modal__close shrink-0 -mt-1 -mr-1.5"
             onClick={onClose}
             aria-label="Close intake dialog"
             disabled={loading}
           >
             <X size={18} />
-          </button>
+          </IconButton>
         </header>
 
         {errorMsg && (
-          <div className="add-recipe-modal__error" role="alert">
-            <AlertCircle size={16} />
+          <div className="add-recipe-modal__error flex items-start gap-2.5 p-3.5 mb-[18px] rounded-lg bg-[#fdf2f0] border border-[#f7ceca] text-[#99281a] text-[13px] leading-[1.45]" role="alert">
+            <AlertCircle size={16} className="shrink-0 mt-0.5" />
             <span>{errorMsg}</span>
           </div>
         )}
@@ -279,26 +283,26 @@ export default function AddRecipeModal({
         {/* 1. Hub / Submenu View */}
         {view === "menu" && (
           <div className="add-recipe-modal__hub">
-            <p className="add-recipe-modal__lead">
+            <p className="add-recipe-modal__lead text-muted text-sm m-0 mb-4">
               Choose how you&apos;d like to add this recipe to your shelf:
             </p>
 
-            <div className="add-recipe-cards">
+            <div className="add-recipe-cards flex flex-col gap-2.5">
               {/* Option A: Manual Entry */}
               <button
                 type="button"
-                className="add-recipe-card"
+                className="add-recipe-card group flex items-start gap-4 w-full p-4 md:px-[18px] rounded-xl border border-line bg-[#fcfdfa] text-left cursor-pointer transition-all duration-200 hover:border-ink hover:bg-white hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(36,35,31,0.08)]"
                 onClick={() => {
                   onSelectManual();
                   onClose();
                 }}
               >
-                <div className="add-recipe-card__icon">
+                <div className="add-recipe-card__icon w-[38px] h-[38px] rounded-[9px] bg-[#edf2eb] text-ink shrink-0 flex items-center justify-center mt-0.5 transition-all duration-200 group-hover:bg-ink group-hover:text-white group-hover:scale-105">
                   <PenLine size={20} />
                 </div>
-                <div className="add-recipe-card__info">
-                  <strong>Manual entry</strong>
-                  <p>
+                <div className="add-recipe-card__info flex-1 min-w-0">
+                  <strong className="block text-ink text-sm font-semibold mb-0.5">Manual entry</strong>
+                  <p className="text-muted text-xs leading-[1.45] m-0 mt-1">
                     Write from scratch with your own measurements. Refine and
                     organize steps with AI on demand.
                   </p>
@@ -308,18 +312,18 @@ export default function AddRecipeModal({
               {/* Option B: Scan from Photo */}
               <button
                 type="button"
-                className="add-recipe-card add-recipe-card--ai"
+                className="add-recipe-card add-recipe-card--ai group flex items-start gap-4 w-full p-4 md:px-[18px] rounded-xl border border-line bg-[#fcfdfa] text-left cursor-pointer transition-all duration-200 hover:border-[#d4a34b] hover:bg-white hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(212,163,75,0.12)]"
                 onClick={() => setView("photo")}
               >
-                <div className="add-recipe-card__icon">
+                <div className="add-recipe-card__icon w-[38px] h-[38px] rounded-[9px] bg-[#edf2eb] text-ink shrink-0 flex items-center justify-center mt-0.5 transition-all duration-200 group-hover:bg-[#c98a28] group-hover:text-white group-hover:scale-105">
                   <Camera size={20} />
                 </div>
-                <div className="add-recipe-card__info">
-                  <div className="add-recipe-card__title-row">
-                    <strong>Scan from photo</strong>
-                    <span className="ai-badge">Gemini AI</span>
+                <div className="add-recipe-card__info flex-1 min-w-0">
+                  <div className="add-recipe-card__title-row flex items-center gap-2 mb-0.5">
+                    <strong className="block text-ink text-sm font-semibold">Scan from photo</strong>
+                    <span className="ai-badge inline-flex items-center gap-1 ml-0.5 px-[7px] py-0.5 rounded-full border border-[#e8cd98] bg-gradient-to-br from-[#fbf2dc] to-[#f7e6c3] text-[#8c5b16] text-[10px] font-bold uppercase tracking-[0.04em]">Gemini AI</span>
                   </div>
-                  <p>
+                  <p className="text-muted text-xs leading-[1.45] m-0 mt-1">
                     Upload a snapshot of a handwritten card, cookbook page, or
                     finished dish. Gemini extracts ingredients and steps instantly.
                   </p>
@@ -329,18 +333,18 @@ export default function AddRecipeModal({
               {/* Option C: Paste from Text */}
               <button
                 type="button"
-                className="add-recipe-card add-recipe-card--ai"
+                className="add-recipe-card add-recipe-card--ai group flex items-start gap-4 w-full p-4 md:px-[18px] rounded-xl border border-line bg-[#fcfdfa] text-left cursor-pointer transition-all duration-200 hover:border-[#d4a34b] hover:bg-white hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(212,163,75,0.12)]"
                 onClick={() => setView("text")}
               >
-                <div className="add-recipe-card__icon">
+                <div className="add-recipe-card__icon w-[38px] h-[38px] rounded-[9px] bg-[#edf2eb] text-ink shrink-0 flex items-center justify-center mt-0.5 transition-all duration-200 group-hover:bg-[#c98a28] group-hover:text-white group-hover:scale-105">
                   <FileText size={20} />
                 </div>
-                <div className="add-recipe-card__info">
-                  <div className="add-recipe-card__title-row">
-                    <strong>Paste from text</strong>
-                    <span className="ai-badge">Gemini AI</span>
+                <div className="add-recipe-card__info flex-1 min-w-0">
+                  <div className="add-recipe-card__title-row flex items-center gap-2 mb-0.5">
+                    <strong className="block text-ink text-sm font-semibold">Paste from text</strong>
+                    <span className="ai-badge inline-flex items-center gap-1 ml-0.5 px-[7px] py-0.5 rounded-full border border-[#e8cd98] bg-gradient-to-br from-[#fbf2dc] to-[#f7e6c3] text-[#8c5b16] text-[10px] font-bold uppercase tracking-[0.04em]">Gemini AI</span>
                   </div>
-                  <p>
+                  <p className="text-muted text-xs leading-[1.45] m-0 mt-1">
                     Paste rough notes, messy ingredients dumps, or message transcripts.
                     Gemini structures, scales, and organizes them cleanly.
                   </p>
@@ -350,18 +354,18 @@ export default function AddRecipeModal({
               {/* Option D: From Recipe Website */}
               <button
                 type="button"
-                className="add-recipe-card add-recipe-card--ai"
+                className="add-recipe-card add-recipe-card--ai group flex items-start gap-4 w-full p-4 md:px-[18px] rounded-xl border border-line bg-[#fcfdfa] text-left cursor-pointer transition-all duration-200 hover:border-[#d4a34b] hover:bg-white hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(212,163,75,0.12)]"
                 onClick={() => setView("url")}
               >
-                <div className="add-recipe-card__icon">
+                <div className="add-recipe-card__icon w-[38px] h-[38px] rounded-[9px] bg-[#edf2eb] text-ink shrink-0 flex items-center justify-center mt-0.5 transition-all duration-200 group-hover:bg-[#c98a28] group-hover:text-white group-hover:scale-105">
                   <Globe size={20} />
                 </div>
-                <div className="add-recipe-card__info">
-                  <div className="add-recipe-card__title-row">
-                    <strong>From recipe website</strong>
-                    <span className="ai-badge">Gemini AI</span>
+                <div className="add-recipe-card__info flex-1 min-w-0">
+                  <div className="add-recipe-card__title-row flex items-center gap-2 mb-0.5">
+                    <strong className="block text-ink text-sm font-semibold">From recipe website</strong>
+                    <span className="ai-badge inline-flex items-center gap-1 ml-0.5 px-[7px] py-0.5 rounded-full border border-[#e8cd98] bg-gradient-to-br from-[#fbf2dc] to-[#f7e6c3] text-[#8c5b16] text-[10px] font-bold uppercase tracking-[0.04em]">Gemini AI</span>
                   </div>
-                  <p>
+                  <p className="text-muted text-xs leading-[1.45] m-0 mt-1">
                     Import from NYT Cooking, Serious Eats, or food blogs without
                     the ads, popups, or life-story filler.
                   </p>
@@ -371,18 +375,18 @@ export default function AddRecipeModal({
               {/* Option E: From Social Media */}
               <button
                 type="button"
-                className="add-recipe-card add-recipe-card--ai"
+                className="add-recipe-card add-recipe-card--ai group flex items-start gap-4 w-full p-4 md:px-[18px] rounded-xl border border-line bg-[#fcfdfa] text-left cursor-pointer transition-all duration-200 hover:border-[#d4a34b] hover:bg-white hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(212,163,75,0.12)]"
                 onClick={() => setView("social")}
               >
-                <div className="add-recipe-card__icon">
+                <div className="add-recipe-card__icon w-[38px] h-[38px] rounded-[9px] bg-[#edf2eb] text-ink shrink-0 flex items-center justify-center mt-0.5 transition-all duration-200 group-hover:bg-[#c98a28] group-hover:text-white group-hover:scale-105">
                   <Video size={20} />
                 </div>
-                <div className="add-recipe-card__info">
-                  <div className="add-recipe-card__title-row">
-                    <strong>From TikTok, Instagram, or YouTube</strong>
-                    <span className="ai-badge">Gemini AI</span>
+                <div className="add-recipe-card__info flex-1 min-w-0">
+                  <div className="add-recipe-card__title-row flex items-center gap-2 mb-0.5">
+                    <strong className="block text-ink text-sm font-semibold">From TikTok, Instagram, or YouTube</strong>
+                    <span className="ai-badge inline-flex items-center gap-1 ml-0.5 px-[7px] py-0.5 rounded-full border border-[#e8cd98] bg-gradient-to-br from-[#fbf2dc] to-[#f7e6c3] text-[#8c5b16] text-[10px] font-bold uppercase tracking-[0.04em]">Gemini AI</span>
                   </div>
-                  <p>
+                  <p className="text-muted text-xs leading-[1.45] m-0 mt-1">
                     Paste a video link. Gemini extracts the recipe from the caption
                     and embeds the playable video on the card.
                   </p>
@@ -390,11 +394,11 @@ export default function AddRecipeModal({
               </button>
             </div>
 
-            <div className="add-recipe-modal__hub-footer">
+            <div className="add-recipe-modal__hub-footer flex flex-wrap items-center justify-center gap-2 mt-3.5 pt-3 border-t border-line text-muted text-[13px]">
               <span>Have an existing recipe JSON or backup file?</span>
               <button
                 type="button"
-                className="text-button add-recipe-modal__file-import-btn"
+                className="add-recipe-modal__file-import-btn inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-ink font-semibold bg-transparent border-0 cursor-pointer hover:bg-ink/5 transition-colors"
                 onClick={() => {
                   onImportFile?.();
                   onClose();
@@ -409,8 +413,8 @@ export default function AddRecipeModal({
 
         {/* 2. Photo Scan View */}
         {view === "photo" && (
-          <div className="add-recipe-modal__form-view">
-            <p className="add-recipe-modal__view-desc">
+          <div className="add-recipe-modal__form-view flex flex-col gap-4">
+            <p className="add-recipe-modal__view-desc text-muted text-[13px] leading-[1.55] m-0">
               Upload an image of a cookbook page, handwritten recipe card, or plated dish.
               Gemini Vision will extract ingredients, measurements, and directions.
             </p>
@@ -424,43 +428,45 @@ export default function AddRecipeModal({
             />
 
             <div
-              className={`photo-dropzone ${photoPreview ? "has-preview" : ""}`}
+              className={`photo-dropzone text-center cursor-pointer rounded-xl transition-all duration-200 border-2 ${photoPreview ? "has-preview border-solid border-line p-2.5 bg-white" : "border-dashed border-[#ccd6c8] p-6 bg-[#fcfdfb] hover:border-ink hover:bg-[#f6faf5]"}`}
               onClick={() => {
                 filePickerActiveRef.current = true;
                 fileInputRef.current?.click();
               }}
             >
               {photoPreview ? (
-                <div className="photo-preview-wrap">
-                  <img src={photoPreview} alt="Recipe source snapshot" />
-                  <div className="photo-preview-overlay">
+                <div className="photo-preview-wrap relative rounded-lg overflow-hidden w-full max-h-[260px] group">
+                  <img src={photoPreview} alt="Recipe source snapshot" className="w-full h-60 object-cover block" />
+                  <div className="photo-preview-overlay absolute inset-0 bg-[#121c17]/45 text-white flex flex-col items-center justify-center gap-1.5 text-xs font-semibold opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                     <Camera size={20} />
                     <span>Click to change photo</span>
                   </div>
                 </div>
               ) : (
-                <div className="photo-dropzone-empty">
-                  <div className="photo-dropzone-icon">
+                <div className="photo-dropzone-empty flex flex-col items-center gap-1.5">
+                  <div className="photo-dropzone-icon w-[52px] h-[52px] rounded-full bg-[#edf3eb] text-ink flex items-center justify-center mb-1">
                     <Upload size={28} />
                   </div>
-                  <strong>Choose a recipe photo or snap a picture</strong>
-                  <small>JPG, PNG, or WebP up to 15MB</small>
+                  <strong className="text-ink text-sm font-semibold">Choose a recipe photo or snap a picture</strong>
+                  <small className="text-muted text-xs">JPG, PNG, or WebP up to 15MB</small>
                 </div>
               )}
             </div>
 
-            <div className="add-recipe-modal__actions">
-              <button
+            <div className="add-recipe-modal__actions flex items-center justify-end gap-2.5 mt-2.5">
+              <Button
                 type="button"
-                className="button button--light"
+                variant="light"
+                size="action"
                 onClick={() => setView("menu")}
                 disabled={loading}
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
-                className="button ai-primary-btn"
+                variant="primary"
+                size="action"
                 disabled={!selectedPhoto || loading}
                 onClick={handleExecutePhotoScan}
               >
@@ -475,21 +481,21 @@ export default function AddRecipeModal({
                     <span>Scan with Gemini</span>
                   </>
                 )}
-              </button>
+              </Button>
             </div>
           </div>
         )}
 
         {/* 3. Text Paste View */}
         {view === "text" && (
-          <form onSubmit={handleExecuteTextParse} className="add-recipe-modal__form-view">
-            <p className="add-recipe-modal__view-desc">
+          <form onSubmit={handleExecuteTextParse} className="add-recipe-modal__form-view flex flex-col gap-4">
+            <p className="add-recipe-modal__view-desc text-muted text-[13px] leading-[1.55] m-0">
               Paste messy cooking notes, a dump of ingredients, or instructions from a chat.
               Gemini AI will structure, scale, and standardize it into a clean recipe.
             </p>
 
             <textarea
-              className="add-recipe-textarea"
+              className="add-recipe-textarea w-full min-h-[160px] p-3.5 md:p-4 rounded-[10px] border border-line bg-white text-ink text-[13px] leading-[1.6] resize-y transition-all focus:border-ink focus:outline-none focus:ring-2 focus:ring-ink/20 disabled:opacity-60"
               rows={8}
               value={textInput}
               onChange={(e) => setTextInput(e.target.value)}
@@ -499,18 +505,20 @@ export default function AddRecipeModal({
               autoFocus
             />
 
-            <div className="add-recipe-modal__actions">
-              <button
+            <div className="add-recipe-modal__actions flex items-center justify-end gap-2.5 mt-2.5">
+              <Button
                 type="button"
-                className="button button--light"
+                variant="light"
+                size="action"
                 onClick={() => setView("menu")}
                 disabled={loading}
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
                 type="submit"
-                className="button ai-primary-btn"
+                variant="primary"
+                size="action"
                 disabled={!textInput.trim() || loading}
               >
                 {loading ? (
@@ -524,24 +532,24 @@ export default function AddRecipeModal({
                     <span>Parse with Gemini</span>
                   </>
                 )}
-              </button>
+              </Button>
             </div>
           </form>
         )}
 
         {/* 4. Recipe Website URL View */}
         {view === "url" && (
-          <form onSubmit={handleExecuteUrlImport} className="add-recipe-modal__form-view">
-            <p className="add-recipe-modal__view-desc">
+          <form onSubmit={handleExecuteUrlImport} className="add-recipe-modal__form-view flex flex-col gap-4">
+            <p className="add-recipe-modal__view-desc text-muted text-[13px] leading-[1.55] m-0">
               Paste the URL of any recipe website or food blog. We will bypass popups,
               ad banners, and life stories to extract the pure culinary recipe.
             </p>
 
-            <div className="input-with-icon">
-              <Globe size={18} className="input-lead-icon" />
+            <div className="input-with-icon relative flex items-center">
+              <Globe size={18} className="input-lead-icon absolute left-3.5 text-muted pointer-events-none" />
               <input
                 type="url"
-                className="add-recipe-input"
+                className="add-recipe-input w-full pl-[42px] pr-3.5 py-3 rounded-[9px] border border-line bg-white text-ink text-sm transition-all focus:border-ink focus:outline-none focus:ring-2 focus:ring-ink/20 disabled:opacity-60"
                 placeholder="https://www.seriouseats.com/the-best-crispy-roast-potatoes"
                 value={urlInput}
                 onChange={(e) => setUrlInput(e.target.value)}
@@ -551,28 +559,30 @@ export default function AddRecipeModal({
               />
             </div>
 
-            <div className="url-suggestions">
-              <span className="url-suggestions-label">Works with:</span>
-              <span className="tag-pill">NYT Cooking</span>
-              <span className="tag-pill">Serious Eats</span>
-              <span className="tag-pill">Bon Appétit</span>
-              <span className="tag-pill">Sally&apos;s Baking</span>
-              <span className="tag-pill">Allrecipes</span>
-              <span className="tag-pill">Food blogs</span>
+            <div className="url-suggestions flex flex-wrap items-center gap-1.5 text-xs">
+              <span className="url-suggestions-label text-muted text-[11px] font-medium mr-0.5">Works with:</span>
+              <span className="tag-pill px-2 py-0.5 rounded-md bg-[#f0f4ee] border border-[#dce4d9] text-ink text-[11px]">NYT Cooking</span>
+              <span className="tag-pill px-2 py-0.5 rounded-md bg-[#f0f4ee] border border-[#dce4d9] text-ink text-[11px]">Serious Eats</span>
+              <span className="tag-pill px-2 py-0.5 rounded-md bg-[#f0f4ee] border border-[#dce4d9] text-ink text-[11px]">Bon Appétit</span>
+              <span className="tag-pill px-2 py-0.5 rounded-md bg-[#f0f4ee] border border-[#dce4d9] text-ink text-[11px]">Sally&apos;s Baking</span>
+              <span className="tag-pill px-2 py-0.5 rounded-md bg-[#f0f4ee] border border-[#dce4d9] text-ink text-[11px]">Allrecipes</span>
+              <span className="tag-pill px-2 py-0.5 rounded-md bg-[#f0f4ee] border border-[#dce4d9] text-ink text-[11px]">Food blogs</span>
             </div>
 
-            <div className="add-recipe-modal__actions">
-              <button
+            <div className="add-recipe-modal__actions flex items-center justify-end gap-2.5 mt-2.5">
+              <Button
                 type="button"
-                className="button button--light"
+                variant="light"
+                size="action"
                 onClick={() => setView("menu")}
                 disabled={loading}
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
                 type="submit"
-                className="button ai-primary-btn"
+                variant="primary"
+                size="action"
                 disabled={!urlInput.trim() || loading}
               >
                 {loading ? (
@@ -586,24 +596,24 @@ export default function AddRecipeModal({
                     <span>Import Recipe</span>
                   </>
                 )}
-              </button>
+              </Button>
             </div>
           </form>
         )}
 
         {/* 5. Social Media Video View */}
         {view === "social" && (
-          <form onSubmit={handleExecuteSocialImport} className="add-recipe-modal__form-view">
-            <p className="add-recipe-modal__view-desc">
+          <form onSubmit={handleExecuteSocialImport} className="add-recipe-modal__form-view flex flex-col gap-4">
+            <p className="add-recipe-modal__view-desc text-muted text-[13px] leading-[1.55] m-0">
               Paste a public video link from TikTok, Instagram Reels, or YouTube.
               Gemini will extract the recipe from the caption and embed the playable video.
             </p>
 
-            <div className="input-with-icon">
-              <Video size={18} className="input-lead-icon" />
+            <div className="input-with-icon relative flex items-center">
+              <Video size={18} className="input-lead-icon absolute left-3.5 text-muted pointer-events-none" />
               <input
                 type="url"
-                className="add-recipe-input"
+                className="add-recipe-input w-full pl-[42px] pr-3.5 py-3 rounded-[9px] border border-line bg-white text-ink text-sm transition-all focus:border-ink focus:outline-none focus:ring-2 focus:ring-ink/20 disabled:opacity-60"
                 placeholder="https://www.tiktok.com/@creator/video/... or https://youtube.com/watch?v=..."
                 value={socialInput}
                 onChange={(e) => {
@@ -619,25 +629,25 @@ export default function AddRecipeModal({
             </div>
 
             {(/instagram\.com/i.test(socialInput) || showSocialCaption) && (
-              <div className="add-recipe-modal__caption-group">
-                <div className="add-recipe-modal__caption-header">
-                  <label htmlFor="social-caption-input" className="add-recipe-modal__caption-label">
+              <div className="add-recipe-modal__caption-group flex flex-col gap-2 mt-1 p-3 rounded-[10px] border border-line bg-black/[0.02]">
+                <div className="add-recipe-modal__caption-header flex flex-wrap items-center justify-between gap-1.5">
+                  <label htmlFor="social-caption-input" className="add-recipe-modal__caption-label flex items-center gap-1.5 text-ink text-xs font-semibold">
                     Post caption / recipe text
                   </label>
                   {/instagram\.com/i.test(socialInput) && (
-                    <span className="caption-badge">Recommended for Instagram</span>
+                    <span className="caption-badge inline-block px-1.5 py-0.5 rounded-full border border-[#e8cd98] bg-[#fbf2dc] text-[#8c5b16] text-[10px] font-semibold">Recommended for Instagram</span>
                   )}
                 </div>
                 <textarea
                   id="social-caption-input"
-                  className="add-recipe-textarea add-recipe-textarea--caption"
+                  className="add-recipe-textarea add-recipe-textarea--caption w-full min-h-[85px] max-h-[180px] p-2.5 rounded-[10px] border border-line bg-white text-ink text-xs leading-normal resize-y transition-all focus:border-ink focus:outline-none focus:ring-2 focus:ring-ink/20 disabled:opacity-60"
                   rows={4}
                   placeholder="Paste the caption or ingredient list from the Instagram post here..."
                   value={socialCaption}
                   onChange={(e) => setSocialCaption(e.target.value)}
                   disabled={loading}
                 />
-                <p className="add-recipe-modal__caption-hint">
+                <p className="add-recipe-modal__caption-hint text-muted text-[11px] leading-[1.45] m-0">
                   {/instagram\.com/i.test(socialInput)
                     ? "Try the link on its own, or paste the caption to skip automatic lookup. If the caption is unavailable, open the post and copy its recipe text here. Review the extracted recipe before saving."
                     : "If the video doesn't have a public text description, paste the recipe notes or ingredient list here."}
@@ -645,25 +655,27 @@ export default function AddRecipeModal({
               </div>
             )}
 
-            <div className="url-suggestions">
-              <span className="url-suggestions-label">Supported platforms:</span>
-              <span className="tag-pill tag-pill--social">TikTok</span>
-              <span className="tag-pill tag-pill--social">Instagram Reels</span>
-              <span className="tag-pill tag-pill--social">YouTube / Shorts</span>
+            <div className="url-suggestions flex flex-wrap items-center gap-1.5 text-xs">
+              <span className="url-suggestions-label text-muted text-[11px] font-medium mr-0.5">Supported platforms:</span>
+              <span className="tag-pill tag-pill--social px-2 py-0.5 rounded-md bg-[#fdf5e8] border border-[#fae4c2] text-[#8c5b16] text-[11px]">TikTok</span>
+              <span className="tag-pill tag-pill--social px-2 py-0.5 rounded-md bg-[#fdf5e8] border border-[#fae4c2] text-[#8c5b16] text-[11px]">Instagram Reels</span>
+              <span className="tag-pill tag-pill--social px-2 py-0.5 rounded-md bg-[#fdf5e8] border border-[#fae4c2] text-[#8c5b16] text-[11px]">YouTube / Shorts</span>
             </div>
 
-            <div className="add-recipe-modal__actions">
-              <button
+            <div className="add-recipe-modal__actions flex items-center justify-end gap-2.5 mt-2.5">
+              <Button
                 type="button"
-                className="button button--light"
+                variant="light"
+                size="action"
                 onClick={() => setView("menu")}
                 disabled={loading}
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
                 type="submit"
-                className="button ai-primary-btn"
+                variant="primary"
+                size="action"
                 disabled={!socialInput.trim() || loading}
               >
                 {loading ? (
@@ -677,7 +689,7 @@ export default function AddRecipeModal({
                     <span>Extract &amp; Embed</span>
                   </>
                 )}
-              </button>
+              </Button>
             </div>
           </form>
         )}

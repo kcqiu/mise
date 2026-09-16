@@ -45,8 +45,6 @@ import {
   mergeGuestIntoAccountSession,
   generateUUID,
   getDeviceId,
-  resetGrocerySession,
-  rolloverGrocerySession,
   EMPTY_GROCERY_SESSION,
 } from "./groceries";
 import RecipeLibrary from "./components/RecipeLibrary";
@@ -58,6 +56,12 @@ import ToastStack from "./components/ToastStack";
 import GroceryListView from "./components/GroceryListView";
 import { AppFooter, AppHeader } from "./components/AppShell";
 import useHashRoute from "./useHashRoute";
+import { resolveGroceryCompletion } from "./groceryCompletion";
+import { appendToast } from "./toastQueue";
+
+const GROCERY_AUTH_PROMPT_SEEN_KEY =
+  "mise-groceries-auth-prompt-seen-v1";
+const GROCERY_AUTH_PROMPT_DELAY_MS = 10000;
 
 export default function RecipeApp() {
   const [initial] = useState(readLibrary);
@@ -86,6 +90,11 @@ export default function RecipeApp() {
     collection: "all",
     sort: "collection",
   });
+  const [groceryPromptSeen, setGroceryPromptSeen] = useState(
+    () =>
+      typeof window !== "undefined" &&
+      window.localStorage.getItem(GROCERY_AUTH_PROMPT_SEEN_KEY) === "true",
+  );
   const [editor, setEditor] = useState(null);
   const [addRecipeModalOpen, setAddRecipeModalOpen] = useState(false);
   const [grocerySession, setGrocerySession] = useState(readGrocerySession);
@@ -124,15 +133,16 @@ export default function RecipeApp() {
 
   const addToast = (message, type = "info", title = "") => {
     if (!message) return;
-    setToasts((prev) => [
-      ...prev.slice(-4),
-      {
-        id: `toast-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    const createdAt = Date.now();
+    setToasts((prev) =>
+      appendToast(prev, {
+        id: `toast-${createdAt}-${Math.random().toString(36).slice(2, 6)}`,
         message,
         type,
         title,
-      },
-    ]);
+        createdAt,
+      }),
+    );
   };
   const dismissToast = (id) => {
     setToasts((prev) => prev.filter((t) => t.id !== id));
@@ -262,100 +272,45 @@ export default function RecipeApp() {
 
   const handleCompleteTrip = async (action) => {
     const userId = account.session?.user?.id || null;
-    if (!userId) {
-      const nextSession =
-        action === "clear"
-          ? resetGrocerySession()
-          : rolloverGrocerySession(grocerySession, recipes);
-      setGrocerySession(nextSession);
-      saveGrocerySession(nextSession, null);
-      addToast(
-        action === "clear"
-          ? "Grocery list cleared"
-          : "Completed trip; unpurchased items rolled over",
-        "success",
-      );
-      return;
-    }
-
-    if (typeof navigator !== "undefined" && !navigator.onLine) {
-      addToast("Internet connection required to complete trip", "error");
-      return;
-    }
-
-    setSyncStatus("syncing");
     const newSessionId = generateUUID();
-    let rolloverCustom = [];
-    if (action === "rollover") {
-      const rolled = rolloverGrocerySession(
-        grocerySession,
-        recipes,
-        newSessionId,
-      );
-      rolloverCustom = rolled.customItems || [];
-    }
+    const isOnline = typeof navigator === "undefined" || navigator.onLine;
 
-    try {
-      const res = await completeAccountGrocerySession(
-        userId,
-        grocerySession.id,
-        action,
-        rolloverCustom,
-        newSessionId,
-        grocerySession.revision,
-      );
+    if (userId && isOnline) setSyncStatus("syncing");
 
-      if (res && res.success) {
-        const nextActive = res.activeSession || EMPTY_GROCERY_SESSION;
-        clearGroceryQueue(userId);
-        setGrocerySession(nextActive);
-        saveGrocerySession(nextActive, userId);
-        setSyncStatus("saved");
+    const result = await resolveGroceryCompletion({
+      action,
+      userId,
+      isOnline,
+      session: grocerySession,
+      recipes,
+      newSessionId,
+      completeRemote: completeAccountGrocerySession,
+    });
 
-        broadcastGroceryMutations(grocerySession.id, {
-          completedSessionId: grocerySession.id,
-          activeSession: nextActive,
-        });
-
-        addToast(
-          action === "clear"
-            ? "Grocery list cleared"
-            : "Completed trip; unpurchased items rolled over",
-          "success",
-        );
-        return;
-      } else if (res && res.code === "REVISION_CONFLICT") {
-        setSyncStatus("saved");
-        addToast(
-          "Could not complete trip: your list was updated on another device. Please review the latest list.",
-          "error",
-        );
-        if (res.session) {
-          setGrocerySession(res.session);
-          saveGrocerySession(res.session, userId);
-        }
-        return;
+    if (!result.ok) {
+      setSyncStatus(isOnline ? "saved" : "offline");
+      if (result.latestSession) {
+        setGrocerySession(result.latestSession);
+        saveGrocerySession(result.latestSession, userId);
       }
-    } catch {
-      // Graceful fallback below
+      addToast(result.error, "error");
+      return result;
     }
 
-    // Fallback: If cloud RPC fails or table/RPC is not yet migrated,
-    // finalize trip locally in localStorage so user's cart is never stuck
-    const nextSession =
-      action === "clear"
-        ? resetGrocerySession(newSessionId)
-        : rolloverGrocerySession(grocerySession, recipes, newSessionId);
-    clearGroceryQueue(userId);
-    setGrocerySession(nextSession);
-    saveGrocerySession(nextSession, userId);
+    if (result.clearQueue) clearGroceryQueue(userId);
+    setGrocerySession(result.nextSession);
+    saveGrocerySession(result.nextSession, userId);
     setSyncStatus("saved");
-    addToast(
-      action === "clear"
-        ? "Grocery list cleared"
-        : "Completed trip; unpurchased items rolled over",
-      "success",
-    );
+
+    if (result.broadcast) {
+      broadcastGroceryMutations(grocerySession.id, {
+        completedSessionId: grocerySession.id,
+        activeSession: result.nextSession,
+      });
+    }
+
+    addToast(result.message, "success");
+    return result;
   };
 
   const toggleRecipeInGroceries = (recipeId, servings) => {
@@ -423,20 +378,49 @@ export default function RecipeApp() {
     };
   }, []);
 
-  // Bug 7: Lock groceries cart behind login:
-  // Guests can click "Add to Groceries", but once on #/groceries, trigger login/signup after 10 seconds
   useEffect(() => {
-    if (route === "groceries" && !account.session && !account.loading) {
-      const timer = setTimeout(() => {
-        setAuthModal({
-          open: true,
-          intent: "groceries",
-          error: "",
-        });
-      }, 10000);
-      return () => clearTimeout(timer);
+    if (
+      route !== "groceries" ||
+      window.location.hash !== "#/groceries"
+    ) {
+      return undefined;
     }
-  }, [route, account.session, account.loading]);
+
+    if (
+      account.session ||
+      account.loading ||
+      authModal.open
+    ) {
+      return undefined;
+    }
+
+    const openGroceryAuthPrompt = () => {
+      window.localStorage.setItem(GROCERY_AUTH_PROMPT_SEEN_KEY, "true");
+      setGroceryPromptSeen(true);
+      setAuthModal({
+        open: true,
+        intent: "groceries",
+        error: "",
+      });
+    };
+
+    if (groceryPromptSeen) {
+      openGroceryAuthPrompt();
+      return undefined;
+    }
+
+    const timer = setTimeout(
+      openGroceryAuthPrompt,
+      GROCERY_AUTH_PROMPT_DELAY_MS,
+    );
+    return () => clearTimeout(timer);
+  }, [
+    route,
+    account.session,
+    account.loading,
+    authModal.open,
+    groceryPromptSeen,
+  ]);
 
   useEffect(() => {
     document.title = current
@@ -942,10 +926,25 @@ export default function RecipeApp() {
     if (window.location.hash === "#/login") {
       window.location.hash = "#/";
     }
-    if (route === "groceries" && !account.session) {
+    if (
+      authModal.intent === "groceries" &&
+      route === "groceries" &&
+      !account.session
+    ) {
       window.location.hash = "#/";
-      addToast("Please sign in or create an account to use the Groceries bag.", "info");
     }
+  };
+
+  const searchByTag = (tag) => {
+    const query = tag.trim();
+    if (!query) return;
+    setShelfState((state) => ({
+      ...state,
+      query,
+      category: "",
+      collection: "all",
+    }));
+    window.location.hash = "/";
   };
   const endSession = async () => {
     try {
@@ -983,7 +982,7 @@ export default function RecipeApp() {
     <div className="recipe-app">
       <a
         href="#recipe-main"
-        className="recipe-skip"
+        className="recipe-skip fixed top-4 left-4 z-[200] bg-ink text-white px-5 py-3.5 -translate-y-[150%] focus:translate-y-0 transition-transform font-medium text-sm rounded shadow-lg"
         onClick={(event) => {
           event.preventDefault();
           document.getElementById("recipe-main")?.focus();
@@ -1056,6 +1055,7 @@ export default function RecipeApp() {
             progress={activeLibrary.progress[current.id]}
             onProgress={(progress) => updateProgress(current.id, progress)}
             onEdit={(recipe) => openEditor(recipe)}
+            onSearchTag={searchByTag}
             isLocal={personalRecipes.some((recipe) => recipe.id === current.id)}
             inGroceries={(grocerySession.recipes || []).some(
               (r) => r.recipeId === current.id,
@@ -1064,13 +1064,13 @@ export default function RecipeApp() {
           />
         ) : (
           <main
-            className="empty-state missing-recipe"
+            className="empty-state missing-recipe min-h-[65svh] flex flex-col items-center justify-center text-center p-8 gap-4"
             id="recipe-main"
             tabIndex={-1}
           >
-            <BookOpen size={40} strokeWidth={1.2} />
-            <h1>This recipe isn't on the shelf.</h1>
-            <p>
+            <BookOpen size={40} strokeWidth={1.2} className="text-muted" />
+            <h1 className="font-serif text-3xl font-normal text-ink m-0">This recipe isn't on the shelf.</h1>
+            <p className="text-muted text-sm max-w-md m-0">
               It may be saved on another device. Import your backup to bring it
               here.
             </p>

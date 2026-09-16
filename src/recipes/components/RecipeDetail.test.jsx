@@ -167,4 +167,27 @@ describe("RecipeDetail unit conversion", () => {
     await user.click(groceryBtns[0]);
     expect(handleToggleGroceries).toHaveBeenCalledWith("matcha-latte", 2);
   });
+
+  it("reports the selected tag through an accessible button", async () => {
+    const user = userEvent.setup();
+    const handleSearchTag = vi.fn();
+
+    render(
+      <RecipeDetail
+        recipe={mockRecipe}
+        favorite={false}
+        progress={{ ingredients: [], steps: [] }}
+        onFavorite={vi.fn()}
+        onProgress={vi.fn()}
+        onEdit={vi.fn()}
+        onSearchTag={handleSearchTag}
+        isLocal={true}
+      />
+    );
+
+    await user.click(screen.getByRole("button", { name: "Quick" }));
+
+    expect(handleSearchTag).toHaveBeenCalledOnce();
+    expect(handleSearchTag).toHaveBeenCalledWith("Quick");
+  });
 });

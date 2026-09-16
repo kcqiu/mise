@@ -6,6 +6,200 @@
   --color-muted: #69766d;
   --color-terracotta: #b34939;
   --color-line: #dce2d9;
+  --color-sand: #e6dfd3;
+  --color-accent: #24231f;
+  --color-green: #24231f;
+
   --font-serif: "Fraunces", Georgia, serif;
   --font-sans: "DM Sans", sans-serif;
+}
+
+/* compatibility aliases while legacy CSS exists */
+:root {
+  --paper: var(--color-paper);
+  --ink: var(--color-ink);
+  --muted: var(--color-muted);
+  --red: var(--color-terracotta);
+  --line: var(--color-line);
+  --serif: var(--font-serif);
+  --sans: var(--font-sans);
+  --accent: var(--color-accent);
+  --green: var(--color-green);
+}
+
+@layer base {
+  :root {
+    color: #24231f;
+    font-synthesis: none;
+    text-rendering: optimizelegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    background-color: var(--color-paper);
+    font-family: var(--font-sans);
+  }
+
+  * {
+    box-sizing: border-box;
+    letter-spacing: 0;
+  }
+
+  html,
+  body {
+    min-width: 0;
+    margin: 0;
+    background-color: var(--color-paper);
+    color: var(--color-ink);
+  }
+
+  button,
+  input,
+  textarea,
+  select {
+    font: inherit;
+    border-radius: 4px;
+  }
+
+  button,
+  a,
+  input,
+  textarea,
+  select {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  button {
+    cursor: pointer;
+    color: inherit;
+  }
+
+  button:disabled {
+    cursor: default;
+    opacity: 0.35;
+  }
+
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  button,
+  select,
+  a {
+    touch-action: manipulation;
+  }
+
+  button:focus-visible,
+  a:focus-visible,
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible,
+  summary:focus-visible {
+    outline: 2px solid var(--color-terracotta);
+    outline-offset: 4px;
+  }
+
+  svg {
+    flex-shrink: 0;
+    display: block;
+  }
+
+  .recipe-app {
+    overflow: clip;
+  }
+
+  .recipe-app h1,
+  .recipe-app h2,
+  .recipe-app h3,
+  .recipe-app p {
+    margin-top: 0;
+  }
+
+  .recipe-app h1,
+  .recipe-app h2 {
+    font-weight: 400;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    ::before,
+    ::after {
+      scroll-behavior: auto !important;
+      transition: none !important;
+      animation: none !important;
+    }
+  }
+}
+
+/* Transitional utilities for backwards compatibility during migration */
+@utility button {
+  min-height: 44px;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  gap: 9px;
+  padding: 12px 19px;
+  background-color: #24231f;
+  border: 1px solid #24231f;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 550;
+  border-radius: 4px;
+  transition: background-color 0.18s, border-color 0.18s;
+  &:hover {
+    background-color: #383630;
+    border-color: #383630;
+  }
+}
+
+@utility button--light {
+  color: #24231f;
+  background-color: #fff;
+  border: 1px solid rgba(36, 35, 31, 0.16);
+  &:hover {
+    color: #24231f;
+    background-color: #faf8f5;
+    border-color: rgba(36, 35, 31, 0.32);
+  }
+}
+
+@utility icon-button {
+  border: 0;
+  background-color: transparent;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  padding: 0;
+  transition: color 0.15s, background-color 0.15s;
+  &:hover {
+    background-color: rgba(36, 35, 31, 0.06);
+  }
+}
+
+@utility text-button {
+  padding: 0;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: none;
+  border: 0;
+  font-size: 13px;
+  font-weight: 550;
+  &:hover {
+    color: var(--color-terracotta);
+  }
+}
+
+@utility eyebrow {
+  text-transform: uppercase;
+  color: var(--color-muted);
+  align-items: center;
+  gap: 10px;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1.5;
+  display: flex;
 }

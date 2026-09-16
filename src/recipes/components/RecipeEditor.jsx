@@ -16,6 +16,10 @@ import {
   generateRecipeCover,
 } from "../ai";
 import RecipeArtwork from "./RecipeArtwork";
+import { Button } from "@/components/ui/Button";
+import { IconButton } from "@/components/ui/IconButton";
+import { TextButton } from "@/components/ui/TextButton";
+import { cn } from "@/lib/utils";
 
 function cropAndCompressImage(file, targetSize = 800) {
   return new Promise((resolve, reject) => {
@@ -316,7 +320,11 @@ export default function RecipeEditor({
   return (
     <dialog
       ref={dialog}
-      className="recipe-editor"
+      className={cn(
+        "recipe-editor m-auto w-[min(920px,calc(100vw_-_48px))] max-w-none max-h-[calc(100svh_-_48px)] overflow-hidden rounded-lg border border-line bg-paper p-0 text-ink shadow-[0_25px_100px_#10241b33]",
+        "max-[580px]:m-0 max-[580px]:h-[100svh] max-[580px]:max-h-[100svh] max-[580px]:w-screen max-[580px]:rounded-none max-[580px]:border-0"
+      )}
+      data-layout="centered-workspace"
       aria-labelledby="editor-title"
       onCancel={(event) => {
         if (filePickerActiveRef.current || event.target !== dialog.current) {
@@ -327,18 +335,27 @@ export default function RecipeEditor({
         onClose();
       }}
     >
-      <form onSubmit={submit}>
-        <div className="editor-header">
+      <form
+        className="flex max-h-[inherit] min-h-0 flex-col max-[580px]:h-full"
+        aria-label="Recipe editor form"
+        onSubmit={submit}
+      >
+        <div className="editor-header z-[2] flex shrink-0 items-center justify-between gap-3.5 border-b border-line bg-paper px-8 pt-6 pb-5 max-[580px]:px-5 max-[580px]:pt-[max(22px,env(safe-area-inset-top))] max-[580px]:pb-[17px]">
           <div>
-            <span className="eyebrow">From your kitchen</span>
-            <h2 id="editor-title">
+            <span className="eyebrow block text-[10px] font-semibold tracking-[0.08em] uppercase text-muted">
+              From your kitchen
+            </span>
+            <h2
+              id="editor-title"
+              className="font-serif font-normal text-[32px] mt-[7px] mb-0 leading-tight max-[580px]:text-[29px]"
+            >
               {recipe ? "Make it yours." : "A new keeper."}
             </h2>
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          <div className="flex items-center gap-2.5">
             <button
               type="button"
-              className="button ai-polish-btn"
+              className="button ai-polish-btn inline-flex items-center justify-center gap-1.5 min-h-[36px] px-3.5 py-2 text-xs font-[550] rounded-[4px] cursor-pointer transition-colors duration-150 border disabled:opacity-40 disabled:cursor-not-allowed select-none bg-[#eef5eb] text-[#2e5735] border-[#bdd2b7] hover:bg-[#e1edd8] hover:border-[#9cb894]"
               onClick={handleManualPolish}
               disabled={polishing}
               title="Standardize measurements and enhance culinary steps with Gemini AI"
@@ -355,31 +372,29 @@ export default function RecipeEditor({
                 </>
               )}
             </button>
-            <button
-              type="button"
-              className="icon-button"
+            <IconButton
+              size="default"
               onClick={onClose}
               aria-label="Close recipe editor"
             >
               <X size={21} />
-            </button>
+            </IconButton>
           </div>
         </div>
         {polishNotice && (
           <div
-            className="editor-cover-notice"
-            style={{
-              margin: "0 24px 12px 24px",
-              color: "var(--green)",
-              fontWeight: "600",
-            }}
+            className="editor-cover-notice mx-6 mb-3 text-emerald-800 font-semibold text-xs bg-[#eef3eb] px-2 py-1 rounded"
             role="status"
           >
             {polishNotice}
           </div>
         )}
-        <div className="editor-content">
-          <label>
+        <div
+          className="editor-content min-h-0 flex-1 overflow-y-auto overscroll-contain px-8 pt-[26px] pb-[30px] max-[580px]:px-5 max-[580px]:py-[23px]"
+          role="region"
+          aria-label="Recipe fields"
+        >
+          <label className="block mb-[19px] text-xs font-[550] leading-[1.6]">
             Recipe name
             <input
               required
@@ -388,9 +403,10 @@ export default function RecipeEditor({
               maxLength={150}
               onChange={(event) => set("title", event.target.value)}
               placeholder="What are we making?"
+              className="w-full min-h-[44px] text-ink bg-white border border-[#cfd8cb] rounded-[4px] mt-1.5 px-3 py-2.5 text-sm max-[580px]:text-base placeholder:text-[#929b90] focus:outline-none focus:border-ink/50 transition-colors"
             />
           </label>
-          <label>
+          <label className="block mb-[19px] text-xs font-[550] leading-[1.6]">
             A little about it
             <textarea
               value={draft.description}
@@ -398,21 +414,22 @@ export default function RecipeEditor({
               onChange={(event) => set("description", event.target.value)}
               rows={2}
               placeholder="The version you always come back to."
+              className="w-full min-h-[44px] text-ink bg-white border border-[#cfd8cb] rounded-[4px] mt-1.5 px-3 py-2.5 text-sm max-[580px]:text-base placeholder:text-[#929b90] leading-[1.6] resize-y focus:outline-none focus:border-ink/50 transition-colors"
             />
           </label>
 
-          <div className="editor-cover-section">
-            <div className="editor-cover-header">
-              <span className="editor-cover-title">
+          <div className="editor-cover-section bg-[#f7f9f5] border border-[#dbe3d7] rounded-lg mt-1 mb-6 p-4">
+            <div className="editor-cover-header flex items-center justify-between mb-3">
+              <span className="editor-cover-title text-[13px] font-semibold text-ink">
                 Cover photo{" "}
-                <span className="field-hint">
+                <span className="field-hint text-muted ml-0.5 text-[10px] font-normal">
                   optional • auto-crops symmetrically
                 </span>
               </span>
               {draft.artwork && (
                 <button
                   type="button"
-                  className="text-button editor-cover-remove"
+                  className="editor-cover-remove text-xs text-[#a5382b] underline bg-transparent border-0 p-0 cursor-pointer hover:text-[#8a2e23] transition-colors"
                   onClick={() => set("artwork", "")}
                 >
                   Remove photo
@@ -420,17 +437,17 @@ export default function RecipeEditor({
               )}
             </div>
 
-            <div className="editor-cover-layout">
-              <div className="editor-cover-preview">
+            <div className="editor-cover-layout flex items-start gap-4 max-[600px]:flex-col max-[600px]:items-center">
+              <div className="editor-cover-preview w-[110px] h-[110px] max-[600px]:w-[140px] max-[600px]:h-[140px] shrink-0 rounded-md bg-[#e8ede3] border border-[#d0dacb] overflow-hidden">
                 <RecipeArtwork
                   artwork={draft.artwork}
                   title={draft.title || "Recipe preview"}
-                  className="editor-cover-thumb"
+                  className="editor-cover-thumb w-full h-full aspect-square"
                 />
               </div>
 
-              <div className="editor-cover-controls">
-                <div className="editor-cover-buttons">
+              <div className="editor-cover-controls flex flex-col flex-1 gap-2.5 min-w-0 w-full">
+                <div className="editor-cover-buttons flex flex-wrap gap-2.5">
                   <input
                     ref={fileInputRef}
                     type="file"
@@ -453,9 +470,11 @@ export default function RecipeEditor({
                       }, 400);
                     }}
                   />
-                  <button
+                  <Button
+                    variant="light"
+                    size="sm"
                     type="button"
-                    className="button secondary editor-cover-btn"
+                    className="editor-cover-btn min-h-[38px] px-3.5 py-2 text-[13px] gap-[7px]"
                     onClick={() => {
                       filePickerActiveRef.current = true;
                       fileInputRef.current?.click();
@@ -473,11 +492,11 @@ export default function RecipeEditor({
                         <span>Upload photo</span>
                       </>
                     )}
-                  </button>
+                  </Button>
 
                   <button
                     type="button"
-                    className="button ai-sparkle-button editor-cover-btn"
+                    className="button ai-sparkle-button editor-cover-btn inline-flex items-center justify-center gap-[7px] min-h-[38px] px-3.5 py-2 text-[13px] font-[550] rounded-[4px] cursor-pointer transition-all duration-200 border disabled:opacity-40 disabled:cursor-not-allowed select-none bg-[#eef5eb] text-[#2e5735] border-[#bdd2b7] hover:bg-[#e1edd8] hover:border-[#9cb894]"
                     onClick={handleGenerateCover}
                     disabled={processingCover || !canGenerateCover}
                     title={coverTooltip}
@@ -491,7 +510,9 @@ export default function RecipeEditor({
                       <>
                         <Sparkles size={15} />
                         <span>Generate with AI</span>
-                        <span className="ai-badge">AI</span>
+                        <span className="ai-badge bg-[#2e5735] text-white text-[9px] font-bold px-1.5 py-0.5 rounded-[3px] ml-0.5 tracking-[0.05em]">
+                          AI
+                        </span>
                       </>
                     )}
                   </button>
@@ -499,25 +520,20 @@ export default function RecipeEditor({
 
                 {!canGenerateCover && (
                   <p
-                    className="editor-cover-hint"
-                    style={{
-                      fontSize: "11px",
-                      color: "var(--muted)",
-                      margin: "4px 0 0 0",
-                      lineHeight: "1.4",
-                    }}
+                    className="editor-cover-hint text-[11px] text-muted mt-1 leading-[1.4] m-0"
                   >
                     ℹ️ To save on API tokens, fill in title, category, 2+ ingredients, and 1+ step to unlock AI photo generation.
                   </p>
                 )}
 
-                <div className="editor-cover-url-wrap">
+                <div className="editor-cover-url-wrap w-full">
                   <input
                     type="url"
                     value={
                       draft.artwork?.startsWith("data:") ? "" : draft.artwork
                     }
                     placeholder="Or paste an image URL (Unsplash, ImgBB, Supabase...)"
+                    className="w-full min-h-[38px] text-ink bg-white border border-[#cfd8cb] rounded-[4px] px-3 py-1.5 text-[13px] max-[580px]:text-base placeholder:text-[#929b90] focus:outline-none focus:border-ink/50 transition-colors"
                     onChange={(event) =>
                       set("artwork", event.target.value.trim())
                     }
@@ -525,7 +541,7 @@ export default function RecipeEditor({
                 </div>
 
                 {coverNotice && (
-                  <p className="editor-cover-notice" role="status">
+                  <p className="editor-cover-notice text-xs text-[#38593c] bg-[#eef3eb] px-2 py-1 rounded leading-[1.4] m-0" role="status">
                     {coverNotice}
                   </p>
                 )}
@@ -533,14 +549,15 @@ export default function RecipeEditor({
             </div>
           </div>
 
-          <div className="form-grid">
-            <label>
+          <div className="form-grid grid grid-cols-2 gap-x-5 max-[580px]:gap-x-3.5">
+            <label className="block mb-[19px] text-xs font-[550] leading-[1.6]">
               Category
               <input
                 required
                 list="recipe-categories"
                 value={draft.category}
                 maxLength={150}
+                className="w-full min-h-[44px] text-ink bg-white border border-[#cfd8cb] rounded-[4px] mt-1.5 px-3 py-2.5 text-sm max-[580px]:text-base placeholder:text-[#929b90] focus:outline-none focus:border-ink/50 transition-colors"
                 onChange={(event) => set("category", event.target.value)}
               />
               <datalist id="recipe-categories">
@@ -549,16 +566,17 @@ export default function RecipeEditor({
                 ))}
               </datalist>
             </label>
-            <label>
-              Tags <span className="field-hint">comma-separated</span>
+            <label className="block mb-[19px] text-xs font-[550] leading-[1.6]">
+              Tags <span className="field-hint text-muted ml-0.5 text-[10px] font-normal">comma-separated</span>
               <input
                 value={draft.tags.join(",")}
                 onChange={(event) => set("tags", event.target.value.split(","))}
                 placeholder="Quick meals, Chicken"
+                className="w-full min-h-[44px] text-ink bg-white border border-[#cfd8cb] rounded-[4px] mt-1.5 px-3 py-2.5 text-sm max-[580px]:text-base placeholder:text-[#929b90] focus:outline-none focus:border-ink/50 transition-colors"
               />
             </label>
-            <label>
-              Prep time <span className="field-hint">minutes</span>
+            <label className="block mb-[19px] text-xs font-[550] leading-[1.6]">
+              Prep time <span className="field-hint text-muted ml-0.5 text-[10px] font-normal">minutes</span>
               <input
                 required
                 type="number"
@@ -566,10 +584,11 @@ export default function RecipeEditor({
                 max="10080"
                 value={draft.prepMinutes}
                 onChange={(event) => set("prepMinutes", event.target.value)}
+                className="w-full min-h-[44px] text-ink bg-white border border-[#cfd8cb] rounded-[4px] mt-1.5 px-3 py-2.5 text-sm max-[580px]:text-base placeholder:text-[#929b90] focus:outline-none focus:border-ink/50 transition-colors"
               />
             </label>
-            <label>
-              Cook time <span className="field-hint">minutes</span>
+            <label className="block mb-[19px] text-xs font-[550] leading-[1.6]">
+              Cook time <span className="field-hint text-muted ml-0.5 text-[10px] font-normal">minutes</span>
               <input
                 required
                 type="number"
@@ -577,10 +596,11 @@ export default function RecipeEditor({
                 max="10080"
                 value={draft.cookMinutes}
                 onChange={(event) => set("cookMinutes", event.target.value)}
+                className="w-full min-h-[44px] text-ink bg-white border border-[#cfd8cb] rounded-[4px] mt-1.5 px-3 py-2.5 text-sm max-[580px]:text-base placeholder:text-[#929b90] focus:outline-none focus:border-ink/50 transition-colors"
               />
             </label>
-            <label>
-              Rest time <span className="field-hint">minutes</span>
+            <label className="block mb-[19px] text-xs font-[550] leading-[1.6]">
+              Rest time <span className="field-hint text-muted ml-0.5 text-[10px] font-normal">minutes</span>
               <input
                 required
                 type="number"
@@ -588,9 +608,10 @@ export default function RecipeEditor({
                 max="10080"
                 value={draft.restMinutes}
                 onChange={(event) => set("restMinutes", event.target.value)}
+                className="w-full min-h-[44px] text-ink bg-white border border-[#cfd8cb] rounded-[4px] mt-1.5 px-3 py-2.5 text-sm max-[580px]:text-base placeholder:text-[#929b90] focus:outline-none focus:border-ink/50 transition-colors"
               />
             </label>
-            <label>
+            <label className="block mb-[19px] text-xs font-[550] leading-[1.6]">
               Servings
               <input
                 required
@@ -599,31 +620,37 @@ export default function RecipeEditor({
                 max="100"
                 value={draft.servings}
                 onChange={(event) => set("servings", event.target.value)}
+                className="w-full min-h-[44px] text-ink bg-white border border-[#cfd8cb] rounded-[4px] mt-1.5 px-3 py-2.5 text-sm max-[580px]:text-base placeholder:text-[#929b90] focus:outline-none focus:border-ink/50 transition-colors"
               />
             </label>
-            <label>
+            <label className="block mb-[19px] text-xs font-[550] leading-[1.6]">
               Cuisine
               <input
                 value={draft.cuisine}
                 onChange={(event) => set("cuisine", event.target.value)}
                 placeholder="Italian, Japanese-inspired..."
+                className="w-full min-h-[44px] text-ink bg-white border border-[#cfd8cb] rounded-[4px] mt-1.5 px-3 py-2.5 text-sm max-[580px]:text-base placeholder:text-[#929b90] focus:outline-none focus:border-ink/50 transition-colors"
               />
             </label>
-            <label>
+            <label className="block mb-[19px] text-xs font-[550] leading-[1.6]">
               Cooking method
               <input
                 value={draft.method}
                 onChange={(event) => set("method", event.target.value)}
                 placeholder="Air fryer, stir fry, no cook..."
+                className="w-full min-h-[44px] text-ink bg-white border border-[#cfd8cb] rounded-[4px] mt-1.5 px-3 py-2.5 text-sm max-[580px]:text-base placeholder:text-[#929b90] focus:outline-none focus:border-ink/50 transition-colors"
               />
             </label>
           </div>
-          <fieldset>
-            <legend>Ingredients</legend>
+          <fieldset className="border-0 border-t border-line min-w-0 mt-1.5 mb-[27px] pt-[26px] pb-1.5">
+            <legend className="font-serif font-normal text-2xl pr-[15px] max-[580px]:text-[25px]">Ingredients</legend>
             {draft.ingredients.map((item, index) => (
-              <div className="ingredient-fields" key={index}>
-                <label>
-                  <span className="field-hint">Amount</span>
+              <div
+                className="ingredient-fields grid grid-cols-[78px_82px_minmax(0,1fr)_32px] max-[580px]:grid-cols-[64px_68px_minmax(0,1fr)_30px] max-[370px]:grid-cols-[56px_56px_minmax(0,1fr)_28px] gap-x-2.5 max-[580px]:gap-x-[7px] mb-2.5"
+                key={index}
+              >
+                <label className="block mb-2.5 text-xs font-[550] leading-[1.6]">
+                  <span className="field-hint text-muted m-0 text-[10px] font-normal">Amount</span>
                   <input
                     type="number"
                     step="any"
@@ -640,10 +667,11 @@ export default function RecipeEditor({
                       )
                     }
                     placeholder="2"
+                    className="w-full min-h-[44px] text-ink bg-white border border-[#cfd8cb] rounded-[4px] mt-1.5 px-3 max-[580px]:px-2 py-2.5 text-sm max-[580px]:text-base placeholder:text-[#929b90] focus:outline-none focus:border-ink/50 transition-colors"
                   />
                 </label>
-                <label>
-                  <span className="field-hint">Unit</span>
+                <label className="block mb-2.5 text-xs font-[550] leading-[1.6]">
+                  <span className="field-hint text-muted m-0 text-[10px] font-normal">Unit</span>
                   <input
                     value={item.unit}
                     aria-label={`Ingredient ${index + 1} unit`}
@@ -651,10 +679,11 @@ export default function RecipeEditor({
                       setItem("ingredients", index, "unit", event.target.value)
                     }
                     placeholder="tbsp"
+                    className="w-full min-h-[44px] text-ink bg-white border border-[#cfd8cb] rounded-[4px] mt-1.5 px-3 max-[580px]:px-2 py-2.5 text-sm max-[580px]:text-base placeholder:text-[#929b90] focus:outline-none focus:border-ink/50 transition-colors"
                   />
                 </label>
-                <label>
-                  <span className="field-hint">Ingredient</span>
+                <label className="block mb-2.5 text-xs font-[550] leading-[1.6]">
+                  <span className="field-hint text-muted m-0 text-[10px] font-normal">Ingredient</span>
                   <input
                     required
                     value={item.name}
@@ -663,11 +692,11 @@ export default function RecipeEditor({
                       setItem("ingredients", index, "name", event.target.value)
                     }
                     placeholder="Olive oil"
+                    className="w-full min-h-[44px] text-ink bg-white border border-[#cfd8cb] rounded-[4px] mt-1.5 px-3 max-[580px]:px-2 py-2.5 text-sm max-[580px]:text-base placeholder:text-[#929b90] focus:outline-none focus:border-ink/50 transition-colors"
                   />
                 </label>
-                <button
-                  type="button"
-                  className="icon-button"
+                <IconButton
+                  size="sm"
                   disabled={draft.ingredients.length === 1}
                   aria-label={`Remove ingredient ${index + 1}`}
                   onClick={() =>
@@ -676,10 +705,11 @@ export default function RecipeEditor({
                       draft.ingredients.filter((_, at) => at !== index),
                     )
                   }
+                  className="w-8 h-8 max-[580px]:w-[30px] max-[370px]:w-7 mt-[21px] text-muted hover:text-ink disabled:opacity-30 disabled:cursor-not-allowed"
                 >
                   <Trash2 size={16} />
-                </button>
-                <label className="ingredient-note-field">
+                </IconButton>
+                <label className="col-span-3 mb-2">
                   <span className="sr-only">
                     Ingredient {index + 1} preparation note
                   </span>
@@ -690,9 +720,10 @@ export default function RecipeEditor({
                     onChange={(event) =>
                       setItem("ingredients", index, "note", event.target.value)
                     }
+                    className="m-0 min-h-[40px] w-full rounded-[4px] border border-[#e1e6dd] bg-transparent px-3 py-1.5 text-sm text-ink transition-colors placeholder:text-[#929b90] focus:border-ink/50 focus:outline-none max-[580px]:text-base"
                   />
                 </label>
-                <label className="ingredient-group-field">
+                <label className="col-span-3 mb-2">
                   <span className="sr-only">Ingredient {index + 1} group</span>
                   <input
                     value={item.group || ""}
@@ -701,30 +732,32 @@ export default function RecipeEditor({
                     onChange={(event) =>
                       setItem("ingredients", index, "group", event.target.value)
                     }
+                    className="m-0 min-h-[40px] w-full rounded-[4px] border border-[#e1e6dd] bg-transparent px-3 py-1.5 text-sm text-ink transition-colors placeholder:text-[#929b90] focus:border-ink/50 focus:outline-none max-[580px]:text-base"
                   />
                 </label>
               </div>
             ))}
-            <button
-              className="text-button"
+            <TextButton
               type="button"
+              className="mt-1"
               onClick={() =>
                 set("ingredients", [...draft.ingredients, blankIngredient()])
               }
             >
               <Plus size={16} />
               Add ingredient
-            </button>
+            </TextButton>
           </fieldset>
-          <fieldset>
-            <legend>Method</legend>
+          <fieldset className="border-0 border-t border-line min-w-0 mt-1.5 mb-[27px] pt-[26px] pb-1.5">
+            <legend className="font-serif font-normal text-2xl pr-[15px] max-[580px]:text-[25px]">Method</legend>
             {draft.steps.map((step, index) => (
-              <div className="step-fields" key={index}>
-                <div>
-                  <span className="eyebrow">Step {index + 1}</span>
-                  <button
-                    className="icon-button"
-                    type="button"
+              <div className="step-fields mb-[22px]" key={index}>
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="eyebrow block text-[10px] font-semibold tracking-[0.08em] uppercase text-muted">
+                    Step {index + 1}
+                  </span>
+                  <IconButton
+                    size="sm"
                     disabled={draft.steps.length === 1}
                     aria-label={`Remove step ${index + 1}`}
                     onClick={() =>
@@ -733,9 +766,10 @@ export default function RecipeEditor({
                         draft.steps.filter((_, at) => at !== index),
                       )
                     }
+                    className="w-8 h-8 text-muted hover:text-ink disabled:opacity-30 disabled:cursor-not-allowed"
                   >
                     <Trash2 size={16} />
-                  </button>
+                  </IconButton>
                 </div>
                 <label className="sr-only" htmlFor={`step-title-${index}`}>
                   Step {index + 1} title
@@ -747,6 +781,7 @@ export default function RecipeEditor({
                     setItem("steps", index, "title", event.target.value)
                   }
                   placeholder="A short heading (optional)"
+                  className="w-full min-h-[44px] text-ink bg-white border border-[#cfd8cb] rounded-[4px] mt-0 mb-2 px-3 py-2.5 text-sm max-[580px]:text-base placeholder:text-[#929b90] focus:outline-none focus:border-ink/50 transition-colors"
                 />
                 <label
                   className="sr-only"
@@ -763,125 +798,146 @@ export default function RecipeEditor({
                     setItem("steps", index, "instruction", event.target.value)
                   }
                   placeholder="What happens next?"
+                  className="w-full min-h-[80px] text-ink bg-white border border-[#cfd8cb] rounded-[4px] mt-1.5 px-3 py-2.5 text-sm max-[580px]:text-base placeholder:text-[#929b90] leading-[1.6] resize-y focus:outline-none focus:border-ink/50 transition-colors"
                 />
               </div>
             ))}
-            <button
-              className="text-button"
+            <TextButton
               type="button"
+              className="mt-1"
               onClick={() => set("steps", [...draft.steps, blankStep()])}
             >
               <Plus size={16} />
               Add step
-            </button>
+            </TextButton>
           </fieldset>
-          <details className="editor-extras">
-            <summary>Notes, substitutions & search keywords</summary>
-            <label>
-              Kitchen notes <span className="field-hint">one per line</span>
+          <details className="editor-extras border-t border-line pt-5">
+            <summary className="cursor-pointer min-h-[38px] max-[580px]:min-h-[48px] max-[580px]:leading-[1.7] text-[13px] font-[550] text-ink select-none">
+              Notes, substitutions & search keywords
+            </summary>
+            <label className="block mt-[15px] mb-[19px] text-xs font-[550] leading-[1.6]">
+              Kitchen notes <span className="field-hint text-muted ml-0.5 text-[10px] font-normal">one per line</span>
               <textarea
                 value={draft.notes.join("\n")}
                 onChange={(event) =>
                   set("notes", event.target.value.split("\n"))
                 }
                 rows={3}
+                className="w-full min-h-[44px] text-ink bg-white border border-[#cfd8cb] rounded-[4px] mt-1.5 px-3 py-2.5 text-sm max-[580px]:text-base placeholder:text-[#929b90] leading-[1.6] resize-y focus:outline-none focus:border-ink/50 transition-colors"
               />
             </label>
-            <label>
-              Substitutions <span className="field-hint">one per line</span>
+            <label className="block mb-[19px] text-xs font-[550] leading-[1.6]">
+              Substitutions <span className="field-hint text-muted ml-0.5 text-[10px] font-normal">one per line</span>
               <textarea
                 value={draft.substitutions.join("\n")}
                 onChange={(event) =>
                   set("substitutions", event.target.value.split("\n"))
                 }
                 rows={2}
+                className="w-full min-h-[44px] text-ink bg-white border border-[#cfd8cb] rounded-[4px] mt-1.5 px-3 py-2.5 text-sm max-[580px]:text-base placeholder:text-[#929b90] leading-[1.6] resize-y focus:outline-none focus:border-ink/50 transition-colors"
               />
             </label>
-            <label>
-              Equipment <span className="field-hint">comma-separated</span>
+            <label className="block mb-[19px] text-xs font-[550] leading-[1.6]">
+              Equipment <span className="field-hint text-muted ml-0.5 text-[10px] font-normal">comma-separated</span>
               <input
                 value={draft.equipment.join(",")}
                 onChange={(event) =>
                   set("equipment", event.target.value.split(","))
                 }
+                className="w-full min-h-[44px] text-ink bg-white border border-[#cfd8cb] rounded-[4px] mt-1.5 px-3 py-2.5 text-sm max-[580px]:text-base placeholder:text-[#929b90] focus:outline-none focus:border-ink/50 transition-colors"
               />
             </label>
-            <label>
+            <label className="block mb-[19px] text-xs font-[550] leading-[1.6]">
               Search keywords{" "}
-              <span className="field-hint">comma-separated</span>
+              <span className="field-hint text-muted ml-0.5 text-[10px] font-normal">comma-separated</span>
               <input
                 value={draft.keywords.join(",")}
                 onChange={(event) =>
                   set("keywords", event.target.value.split(","))
                 }
                 placeholder="beef, rib eye, skillet"
+                className="w-full min-h-[44px] text-ink bg-white border border-[#cfd8cb] rounded-[4px] mt-1.5 px-3 py-2.5 text-sm max-[580px]:text-base placeholder:text-[#929b90] focus:outline-none focus:border-ink/50 transition-colors"
               />
             </label>
-            <label>
-              Source video <span className="field-hint">optional</span>
+            <label className="block mb-[19px] text-xs font-[550] leading-[1.6]">
+              Source video <span className="field-hint text-muted ml-0.5 text-[10px] font-normal">optional</span>
               <input
                 type="url"
                 inputMode="url"
                 value={draft.sourceVideo || ""}
                 onChange={(event) => set("sourceVideo", event.target.value)}
                 placeholder="Instagram, TikTok, or YouTube URL"
+                className="w-full min-h-[44px] text-ink bg-white border border-[#cfd8cb] rounded-[4px] mt-1.5 px-3 py-2.5 text-sm max-[580px]:text-base placeholder:text-[#929b90] focus:outline-none focus:border-ink/50 transition-colors"
               />
             </label>
           </details>
           {isLocal && (
-            <div className="delete-recipe">
+            <div className="delete-recipe mt-8 flex flex-wrap items-center justify-between gap-4 border-t border-[#ecd3ce] pt-5 text-xs">
+              <div>
+                <span className="mb-1 block text-[10px] font-semibold uppercase tracking-[0.08em] text-[#a5382b]">Danger zone</span>
+                <p className="m-0 text-[13px] text-muted">Remove this recipe permanently.</p>
+              </div>
               {confirmDelete ? (
-                <>
-                  <span>
+                <div className="flex flex-wrap items-center justify-end gap-3">
+                  <span className="text-ink">
                     {isCloud
                       ? "Delete this recipe from your cookbook?"
                       : "Delete this browser-saved recipe?"}
                   </span>
-                  <button
+                  <TextButton
                     type="button"
-                    className="text-button danger"
+                    className="text-button danger text-[#a5382b] hover:text-[#8a2e23] font-semibold"
                     onClick={() => onDelete(recipe.id)}
                   >
                     Yes, delete
-                  </button>
-                  <button
+                  </TextButton>
+                  <TextButton
                     type="button"
-                    className="text-button"
+                    className="text-button text-muted hover:text-ink"
                     onClick={() => setConfirmDelete(false)}
                   >
                     Keep it
-                  </button>
-                </>
+                  </TextButton>
+                </div>
               ) : (
-                <button
+                <TextButton
                   type="button"
-                  className="text-button danger"
+                  className="text-button danger text-[#a5382b] hover:text-[#8a2e23]"
                   onClick={() => setConfirmDelete(true)}
                 >
                   <Trash2 size={15} />
                   Delete recipe
-                </button>
+                </TextButton>
               )}
             </div>
           )}
         </div>
-        <div className="editor-footer">
+        <div
+          className="editor-footer z-[2] flex shrink-0 flex-wrap items-center justify-between gap-3 border-t border-line bg-paper px-8 py-[17px] max-[580px]:gap-2.5 max-[580px]:px-5 max-[580px]:py-3.5 max-[580px]:pb-[max(14px,env(safe-area-inset-bottom))]"
+          role="group"
+          aria-label="Editor actions"
+        >
           {error && (
-            <p className="form-error" role="alert">
+            <p className="form-error w-full max-w-none text-xs text-[#a5382b] m-0" role="alert">
               {error}
             </p>
           )}
           {isCloud ? (
-            <p className="editor-status-cloud">
+            <p className="editor-status-cloud inline-flex items-center gap-1.5 font-[550] text-[#234d3c] max-w-none text-[11px] max-[580px]:text-[10px] m-0">
               <Cloud size={14} /> Saved to your synced cloud cookbook.
             </p>
           ) : (
-            <p>Saved on this browser. Export a backup to keep a copy.</p>
+            <p className="max-w-[250px] max-[580px]:max-w-[170px] max-[370px]:max-w-[140px] text-muted m-0 text-[11px] max-[580px]:text-[10px] leading-[1.6]">Saved on this browser. Export a backup to keep a copy.</p>
           )}
-          <button className="button" type="submit">
+          <Button
+            type="submit"
+            variant="primary"
+            size="default"
+            className="button gap-2 max-[580px]:px-3.5 max-[580px]:text-xs"
+          >
             <Save size={17} />
             Save recipe
-          </button>
+          </Button>
         </div>
       </form>
     </dialog>

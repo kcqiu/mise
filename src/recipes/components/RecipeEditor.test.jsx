@@ -271,6 +271,52 @@ describe('RecipeEditor component', () => {
 
     expect(screen.queryByLabelText(/Illustration/i)).not.toBeInTheDocument();
   });
+
+  it('uses a centered workspace shell with independently scrolling fields and persistent actions', () => {
+    render(
+      <RecipeEditor
+        recipe={defaultRecipe}
+        categories={['Baking', 'Dinner']}
+        onSave={vi.fn()}
+        onClose={vi.fn()}
+        onDelete={vi.fn()}
+        isLocal={true}
+        isCloud={true}
+      />
+    );
+
+    const dialog = screen.getByRole('dialog', { name: /Make it yours/i });
+    expect(dialog).toHaveAttribute('data-layout', 'centered-workspace');
+
+    const form = screen.getByRole('form', { name: 'Recipe editor form' });
+    expect(form).toHaveClass('flex', 'flex-col');
+
+    const fields = screen.getByRole('region', { name: 'Recipe fields' });
+    expect(fields).toHaveClass('min-h-0', 'overflow-y-auto');
+
+    expect(screen.getByRole('group', { name: 'Editor actions' })).toBeInTheDocument();
+  });
+
+  it('keeps repeated ingredient inputs readable on mobile', () => {
+    render(
+      <RecipeEditor
+        recipe={defaultRecipe}
+        categories={['Baking', 'Dinner']}
+        onSave={vi.fn()}
+        onClose={vi.fn()}
+        onDelete={vi.fn()}
+        isLocal={true}
+        isCloud={true}
+      />
+    );
+
+    const note = screen.getByLabelText('Ingredient 1 preparation note');
+    const group = screen.getByLabelText('Ingredient 1 group');
+    expect(note).not.toHaveClass('text-xs');
+    expect(group).not.toHaveClass('text-xs');
+    expect(note).toHaveClass('text-sm', 'max-[580px]:text-base');
+    expect(group).toHaveClass('text-sm', 'max-[580px]:text-base');
+  });
 });
 
 describe('AI cover prompt builder', () => {
