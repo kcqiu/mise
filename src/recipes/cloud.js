@@ -276,6 +276,17 @@ export async function loadAccountGrocerySession(userId) {
   }
 }
 
+async function ensureAccountGrocerySession(client, sessionId) {
+  const { data, error } = await client.rpc("ensure_grocery_session", {
+    p_session_id: sessionId,
+  });
+  if (error) throw error;
+  if (!data?.success || !data.session) {
+    throw new Error(data?.code || "Failed to create grocery session");
+  }
+  return dbRecordToGrocerySession(data.session);
+}
+
 /**
  * Applies a batch of queued mutations atomically on the server.
  */
@@ -285,12 +296,23 @@ export async function saveAccountGroceryMutations(userId, sessionId, expectedRev
     return { success: false, error: new Error("Not authenticated") };
   }
   try {
-    const { data, error } = await client.rpc("apply_grocery_mutations", {
-      p_session_id: sessionId,
-      p_expected_revision: expectedRevision,
-      p_mutations: mutations,
-    });
+    const applyMutations = (targetSessionId, targetRevision) =>
+      client.rpc("apply_grocery_mutations", {
+        p_session_id: targetSessionId,
+        p_expected_revision: targetRevision,
+        p_mutations: mutations,
+      });
+
+    let { data, error } = await applyMutations(sessionId, expectedRevision);
     if (error) throw error;
+    if (data?.code === "SESSION_NOT_FOUND") {
+      const activeSession = await ensureAccountGrocerySession(client, sessionId);
+      ({ data, error } = await applyMutations(
+        activeSession.id,
+        activeSession.revision,
+      ));
+      if (error) throw error;
+    }
     if (data?.success) {
       return {
         success: true,
@@ -338,14 +360,29 @@ export async function completeAccountGrocerySession(
     return { success: false, error: new Error("Not authenticated") };
   }
   try {
-    const { data, error } = await client.rpc("complete_grocery_session", {
-      p_session_id: sessionId,
-      p_action: action,
-      p_rollover_custom_items: rolloverCustomItems || [],
-      p_new_session_id: newSessionId,
-      p_expected_revision: expectedRevision,
-    });
+    const completeSession = (targetSessionId, targetRevision) =>
+      client.rpc("complete_grocery_session", {
+        p_session_id: targetSessionId,
+        p_action: action,
+        p_rollover_custom_items: rolloverCustomItems || [],
+        p_new_session_id: newSessionId,
+        p_expected_revision: targetRevision,
+      });
+
+    let { data, error } = await completeSession(sessionId, expectedRevision);
     if (error) throw error;
+    if (
+      data?.success &&
+      data.code === "ALREADY_COMPLETED" &&
+      !data.activeSession
+    ) {
+      const activeSession = await ensureAccountGrocerySession(client, sessionId);
+      ({ data, error } = await completeSession(
+        activeSession.id,
+        activeSession.revision,
+      ));
+      if (error) throw error;
+    }
     if (data?.success) {
       return {
         success: true,

@@ -112,6 +112,73 @@ describe("Groceries Cloud Synchronization Client", () => {
       expect(res.ackMutationIds).toEqual(["m-1"]);
     });
 
+    it("creates a missing cloud session and retries queued mutations", async () => {
+      const sessionId = "22222222-2222-4222-8222-222222222222";
+      const mutations = [
+        {
+          mutationId: "m-bootstrap",
+          type: "RECIPE_ADDED",
+          targetId: "soup",
+          payload: { servings: 4 },
+        },
+      ];
+      const activeSession = {
+        id: sessionId,
+        status: "active",
+        revision: 1,
+        recipes: [],
+        custom_items: [],
+        item_overrides: {},
+      };
+      const syncedSession = {
+        ...activeSession,
+        revision: 2,
+        recipes: [{ recipeId: "soup", servings: 4 }],
+      };
+      const mockRpc = vi
+        .fn()
+        .mockResolvedValueOnce({
+          data: { success: false, code: "SESSION_NOT_FOUND", sessionId },
+          error: null,
+        })
+        .mockResolvedValueOnce({
+          data: { success: true, created: true, session: activeSession },
+          error: null,
+        })
+        .mockResolvedValueOnce({
+          data: {
+            success: true,
+            sessionId,
+            revision: 2,
+            ackMutationIds: ["m-bootstrap"],
+            session: syncedSession,
+          },
+          error: null,
+        });
+
+      cloud.setSupabaseClientForTesting({ rpc: mockRpc });
+
+      const result = await cloud.saveAccountGroceryMutations(
+        "user-123",
+        sessionId,
+        1,
+        mutations,
+      );
+
+      expect(result.success).toBe(true);
+      expect(result.session.recipes).toEqual([
+        { recipeId: "soup", servings: 4 },
+      ]);
+      expect(mockRpc).toHaveBeenNthCalledWith(2, "ensure_grocery_session", {
+        p_session_id: sessionId,
+      });
+      expect(mockRpc).toHaveBeenNthCalledWith(3, "apply_grocery_mutations", {
+        p_session_id: sessionId,
+        p_expected_revision: 1,
+        p_mutations: mutations,
+      });
+    });
+
     it("handles SESSION_COMPLETED response and parses currentActiveSession", async () => {
       const mockRpc = vi.fn().mockResolvedValue({
         data: {
@@ -177,6 +244,68 @@ describe("Groceries Cloud Synchronization Client", () => {
 
       expect(res.success).toBe(true);
       expect(res.activeSession.id).toBe("session-2");
+    });
+
+    it("creates a missing cloud session and retries trip completion", async () => {
+      const activeSession = {
+        id: "session-1",
+        status: "active",
+        revision: 1,
+        recipes: [],
+        custom_items: [],
+        item_overrides: {},
+      };
+      const clearedSession = {
+        ...activeSession,
+        id: "session-2",
+      };
+      const mockRpc = vi
+        .fn()
+        .mockResolvedValueOnce({
+          data: {
+            success: true,
+            code: "ALREADY_COMPLETED",
+            activeSession: null,
+          },
+          error: null,
+        })
+        .mockResolvedValueOnce({
+          data: { success: true, created: true, session: activeSession },
+          error: null,
+        })
+        .mockResolvedValueOnce({
+          data: {
+            success: true,
+            action: "clear",
+            completedSessionId: "session-1",
+            activeSession: clearedSession,
+          },
+          error: null,
+        });
+
+      cloud.setSupabaseClientForTesting({ rpc: mockRpc });
+
+      const result = await cloud.completeAccountGrocerySession(
+        "user-123",
+        "session-1",
+        "clear",
+        [],
+        "session-2",
+        1,
+      );
+
+      expect(result.success).toBe(true);
+      expect(result.activeSession.id).toBe("session-2");
+      expect(mockRpc).toHaveBeenNthCalledWith(2, "ensure_grocery_session", {
+        p_session_id: "session-1",
+      });
+      expect(mockRpc).toHaveBeenNthCalledWith(3, "complete_grocery_session", {
+        p_session_id: "session-1",
+        p_action: "clear",
+        p_rollover_custom_items: [],
+        p_new_session_id: "session-2",
+        p_expected_revision: 1,
+      });
     });
 
     it("handles REVISION_CONFLICT on trip completion guard", async () => {
