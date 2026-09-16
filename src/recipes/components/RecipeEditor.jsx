@@ -355,7 +355,7 @@ export default function RecipeEditor({
           <div className="flex items-center gap-2.5">
             <button
               type="button"
-              className="button ai-polish-btn inline-flex items-center justify-center gap-1.5 min-h-[36px] px-3.5 py-2 text-xs font-[550] rounded-[4px] cursor-pointer transition-colors duration-150 border disabled:opacity-40 disabled:cursor-not-allowed select-none bg-[#eef5eb] text-[#2e5735] border-[#bdd2b7] hover:bg-[#e1edd8] hover:border-[#9cb894]"
+              className="button ai-polish-btn inline-flex items-center justify-center gap-1.5 min-h-[36px] px-3.5 py-2 text-xs font-[550] rounded-[4px] cursor-pointer transition-colors duration-150 border disabled:opacity-40 disabled:cursor-not-allowed select-none bg-[#eef5eb] text-[#2e5735] border-[#bdd2b7] hover:bg-[#e1edd8] hover:border-[#9cb894] focus-visible:outline-none focus-visible:bg-[#e1edd8] focus-visible:border-[#9cb894]"
               onClick={handleManualPolish}
               disabled={polishing}
               title="Standardize measurements and enhance culinary steps with Gemini AI"
