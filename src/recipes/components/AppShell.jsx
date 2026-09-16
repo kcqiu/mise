@@ -7,6 +7,7 @@ import {
   UserRound,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import InstallAppMenuItem from "./InstallAppMenuItem";
 
 export function AppHeader({
   account,
@@ -110,6 +111,7 @@ export function AppHeader({
                       {favoriteCount === 1 ? "favorite" : "favorites"}
                     </span>
                   </div>
+                  <InstallAppMenuItem />
                   <button
                     type="button"
                     onClick={onSignOut}

@@ -1,0 +1,25 @@
+{
+  "name": "MISE — Personal Cookbook",
+  "short_name": "MISE",
+  "id": "/",
+  "description": "A personal cookbook for recipes kept close.",
+  "start_url": "/#/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#F2EEE5",
+  "theme_color": "#F2EEE5",
+  "icons": [
+    {
+      "src": "/mise-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/mise-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
