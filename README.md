@@ -30,6 +30,7 @@ values.
 | --- | --- |
 | `VITE_SUPABASE_URL` | Supabase project URL |
 | `VITE_SUPABASE_PUBLISHABLE_KEY` | Browser-safe Supabase key |
+| `VITE_GOOGLE_CLIENT_ID` | Public Google Web OAuth client ID |
 | `GEMINI_API_KEY` | Recipe parsing and refinement |
 | `CHOCODATA_API_KEY` | Optional Instagram caption lookup |
 | `CLOUDFLARE_ACCOUNT_ID` | AI cover generation |
@@ -53,11 +54,18 @@ storage are protected by Supabase row-level security policies.
 
 ### Google sign-in branding
 
-The Google account chooser displays the Supabase Auth hostname unless the auth
-endpoint is branded. Set the OAuth app name and logo to **MISE** in Google Auth
-Platform, then configure a Supabase custom domain. Add both the custom-domain
-and legacy `supabase.co` callback URLs to the Google OAuth client before
-activating the domain, and use the branded URL for `VITE_SUPABASE_URL`.
+MISE uses Google Identity Services to obtain a Google ID token, then exchanges
+that token for the existing Supabase session. In Google Auth Platform:
+
+1. Add the app's deployment URL as an Authorized JavaScript Origin.
+2. Set the OAuth app name and logo to **MISE**. Use the public homepage,
+   `/privacy`, and `/terms` URLs from the same verified deployment domain,
+   then verify and publish the branding.
+3. Use the same Web OAuth client ID configured for the Supabase Google provider
+   as `VITE_GOOGLE_CLIENT_ID`. Keep the client secret server-side in Supabase.
+
+Google may still show the authorized app domain as a security signal, but the
+Supabase project hostname is no longer part of the browser sign-in flow.
 
 ## Checks
 

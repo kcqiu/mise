@@ -6,18 +6,35 @@ describe("Groceries Cloud Synchronization Client", () => {
     cloud.setSupabaseClientForTesting(null);
   });
 
-  it("starts Google OAuth with the current application origin", async () => {
-    const signInWithOAuth = vi.fn().mockResolvedValue({ error: null });
+  it("exchanges a Google ID token for a Supabase session", async () => {
+    const signInWithIdToken = vi.fn().mockResolvedValue({
+      data: { session: { access_token: "supabase-session-token" } },
+      error: null,
+    });
     cloud.setSupabaseClientForTesting({
-      auth: { signInWithOAuth },
+      auth: { signInWithIdToken },
     });
 
-    await cloud.signInWithGoogle();
+    const result = await cloud.signInWithGoogle({
+      idToken: "google-id-token",
+      nonce: "raw-nonce",
+    });
 
-    expect(signInWithOAuth).toHaveBeenCalledWith({
+    expect(result.session.access_token).toBe("supabase-session-token");
+    expect(signInWithIdToken).toHaveBeenCalledWith({
       provider: "google",
-      options: { redirectTo: window.location.origin },
+      token: "google-id-token",
+      nonce: "raw-nonce",
     });
+  });
+
+  it("rejects an empty Google credential before contacting Supabase", async () => {
+    const signInWithIdToken = vi.fn();
+    cloud.setSupabaseClientForTesting({ auth: { signInWithIdToken } });
+
+    await expect(cloud.signInWithGoogle({ idToken: "", nonce: "nonce" }))
+      .rejects.toThrow("Google did not return a sign-in credential");
+    expect(signInWithIdToken).not.toHaveBeenCalled();
   });
 
   it("safely handles unauthenticated calls when cloud is disabled or credentials missing", async () => {

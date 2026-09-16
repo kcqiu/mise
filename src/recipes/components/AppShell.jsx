@@ -7,6 +7,7 @@ import {
   UserRound,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import InstallAppMenuItem from "./InstallAppMenuItem";
 
 export function AppHeader({
   account,
@@ -110,6 +111,7 @@ export function AppHeader({
                       {favoriteCount === 1 ? "favorite" : "favorites"}
                     </span>
                   </div>
+                  <InstallAppMenuItem />
                   <button
                     type="button"
                     onClick={onSignOut}
@@ -153,12 +155,26 @@ export function AppHeader({
 
 export function AppFooter() {
   return (
-    <footer className="app-footer border-t border-line text-[#798577] flex items-center gap-7 min-h-[108px] mt-[72px] max-[800px]:mt-12 w-[min(1312px,calc(100%-48px))] min-[1500px]:w-[min(1360px,calc(100%-160px))] max-[1150px]:w-[calc(100%-72px)] max-[800px]:w-[calc(100%-48px)] max-[580px]:w-[calc(100%-36px)] mx-auto">
+    <footer className="app-footer border-t border-line text-[#798577] flex items-center gap-7 min-h-[108px] mt-[72px] max-[800px]:mt-12 w-[min(1312px,calc(100%-48px))] min-[1500px]:w-[min(1360px,calc(100%-160px))] max-[1150px]:w-[calc(100%-72px)] max-[800px]:w-[calc(100%-48px)] max-[580px]:w-[calc(100%-36px)] max-[580px]:gap-4 mx-auto">
       <a href="#/" className="mise-brand text-ink text-[31px] font-serif font-medium leading-[0.9] pb-1 no-underline">
         mise<span className="text-terracotta">.</span>
       </a>
       <span className="text-[11px]">A little less searching. A little more cooking.</span>
-      <Sprout size={23} strokeWidth={1.3} aria-hidden="true" className="ml-auto" />
+      <nav className="ml-auto flex items-center gap-4" aria-label="Legal">
+        <a
+          href="/privacy"
+          className="text-[11px] font-medium underline decoration-line underline-offset-4 transition-colors hover:text-ink"
+        >
+          Privacy
+        </a>
+        <a
+          href="/terms"
+          className="text-[11px] font-medium underline decoration-line underline-offset-4 transition-colors hover:text-ink"
+        >
+          Terms
+        </a>
+      </nav>
+      <Sprout size={23} strokeWidth={1.3} aria-hidden="true" />
     </footer>
   );
 }

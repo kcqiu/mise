@@ -913,9 +913,9 @@ export default function RecipeApp() {
   const beginSignIn = () => {
     setAuthModal({ open: true, intent: "signin", error: "" });
   };
-  const handleAuthModalSignIn = async () => {
+  const handleAuthModalSignIn = async (credentials) => {
     try {
-      await signInWithGoogle();
+      await signInWithGoogle(credentials);
     } catch (error) {
       setAuthModal((prev) => ({ ...prev, error: error.message }));
       addToast(`Google sign-in could not start: ${error.message}`, "error");

@@ -28,6 +28,10 @@ storage. Signed-in data is account-owned in Supabase and protected by row-level
 security. Grocery changes use an offline mutation queue and revisioned server
 updates.
 
+Google Identity Services owns the browser account chooser. The returned ID
+token is exchanged in `cloud.js` for the same Supabase session used by the rest
+of the app; components do not store or interpret Google tokens.
+
 After changing published recipes, run `npm run seed:generate` and commit the
 updated `supabase/seed.sql`.
 
