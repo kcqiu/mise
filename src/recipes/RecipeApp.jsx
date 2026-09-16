@@ -95,8 +95,6 @@ export default function RecipeApp() {
       typeof window !== "undefined" &&
       window.localStorage.getItem(GROCERY_AUTH_PROMPT_SEEN_KEY) === "true",
   );
-  const [groceryPromptDismissedForVisit, setGroceryPromptDismissedForVisit] =
-    useState(false);
   const [editor, setEditor] = useState(null);
   const [addRecipeModalOpen, setAddRecipeModalOpen] = useState(false);
   const [grocerySession, setGrocerySession] = useState(readGrocerySession);
@@ -381,15 +379,16 @@ export default function RecipeApp() {
   }, []);
 
   useEffect(() => {
-    if (route !== "groceries") {
-      setGroceryPromptDismissedForVisit(false);
+    if (
+      route !== "groceries" ||
+      window.location.hash !== "#/groceries"
+    ) {
       return undefined;
     }
 
     if (
       account.session ||
       account.loading ||
-      groceryPromptDismissedForVisit ||
       authModal.open
     ) {
       return undefined;
@@ -421,7 +420,6 @@ export default function RecipeApp() {
     account.loading,
     authModal.open,
     groceryPromptSeen,
-    groceryPromptDismissedForVisit,
   ]);
 
   useEffect(() => {
@@ -933,7 +931,7 @@ export default function RecipeApp() {
       route === "groceries" &&
       !account.session
     ) {
-      setGroceryPromptDismissedForVisit(true);
+      window.location.hash = "#/";
     }
   };
 

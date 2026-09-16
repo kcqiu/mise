@@ -287,7 +287,7 @@ describe("personal recipe workflows", () => {
   });
 
 
-  it("waits on the first grocery visit, remembers the prompt, and allows guest browsing", async () => {
+  it("waits on the first grocery visit, then returns dismissed guests to the shelf", async () => {
     vi.useFakeTimers();
     render(<RecipeApp />);
 
@@ -327,20 +327,13 @@ describe("personal recipe workflows", () => {
       screen.getByRole("button", { name: "Continue browsing as guest" }),
     );
 
-    expect(window.location.hash).toBe("#/groceries");
-    expect(
-      screen.queryByRole("heading", { name: "Sign in to keep your grocery list" }),
-    ).not.toBeInTheDocument();
-
-    act(() => {
-      vi.advanceTimersByTime(10000);
-    });
+    expect(window.location.hash).toBe("#/");
     expect(
       screen.queryByRole("heading", { name: "Sign in to keep your grocery list" }),
     ).not.toBeInTheDocument();
   });
 
-  it("prompts immediately on later grocery visits but only once per visit", async () => {
+  it("blocks later grocery visits immediately after guest dismissal", async () => {
     window.localStorage.setItem("mise-groceries-auth-prompt-seen-v1", "true");
     window.history.replaceState(null, "", "/recipe/#/groceries");
     render(<RecipeApp />);
@@ -352,13 +345,12 @@ describe("personal recipe workflows", () => {
     fireEvent.click(
       screen.getByRole("button", { name: "Continue browsing as guest" }),
     );
-    expect(window.location.hash).toBe("#/groceries");
+    expect(window.location.hash).toBe("#/");
     expect(
       screen.queryByRole("heading", { name: "Sign in to keep your grocery list" }),
     ).not.toBeInTheDocument();
 
     await act(async () => {
-      window.location.hash = "/";
       window.dispatchEvent(new HashChangeEvent("hashchange"));
     });
     await act(async () => {
