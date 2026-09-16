@@ -45,13 +45,18 @@ export function AppHeader({
             aria-label={`Grocery list${groceryRecipeCount ? ` (${groceryRecipeCount} recipes)` : ""}`}
             title="Open grocery list"
           >
-            <ShoppingBag size={17} />
+            <span className="groceries-nav-icon relative inline-flex h-[17px] w-[17px] shrink-0 items-center justify-center">
+              <ShoppingBag size={17} />
+              {Boolean(groceryRecipeCount) && (
+                <span
+                  aria-hidden="true"
+                  className="groceries-badge pointer-events-none absolute -top-[7px] -right-[9px] inline-flex h-[15px] min-w-[15px] items-center justify-center rounded-full border-[1.5px] border-paper bg-accent px-[3px] text-[9px] font-bold leading-none text-white tabular-nums"
+                >
+                  {groceryRecipeCount}
+                </span>
+              )}
+            </span>
             <span className="groceries-nav-label max-[580px]:hidden">Grocery list</span>
-            {Boolean(groceryRecipeCount) && (
-              <span className="groceries-badge inline-flex items-center justify-center min-w-[18px] h-[18px] px-[5px] rounded-full bg-accent text-white text-[11px] font-bold leading-none ml-0.5 max-[580px]:absolute max-[580px]:-top-1 max-[580px]:-right-1 max-[580px]:min-w-4 max-[580px]:h-4 max-[580px]:m-0 max-[580px]:px-1 max-[580px]:text-[10px]">
-                {groceryRecipeCount}
-              </span>
-            )}
           </a>
 
           <button
