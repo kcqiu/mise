@@ -1,0 +1,31 @@
+name: Keep Supabase project active
+
+on:
+  schedule:
+    # One lightweight read every other calendar day at 06:17 UTC.
+    - cron: "17 6 */2 * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  keep-alive:
+    name: Read one public recipe
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+
+    steps:
+      - name: Read one public system recipe
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
+        run: |
+          test -n "$SUPABASE_URL"
+          test -n "$SUPABASE_PUBLISHABLE_KEY"
+
+          curl --fail --silent --show-error \
+            --output /dev/null \
+            "${SUPABASE_URL%/}/rest/v1/recipes?select=id&is_system=eq.true&limit=1" \
+            --header "apikey: $SUPABASE_PUBLISHABLE_KEY" \
+            --header "Authorization: Bearer $SUPABASE_PUBLISHABLE_KEY"
