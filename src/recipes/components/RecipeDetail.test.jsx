@@ -190,4 +190,43 @@ describe("RecipeDetail unit conversion", () => {
     expect(handleSearchTag).toHaveBeenCalledOnce();
     expect(handleSearchTag).toHaveBeenCalledWith("Quick");
   });
+
+  it("renders the Share button next to Edit recipe for local recipes", () => {
+    render(
+      <RecipeDetail
+        recipe={mockRecipe}
+        favorite={false}
+        progress={{ ingredients: [], steps: [] }}
+        onFavorite={vi.fn()}
+        onProgress={vi.fn()}
+        onEdit={vi.fn()}
+        isLocal={true}
+      />
+    );
+
+    const shareButton = screen.getByRole("button", { name: "Share recipe" });
+    const editButton = screen.getByRole("button", { name: "Edit recipe" });
+    expect(shareButton).toBeInTheDocument();
+    expect(editButton).toBeInTheDocument();
+  });
+
+  it("renders the Share button next to Make it your own for non-local recipes", () => {
+    render(
+      <RecipeDetail
+        recipe={mockRecipe}
+        favorite={false}
+        progress={{ ingredients: [], steps: [] }}
+        onFavorite={vi.fn()}
+        onProgress={vi.fn()}
+        onEdit={vi.fn()}
+        isLocal={false}
+      />
+    );
+
+    const shareButton = screen.getByRole("button", { name: "Share recipe" });
+    const makeYourOwnButton = screen.getByRole("button", { name: "Make it your own" });
+    expect(shareButton).toBeInTheDocument();
+    expect(makeYourOwnButton).toBeInTheDocument();
+  });
 });
+
