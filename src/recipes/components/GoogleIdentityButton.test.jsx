@@ -9,6 +9,32 @@ afterEach(() => {
 });
 
 describe("GoogleIdentityButton", () => {
+  it("caps the rendered Google control so it stays inside the mobile modal", async () => {
+    const renderButton = vi.fn();
+    window.google = {
+      accounts: {
+        id: {
+          initialize: vi.fn(),
+          renderButton,
+        },
+      },
+    };
+
+    render(
+      <GoogleIdentityButton
+        clientId="mise-client.apps.googleusercontent.com"
+        onCredential={vi.fn()}
+        onError={vi.fn()}
+      />,
+    );
+
+    await waitFor(() => expect(renderButton).toHaveBeenCalledTimes(1));
+    expect(renderButton.mock.calls[0][1]).toMatchObject({ width: 320 });
+    expect(
+      screen.getByLabelText("Continue with Google"),
+    ).toHaveClass("w-full", "max-w-[320px]");
+  });
+
   it("passes Google's credential and the matching raw nonce to the app", async () => {
     let googleCallback;
     window.google = {
