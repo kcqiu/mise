@@ -936,15 +936,6 @@ export default function RecipeApp() {
     }
   };
   const handleAddRecipeClick = () => {
-    if (cloudEnabled && !account.session) {
-      setAuthModal({
-        open: true,
-        intent: "create",
-        error: "",
-      });
-      setNotice("Sign in with Google to create and manage your recipes.");
-      return;
-    }
     setAddRecipeModalOpen(true);
   };
   const openEditor = (recipe = null) => {
@@ -1071,6 +1062,16 @@ export default function RecipeApp() {
           addToast("Recipe structured with Gemini AI!", "success");
         }}
         onImportFile={() => importInput.current?.click()}
+        requireAuth={cloudEnabled && !account.session}
+        onRequireAuth={() => {
+          setAddRecipeModalOpen(false);
+          setAuthModal({
+            open: true,
+            intent: "create",
+            error: "",
+          });
+          setNotice("Sign in with Google to create and manage your recipes.");
+        }}
       />
       {notice && (
         <div className="app-notice sr-only" role="status">

@@ -226,4 +226,79 @@ describe("AddRecipeModal intake hub", () => {
     expect(handleParsed).toHaveBeenCalledWith(mockRecipe);
     expect(handleClose).toHaveBeenCalledTimes(1);
   });
+
+  it("triggers onRequireAuth when unauthenticated user clicks any intake pathway", async () => {
+    const user = userEvent.setup();
+    const handleRequireAuth = vi.fn();
+    const handleSelectManual = vi.fn();
+
+    const pathways = [
+      /Manual entry/i,
+      /Scan from photo/i,
+      /Paste from text/i,
+      /From recipe website/i,
+      /From TikTok, Instagram, or YouTube/i,
+    ];
+
+    for (const pathway of pathways) {
+      handleRequireAuth.mockClear();
+      const { unmount } = render(
+        <AddRecipeModal
+          isOpen={true}
+          onClose={vi.fn()}
+          onSelectManual={handleSelectManual}
+          onParsedRecipe={vi.fn()}
+          requireAuth={true}
+          onRequireAuth={handleRequireAuth}
+        />
+      );
+
+      await user.click(screen.getByRole("button", { name: pathway }));
+      expect(handleRequireAuth).toHaveBeenCalledTimes(1);
+      expect(handleSelectManual).not.toHaveBeenCalled();
+      unmount();
+    }
+  });
+
+  it("triggers onRequireAuth when unauthenticated user clicks Import file", async () => {
+    const user = userEvent.setup();
+    const handleRequireAuth = vi.fn();
+    const handleImportFile = vi.fn();
+
+    render(
+      <AddRecipeModal
+        isOpen={true}
+        onClose={vi.fn()}
+        onSelectManual={vi.fn()}
+        onParsedRecipe={vi.fn()}
+        onImportFile={handleImportFile}
+        requireAuth={true}
+        onRequireAuth={handleRequireAuth}
+      />
+    );
+
+    await user.click(screen.getByRole("button", { name: /Import file/i }));
+    expect(handleRequireAuth).toHaveBeenCalledTimes(1);
+    expect(handleImportFile).not.toHaveBeenCalled();
+  });
+
+  it("renders Gemini AI badges with whitespace-nowrap and shrink-0 to prevent awkward wrapping", () => {
+    const { container } = render(
+      <AddRecipeModal
+        isOpen={true}
+        onClose={vi.fn()}
+        onSelectManual={vi.fn()}
+        onParsedRecipe={vi.fn()}
+      />
+    );
+
+    const badges = container.querySelectorAll(".ai-badge");
+    expect(badges.length).toBe(4);
+    badges.forEach((badge) => {
+      expect(badge.textContent).toBe("Gemini AI");
+      expect(badge.className).toContain("whitespace-nowrap");
+      expect(badge.className).toContain("shrink-0");
+    });
+  });
 });
+

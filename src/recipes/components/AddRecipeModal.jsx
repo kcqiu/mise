@@ -28,10 +28,20 @@ export default function AddRecipeModal({
   onSelectManual,
   onParsedRecipe,
   onImportFile,
+  requireAuth = false,
+  onRequireAuth,
 }) {
   const dialogRef = useRef(null);
   const fileInputRef = useRef(null);
   const filePickerActiveRef = useRef(false);
+
+  const handleOptionClick = (action) => {
+    if (requireAuth) {
+      onRequireAuth?.();
+      return;
+    }
+    action();
+  };
 
   // 'menu' | 'photo' | 'text' | 'url' | 'social'
   const [view, setView] = useState("menu");
@@ -213,7 +223,7 @@ export default function AddRecipeModal({
         onClose();
       }}
     >
-      <div className="add-recipe-modal__box border border-line bg-white rounded-[18px] max-h-[90vh] p-7 md:px-[30px] relative overflow-y-auto shadow-[0_28px_72px_rgba(22,38,29,0.25)] animate-modal-enter">
+      <div className="add-recipe-modal__box border border-line bg-white rounded-[18px] max-h-[90vh] p-5 sm:p-7 md:px-[30px] relative overflow-y-auto shadow-[0_28px_72px_rgba(22,38,29,0.25)] animate-modal-enter">
         <header className="add-recipe-modal__header flex items-start gap-3.5 mb-5 relative">
           {view !== "menu" ? (
             <IconButton
@@ -292,10 +302,12 @@ export default function AddRecipeModal({
               <button
                 type="button"
                 className="add-recipe-card group flex items-start gap-4 w-full p-4 md:px-[18px] rounded-xl border border-line bg-[#fcfdfa] text-left cursor-pointer transition-all duration-200 hover:border-ink hover:bg-white hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(36,35,31,0.08)]"
-                onClick={() => {
-                  onSelectManual();
-                  onClose();
-                }}
+                onClick={() =>
+                  handleOptionClick(() => {
+                    onSelectManual();
+                    onClose();
+                  })
+                }
               >
                 <div className="add-recipe-card__icon w-[38px] h-[38px] rounded-[9px] bg-[#edf2eb] text-ink shrink-0 flex items-center justify-center mt-0.5 transition-all duration-200 group-hover:bg-ink group-hover:text-white group-hover:scale-105">
                   <PenLine size={20} />
@@ -313,7 +325,7 @@ export default function AddRecipeModal({
               <button
                 type="button"
                 className="add-recipe-card add-recipe-card--ai group flex items-start gap-4 w-full p-4 md:px-[18px] rounded-xl border border-line bg-[#fcfdfa] text-left cursor-pointer transition-all duration-200 hover:border-[#d4a34b] hover:bg-white hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(212,163,75,0.12)]"
-                onClick={() => setView("photo")}
+                onClick={() => handleOptionClick(() => setView("photo"))}
               >
                 <div className="add-recipe-card__icon w-[38px] h-[38px] rounded-[9px] bg-[#edf2eb] text-ink shrink-0 flex items-center justify-center mt-0.5 transition-all duration-200 group-hover:bg-[#c98a28] group-hover:text-white group-hover:scale-105">
                   <Camera size={20} />
@@ -321,7 +333,7 @@ export default function AddRecipeModal({
                 <div className="add-recipe-card__info flex-1 min-w-0">
                   <div className="add-recipe-card__title-row flex items-center gap-2 mb-0.5">
                     <strong className="block text-ink text-sm font-semibold">Scan from photo</strong>
-                    <span className="ai-badge inline-flex items-center gap-1 ml-0.5 px-[7px] py-0.5 rounded-full border border-[#e8cd98] bg-gradient-to-br from-[#fbf2dc] to-[#f7e6c3] text-[#8c5b16] text-[10px] font-bold uppercase tracking-[0.04em]">Gemini AI</span>
+                    <span className="ai-badge inline-flex items-center shrink-0 whitespace-nowrap gap-1 ml-0.5 px-[7px] py-0.5 rounded-full border border-[#e8cd98] bg-gradient-to-br from-[#fbf2dc] to-[#f7e6c3] text-[#8c5b16] text-[10px] font-bold uppercase tracking-[0.04em]">Gemini AI</span>
                   </div>
                   <p className="text-muted text-xs leading-[1.45] m-0 mt-1">
                     Upload a snapshot of a handwritten card, cookbook page, or
@@ -334,7 +346,7 @@ export default function AddRecipeModal({
               <button
                 type="button"
                 className="add-recipe-card add-recipe-card--ai group flex items-start gap-4 w-full p-4 md:px-[18px] rounded-xl border border-line bg-[#fcfdfa] text-left cursor-pointer transition-all duration-200 hover:border-[#d4a34b] hover:bg-white hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(212,163,75,0.12)]"
-                onClick={() => setView("text")}
+                onClick={() => handleOptionClick(() => setView("text"))}
               >
                 <div className="add-recipe-card__icon w-[38px] h-[38px] rounded-[9px] bg-[#edf2eb] text-ink shrink-0 flex items-center justify-center mt-0.5 transition-all duration-200 group-hover:bg-[#c98a28] group-hover:text-white group-hover:scale-105">
                   <FileText size={20} />
@@ -342,7 +354,7 @@ export default function AddRecipeModal({
                 <div className="add-recipe-card__info flex-1 min-w-0">
                   <div className="add-recipe-card__title-row flex items-center gap-2 mb-0.5">
                     <strong className="block text-ink text-sm font-semibold">Paste from text</strong>
-                    <span className="ai-badge inline-flex items-center gap-1 ml-0.5 px-[7px] py-0.5 rounded-full border border-[#e8cd98] bg-gradient-to-br from-[#fbf2dc] to-[#f7e6c3] text-[#8c5b16] text-[10px] font-bold uppercase tracking-[0.04em]">Gemini AI</span>
+                    <span className="ai-badge inline-flex items-center shrink-0 whitespace-nowrap gap-1 ml-0.5 px-[7px] py-0.5 rounded-full border border-[#e8cd98] bg-gradient-to-br from-[#fbf2dc] to-[#f7e6c3] text-[#8c5b16] text-[10px] font-bold uppercase tracking-[0.04em]">Gemini AI</span>
                   </div>
                   <p className="text-muted text-xs leading-[1.45] m-0 mt-1">
                     Paste rough notes, messy ingredients dumps, or message transcripts.
@@ -355,7 +367,7 @@ export default function AddRecipeModal({
               <button
                 type="button"
                 className="add-recipe-card add-recipe-card--ai group flex items-start gap-4 w-full p-4 md:px-[18px] rounded-xl border border-line bg-[#fcfdfa] text-left cursor-pointer transition-all duration-200 hover:border-[#d4a34b] hover:bg-white hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(212,163,75,0.12)]"
-                onClick={() => setView("url")}
+                onClick={() => handleOptionClick(() => setView("url"))}
               >
                 <div className="add-recipe-card__icon w-[38px] h-[38px] rounded-[9px] bg-[#edf2eb] text-ink shrink-0 flex items-center justify-center mt-0.5 transition-all duration-200 group-hover:bg-[#c98a28] group-hover:text-white group-hover:scale-105">
                   <Globe size={20} />
@@ -363,7 +375,7 @@ export default function AddRecipeModal({
                 <div className="add-recipe-card__info flex-1 min-w-0">
                   <div className="add-recipe-card__title-row flex items-center gap-2 mb-0.5">
                     <strong className="block text-ink text-sm font-semibold">From recipe website</strong>
-                    <span className="ai-badge inline-flex items-center gap-1 ml-0.5 px-[7px] py-0.5 rounded-full border border-[#e8cd98] bg-gradient-to-br from-[#fbf2dc] to-[#f7e6c3] text-[#8c5b16] text-[10px] font-bold uppercase tracking-[0.04em]">Gemini AI</span>
+                    <span className="ai-badge inline-flex items-center shrink-0 whitespace-nowrap gap-1 ml-0.5 px-[7px] py-0.5 rounded-full border border-[#e8cd98] bg-gradient-to-br from-[#fbf2dc] to-[#f7e6c3] text-[#8c5b16] text-[10px] font-bold uppercase tracking-[0.04em]">Gemini AI</span>
                   </div>
                   <p className="text-muted text-xs leading-[1.45] m-0 mt-1">
                     Import from NYT Cooking, Serious Eats, or food blogs without
@@ -376,7 +388,7 @@ export default function AddRecipeModal({
               <button
                 type="button"
                 className="add-recipe-card add-recipe-card--ai group flex items-start gap-4 w-full p-4 md:px-[18px] rounded-xl border border-line bg-[#fcfdfa] text-left cursor-pointer transition-all duration-200 hover:border-[#d4a34b] hover:bg-white hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(212,163,75,0.12)]"
-                onClick={() => setView("social")}
+                onClick={() => handleOptionClick(() => setView("social"))}
               >
                 <div className="add-recipe-card__icon w-[38px] h-[38px] rounded-[9px] bg-[#edf2eb] text-ink shrink-0 flex items-center justify-center mt-0.5 transition-all duration-200 group-hover:bg-[#c98a28] group-hover:text-white group-hover:scale-105">
                   <Video size={20} />
@@ -384,7 +396,7 @@ export default function AddRecipeModal({
                 <div className="add-recipe-card__info flex-1 min-w-0">
                   <div className="add-recipe-card__title-row flex items-center gap-2 mb-0.5">
                     <strong className="block text-ink text-sm font-semibold">From TikTok, Instagram, or YouTube</strong>
-                    <span className="ai-badge inline-flex items-center gap-1 ml-0.5 px-[7px] py-0.5 rounded-full border border-[#e8cd98] bg-gradient-to-br from-[#fbf2dc] to-[#f7e6c3] text-[#8c5b16] text-[10px] font-bold uppercase tracking-[0.04em]">Gemini AI</span>
+                    <span className="ai-badge inline-flex items-center shrink-0 whitespace-nowrap gap-1 ml-0.5 px-[7px] py-0.5 rounded-full border border-[#e8cd98] bg-gradient-to-br from-[#fbf2dc] to-[#f7e6c3] text-[#8c5b16] text-[10px] font-bold uppercase tracking-[0.04em]">Gemini AI</span>
                   </div>
                   <p className="text-muted text-xs leading-[1.45] m-0 mt-1">
                     Paste a video link. Gemini extracts the recipe from the caption
@@ -399,10 +411,12 @@ export default function AddRecipeModal({
               <button
                 type="button"
                 className="add-recipe-modal__file-import-btn inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-ink font-semibold bg-transparent border-0 cursor-pointer hover:bg-ink/5 transition-colors"
-                onClick={() => {
-                  onImportFile?.();
-                  onClose();
-                }}
+                onClick={() =>
+                  handleOptionClick(() => {
+                    onImportFile?.();
+                    onClose();
+                  })
+                }
               >
                 <Upload size={14} />
                 <span>Import file</span>
