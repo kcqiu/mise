@@ -45,10 +45,60 @@ describe("InstallAppMenuItem", () => {
     );
 
     expect(
-      screen.getByRole("dialog", { name: "Add MISE to Home Screen" }),
+      screen.getByRole("dialog", { name: "Add MISE to your Home Screen" }),
     ).toBeInTheDocument();
-    expect(screen.getByText(/tap the Share button/i)).toBeInTheDocument();
+    expect(screen.getByText(/Safari, tap Share/i)).toBeInTheDocument();
     expect(screen.getByText(/Add to Home Screen/i)).toBeInTheDocument();
+  });
+
+  it("shows Chrome instructions in a focused dialog and closes the account menu", async () => {
+    setBrowser({
+      userAgent:
+        "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 CriOS/140.0.7339.122 Mobile/15E148 Safari/604.1",
+    });
+    const user = userEvent.setup();
+
+    render(
+      <details open>
+        <summary>Account</summary>
+        <InstallAppMenuItem />
+      </details>,
+    );
+
+    await user.click(
+      screen.getByRole("button", { name: "Add MISE to Home Screen" }),
+    );
+
+    expect(screen.getByText("Add MISE to your Home Screen")).toBeInTheDocument();
+    expect(screen.getByText(/Chrome.*Share/i)).toBeInTheDocument();
+    expect(screen.queryByText(/Open this page in Safari/i)).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Close install instructions" }),
+    ).toHaveFocus();
+    expect(screen.getByText("Account").closest("details")).not.toHaveAttribute(
+      "open",
+    );
+
+    await user.keyboard("{Escape}");
+
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(screen.getByText("Account")).toHaveFocus();
+  });
+
+  it("does not call unknown iOS browsers Safari", async () => {
+    setBrowser({
+      userAgent:
+        "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 FxiOS/140.0 Mobile/15E148 Safari/605.1.15",
+    });
+    const user = userEvent.setup();
+
+    render(<InstallAppMenuItem />);
+    await user.click(
+      screen.getByRole("button", { name: "Add MISE to Home Screen" }),
+    );
+
+    expect(screen.getByText(/Firefox.*Share/i)).toBeInTheDocument();
+    expect(screen.queryByText(/Safari.*Share/i)).not.toBeInTheDocument();
   });
 
   it("uses the browser install prompt when it becomes available", async () => {
