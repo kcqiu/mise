@@ -403,4 +403,69 @@ describe("Groceries Cloud Synchronization Client", () => {
       });
     });
   });
+
+  describe("loadRecipeById", () => {
+    it("returns null when no client is configured or recipeId is missing", async () => {
+      cloud.setSupabaseClientForTesting(null);
+      expect(await cloud.loadRecipeById(null)).toBeNull();
+      expect(await cloud.loadRecipeById("")).toBeNull();
+    });
+
+    it("loads and returns recipe payload matching the ID", async () => {
+      const mockSelect = vi.fn().mockReturnThis();
+      const mockEq = vi.fn().mockReturnThis();
+      const mockMaybeSingle = vi.fn().mockResolvedValue({
+        data: {
+          id: "recipe-custom-123",
+          payload: {
+            title: "Custom Shared Pasta",
+            description: "A wonderful pasta dish",
+            ingredients: [],
+            steps: [],
+          },
+        },
+        error: null,
+      });
+
+      const mockClient = {
+        from: vi.fn(() => ({
+          select: mockSelect,
+          eq: mockEq,
+          maybeSingle: mockMaybeSingle,
+        })),
+      };
+
+      cloud.setSupabaseClientForTesting(mockClient);
+
+      const loaded = await cloud.loadRecipeById("recipe-custom-123");
+      expect(mockClient.from).toHaveBeenCalledWith("recipes");
+      expect(mockSelect).toHaveBeenCalledWith("id, payload");
+      expect(mockEq).toHaveBeenCalledWith("id", "recipe-custom-123");
+      expect(loaded).toEqual({
+        id: "recipe-custom-123",
+        title: "Custom Shared Pasta",
+        description: "A wonderful pasta dish",
+        ingredients: [],
+        steps: [],
+      });
+    });
+
+    it("returns null when database returns an error or no record", async () => {
+      const mockClient = {
+        from: vi.fn(() => ({
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          maybeSingle: vi.fn().mockResolvedValue({
+            data: null,
+            error: new Error("Not found"),
+          }),
+        })),
+      };
+
+      cloud.setSupabaseClientForTesting(mockClient);
+      const result = await cloud.loadRecipeById("non-existent");
+      expect(result).toBeNull();
+    });
+  });
 });
+

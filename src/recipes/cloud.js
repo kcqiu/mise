@@ -118,6 +118,22 @@ export async function loadAccountLibrary(userId) {
   };
 }
 
+export async function loadRecipeById(recipeId) {
+  const client = customClient || supabase;
+  if (!client || !recipeId) return null;
+  const result = await client
+    .from("recipes")
+    .select("id, payload")
+    .eq("id", recipeId)
+    .maybeSingle();
+  if (result.error) {
+    console.error("Failed to load recipe by id:", result.error);
+    return null;
+  }
+  if (!result.data || !result.data.payload) return null;
+  return { ...result.data.payload, id: result.data.id };
+}
+
 export async function saveAccountRecipe(userId, recipe) {
   const result = await supabase.from("recipes").upsert(
     {

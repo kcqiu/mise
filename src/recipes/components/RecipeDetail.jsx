@@ -17,6 +17,7 @@ import { groupIngredients, totalMinutes } from "../library";
 import { convertMeasurement } from "../units";
 import RecipeArtwork from "./RecipeArtwork";
 import RecipeVideo from "./RecipeVideo";
+import ShareRecipeButton from "./ShareRecipeButton";
 import { IconButton } from "@/components/ui/IconButton";
 import { TextButton } from "@/components/ui/TextButton";
 import { cn } from "@/lib/utils";
@@ -140,6 +141,7 @@ export default function RecipeDetail({
   isLocal,
   inGroceries = false,
   onToggleGroceries,
+  onToast,
 }) {
   const [servings, setServings] = useState(recipe.servings);
   const [unitSystem, setUnitSystem] = useState("original");
@@ -199,6 +201,7 @@ export default function RecipeDetail({
           Back to the shelf
         </a>
         <div className="detail-toolbar-actions flex items-center gap-3">
+          <ShareRecipeButton recipe={recipe} onToast={onToast} />
           <TextButton
             className="text-muted hover:text-ink text-xs max-[580px]:text-[11px] gap-1.5 max-[580px]:gap-1.5 min-h-[44px]"
             onClick={() => onEdit(recipe)}

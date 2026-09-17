@@ -21,6 +21,7 @@ import {
   getSession,
   importAccountLibrary,
   loadAccountLibrary,
+  loadRecipeById,
   saveAccountRecipe,
   setAccountFavorite,
   setAccountProgress,
@@ -129,7 +130,55 @@ export default function RecipeApp() {
 
     return [...sortedPersonal, ...remainingPublished];
   }, [personalRecipes]);
-  const current = recipes.find((recipe) => recipe.id === route);
+
+  const [remoteRecipes, setRemoteRecipes] = useState({});
+  const [loadingRemoteId, setLoadingRemoteId] = useState(null);
+  const [notFoundRemoteIds, setNotFoundRemoteIds] = useState(() => new Set());
+
+  const isRecipeRoute = Boolean(
+    route && route !== "groceries" && route !== "not-found",
+  );
+  const knownRecipe =
+    recipes.find((recipe) => recipe.id === route) || remoteRecipes[route];
+
+  useEffect(() => {
+    if (!isRecipeRoute || knownRecipe || notFoundRemoteIds.has(route)) {
+      return;
+    }
+
+    let active = true;
+    setLoadingRemoteId(route);
+
+    loadRecipeById(route)
+      .then((loaded) => {
+        if (!active) return;
+        setLoadingRemoteId((current) => (current === route ? null : current));
+        if (loaded) {
+          setRemoteRecipes((prev) => ({ ...prev, [route]: loaded }));
+        } else {
+          setNotFoundRemoteIds((prev) => new Set(prev).add(route));
+        }
+      })
+      .catch(() => {
+        if (!active) return;
+        setLoadingRemoteId((current) => (current === route ? null : current));
+        setNotFoundRemoteIds((prev) => new Set(prev).add(route));
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [isRecipeRoute, knownRecipe, route, notFoundRemoteIds]);
+
+  const current = knownRecipe || null;
+
+  const allRecipes = useMemo(() => {
+    const remoteList = Object.values(remoteRecipes);
+    if (!remoteList.length) return recipes;
+    const existing = new Set(recipes.map((r) => r.id));
+    const extra = remoteList.filter((r) => !existing.has(r.id));
+    return [...recipes, ...extra];
+  }, [recipes, remoteRecipes]);
 
   const addToast = (message, type = "info", title = "") => {
     if (!message) return;
@@ -1038,7 +1087,7 @@ export default function RecipeApp() {
       {route === "groceries" ? (
         <GroceryListView
           session={grocerySession}
-          recipes={recipes}
+          recipes={allRecipes}
           onUpdateSession={updateGrocerySession}
           onDispatchMutation={dispatchGroceryMutation}
           onCompleteTrip={handleCompleteTrip}
@@ -1061,7 +1110,18 @@ export default function RecipeApp() {
               (r) => r.recipeId === current.id,
             )}
             onToggleGroceries={toggleRecipeInGroceries}
+            onToast={addToast}
           />
+        ) : loadingRemoteId === route ? (
+          <main
+            className="empty-state loading-recipe min-h-[65svh] flex flex-col items-center justify-center text-center p-8 gap-4"
+            id="recipe-main"
+            tabIndex={-1}
+            aria-live="polite"
+          >
+            <div className="w-8 h-8 rounded-full border-2 border-[#b4aca0] border-t-ink spin-icon" />
+            <p className="text-muted text-sm m-0">Loading recipe...</p>
+          </main>
         ) : (
           <main
             className="empty-state missing-recipe min-h-[65svh] flex flex-col items-center justify-center text-center p-8 gap-4"
