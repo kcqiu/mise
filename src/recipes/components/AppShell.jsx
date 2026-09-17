@@ -15,9 +15,7 @@ export function AppHeader({
   cloudAvailable,
   favoriteCount,
   groceryRecipeCount,
-  importInputRef,
   onAddRecipe,
-  onImportRecipeFile,
   onSignIn,
   onSignOut,
   personalRecipeCount,
@@ -140,15 +138,6 @@ export function AppHeader({
             ))}
         </div>
       </div>
-      <input
-        ref={importInputRef}
-        className="sr-only"
-        type="file"
-        accept=".json,application/json,.txt,.md,text/plain,text/markdown"
-        aria-label="Import recipe file or backup"
-        tabIndex={-1}
-        onChange={onImportRecipeFile}
-      />
     </header>
   );
 }

@@ -927,7 +927,7 @@ export default function RecipeEditor({
               <Cloud size={14} /> Saved to your synced cloud cookbook.
             </p>
           ) : (
-            <p className="max-w-[250px] max-[580px]:max-w-[170px] max-[370px]:max-w-[140px] text-muted m-0 text-[11px] max-[580px]:text-[10px] leading-[1.6]">Saved on this browser. Export a backup to keep a copy.</p>
+            <p className="max-w-[250px] max-[580px]:max-w-[170px] max-[370px]:max-w-[140px] text-muted m-0 text-[11px] max-[580px]:text-[10px] leading-[1.6]">Saved on this browser.</p>
           )}
           <Button
             type="submit"

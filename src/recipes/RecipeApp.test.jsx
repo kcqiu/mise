@@ -179,43 +179,18 @@ describe("personal recipe workflows", () => {
       screen.getByRole("heading", { name: "This recipe isn't on the shelf." }),
     ).toBeInTheDocument();
   });
-  it("imports a single recipe JSON file directly into the editor", async () => {
-    const user = userEvent.setup();
+  it("does not render import recipe file inputs", () => {
     render(<RecipeApp />);
-    const fileInput = screen.getByLabelText("Import recipe file or backup");
-    const singleRecipe = {
-      id: "imported-skillet-eggs",
-      title: "Imported Skillet Eggs",
-      category: "Breakfast",
-      description: "Eggs cooked in a cast iron skillet",
-      cuisine: "American",
-      method: "Stovetop",
-      sourceVideo: "",
-      servings: 2,
-      prepMinutes: 5,
-      cookMinutes: 5,
-      restMinutes: 0,
-      tags: ["quick"],
-      keywords: ["eggs"],
-      notes: [],
-      substitutions: [],
-      equipment: ["Skillet"],
-      artwork: "",
-      example: false,
-      ingredients: [{ name: "Eggs", quantity: 4, unit: "", note: "", group: "" }],
-      steps: [{ title: "Fry", instruction: "Fry eggs until set." }],
-    };
+    expect(
+      screen.queryByLabelText("Import recipe file or backup"),
+    ).not.toBeInTheDocument();
+  });
 
-    const file = new File([JSON.stringify(singleRecipe)], "skillet-eggs.json", {
-      type: "application/json",
-    });
-
-    await user.upload(fileInput, file);
-
-    const dialog = await screen.findByRole("dialog");
-    expect(within(dialog).getByLabelText("Recipe name")).toHaveValue(
-      "Imported Skillet Eggs",
-    );
+  it("does not render My recipes filter tab for unauthenticated user", () => {
+    render(<RecipeApp />);
+    expect(screen.queryByRole("button", { name: "My recipes" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "All recipes" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Favorites" })).toBeInTheDocument();
   });
 
   it("sorts recipes by latest added by default on the shelf", () => {

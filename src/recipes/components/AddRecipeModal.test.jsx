@@ -156,29 +156,18 @@ describe("AddRecipeModal intake hub", () => {
     expect(screen.getByText("YouTube / Shorts")).toBeInTheDocument();
   });
 
-  it("renders hub footer with import file button and triggers onImportFile", async () => {
-    const user = userEvent.setup();
-    const handleImport = vi.fn();
-    const handleClose = vi.fn();
-
+  it("does not render import file footer or backup options", () => {
     render(
       <AddRecipeModal
         isOpen={true}
-        onClose={handleClose}
+        onClose={vi.fn()}
         onSelectManual={vi.fn()}
         onParsedRecipe={vi.fn()}
-        onImportFile={handleImport}
-        onError={vi.fn()}
       />
     );
 
-    expect(screen.getByText(/Have an existing recipe JSON or backup file\?/i)).toBeInTheDocument();
-    const importBtn = screen.getByRole("button", { name: /Import file/i });
-    expect(importBtn).toBeInTheDocument();
-
-    await user.click(importBtn);
-    expect(handleImport).toHaveBeenCalledTimes(1);
-    expect(handleClose).toHaveBeenCalledTimes(1);
+    expect(screen.queryByText(/Have an existing recipe JSON or backup file\?/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Import file/i })).not.toBeInTheDocument();
   });
 
   it("displays Instagram caption input when Instagram URL is typed and submits with caption", async () => {
@@ -260,26 +249,19 @@ describe("AddRecipeModal intake hub", () => {
     }
   });
 
-  it("triggers onRequireAuth when unauthenticated user clicks Import file", async () => {
-    const user = userEvent.setup();
-    const handleRequireAuth = vi.fn();
-    const handleImportFile = vi.fn();
-
+  it("renders the close button with outline suppression so it has no red border", () => {
     render(
       <AddRecipeModal
         isOpen={true}
         onClose={vi.fn()}
         onSelectManual={vi.fn()}
         onParsedRecipe={vi.fn()}
-        onImportFile={handleImportFile}
-        requireAuth={true}
-        onRequireAuth={handleRequireAuth}
       />
     );
 
-    await user.click(screen.getByRole("button", { name: /Import file/i }));
-    expect(handleRequireAuth).toHaveBeenCalledTimes(1);
-    expect(handleImportFile).not.toHaveBeenCalled();
+    const closeButton = screen.getByRole("button", { name: "Close intake dialog" });
+    expect(closeButton.className).toContain("focus-visible:outline-none");
+    expect(closeButton.className).toContain("rounded-full");
   });
 
   it("renders Gemini AI badges with whitespace-nowrap and shrink-0 to prevent awkward wrapping", () => {

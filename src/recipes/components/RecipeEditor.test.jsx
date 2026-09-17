@@ -58,8 +58,11 @@ describe('RecipeEditor component', () => {
     );
 
     expect(
-      screen.getByText('Saved on this browser. Export a backup to keep a copy.')
+      screen.getByText('Saved on this browser.')
     ).toBeInTheDocument();
+    expect(
+      screen.queryByText(/Export a backup/i)
+    ).not.toBeInTheDocument();
     expect(
       screen.queryByText(/Saved to your synced cloud cookbook/i)
     ).not.toBeInTheDocument();

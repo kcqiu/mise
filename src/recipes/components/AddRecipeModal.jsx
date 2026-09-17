@@ -27,7 +27,6 @@ export default function AddRecipeModal({
   onClose,
   onSelectManual,
   onParsedRecipe,
-  onImportFile,
   requireAuth = false,
   onRequireAuth,
 }) {
@@ -274,7 +273,7 @@ export default function AddRecipeModal({
           <IconButton
             variant="default"
             size="default"
-            className="add-recipe-modal__close shrink-0 -mt-1 -mr-1.5"
+            className="add-recipe-modal__close shrink-0 -mt-1 -mr-1.5 rounded-full focus:outline-none focus-visible:outline-none focus-visible:bg-ink/[0.08]"
             onClick={onClose}
             aria-label="Close intake dialog"
             disabled={loading}
@@ -331,9 +330,9 @@ export default function AddRecipeModal({
                   <Camera size={20} />
                 </div>
                 <div className="add-recipe-card__info flex-1 min-w-0">
-                  <div className="add-recipe-card__title-row flex items-center gap-2 mb-0.5">
+                  <div className="add-recipe-card__title-row flex items-start sm:items-center gap-2 mb-0.5">
                     <strong className="block text-ink text-sm font-semibold">Scan from photo</strong>
-                    <span className="ai-badge inline-flex items-center shrink-0 whitespace-nowrap gap-1 ml-0.5 px-[7px] py-0.5 rounded-full border border-[#e8cd98] bg-gradient-to-br from-[#fbf2dc] to-[#f7e6c3] text-[#8c5b16] text-[10px] font-bold uppercase tracking-[0.04em]">Gemini AI</span>
+                    <span className="ai-badge inline-flex items-center shrink-0 whitespace-nowrap gap-1 ml-0.5 px-[7px] py-0.5 rounded-full border border-[#e8cd98] bg-gradient-to-br from-[#fbf2dc] to-[#f7e6c3] text-[#8c5b16] text-[10px] font-bold uppercase tracking-[0.04em] leading-normal">Gemini AI</span>
                   </div>
                   <p className="text-muted text-xs leading-[1.45] m-0 mt-1">
                     Upload a snapshot of a handwritten card, cookbook page, or
@@ -352,9 +351,9 @@ export default function AddRecipeModal({
                   <FileText size={20} />
                 </div>
                 <div className="add-recipe-card__info flex-1 min-w-0">
-                  <div className="add-recipe-card__title-row flex items-center gap-2 mb-0.5">
+                  <div className="add-recipe-card__title-row flex items-start sm:items-center gap-2 mb-0.5">
                     <strong className="block text-ink text-sm font-semibold">Paste from text</strong>
-                    <span className="ai-badge inline-flex items-center shrink-0 whitespace-nowrap gap-1 ml-0.5 px-[7px] py-0.5 rounded-full border border-[#e8cd98] bg-gradient-to-br from-[#fbf2dc] to-[#f7e6c3] text-[#8c5b16] text-[10px] font-bold uppercase tracking-[0.04em]">Gemini AI</span>
+                    <span className="ai-badge inline-flex items-center shrink-0 whitespace-nowrap gap-1 ml-0.5 px-[7px] py-0.5 rounded-full border border-[#e8cd98] bg-gradient-to-br from-[#fbf2dc] to-[#f7e6c3] text-[#8c5b16] text-[10px] font-bold uppercase tracking-[0.04em] leading-normal">Gemini AI</span>
                   </div>
                   <p className="text-muted text-xs leading-[1.45] m-0 mt-1">
                     Paste rough notes, messy ingredients dumps, or message transcripts.
@@ -373,9 +372,9 @@ export default function AddRecipeModal({
                   <Globe size={20} />
                 </div>
                 <div className="add-recipe-card__info flex-1 min-w-0">
-                  <div className="add-recipe-card__title-row flex items-center gap-2 mb-0.5">
+                  <div className="add-recipe-card__title-row flex items-start sm:items-center gap-2 mb-0.5">
                     <strong className="block text-ink text-sm font-semibold">From recipe website</strong>
-                    <span className="ai-badge inline-flex items-center shrink-0 whitespace-nowrap gap-1 ml-0.5 px-[7px] py-0.5 rounded-full border border-[#e8cd98] bg-gradient-to-br from-[#fbf2dc] to-[#f7e6c3] text-[#8c5b16] text-[10px] font-bold uppercase tracking-[0.04em]">Gemini AI</span>
+                    <span className="ai-badge inline-flex items-center shrink-0 whitespace-nowrap gap-1 ml-0.5 px-[7px] py-0.5 rounded-full border border-[#e8cd98] bg-gradient-to-br from-[#fbf2dc] to-[#f7e6c3] text-[#8c5b16] text-[10px] font-bold uppercase tracking-[0.04em] leading-normal">Gemini AI</span>
                   </div>
                   <p className="text-muted text-xs leading-[1.45] m-0 mt-1">
                     Import from NYT Cooking, Serious Eats, or food blogs without
@@ -394,32 +393,15 @@ export default function AddRecipeModal({
                   <Video size={20} />
                 </div>
                 <div className="add-recipe-card__info flex-1 min-w-0">
-                  <div className="add-recipe-card__title-row flex items-center gap-2 mb-0.5">
+                  <div className="add-recipe-card__title-row flex items-start sm:items-center gap-2 mb-0.5">
                     <strong className="block text-ink text-sm font-semibold">From TikTok, Instagram, or YouTube</strong>
-                    <span className="ai-badge inline-flex items-center shrink-0 whitespace-nowrap gap-1 ml-0.5 px-[7px] py-0.5 rounded-full border border-[#e8cd98] bg-gradient-to-br from-[#fbf2dc] to-[#f7e6c3] text-[#8c5b16] text-[10px] font-bold uppercase tracking-[0.04em]">Gemini AI</span>
+                    <span className="ai-badge inline-flex items-center shrink-0 whitespace-nowrap gap-1 ml-0.5 px-[7px] py-0.5 rounded-full border border-[#e8cd98] bg-gradient-to-br from-[#fbf2dc] to-[#f7e6c3] text-[#8c5b16] text-[10px] font-bold uppercase tracking-[0.04em] leading-normal">Gemini AI</span>
                   </div>
                   <p className="text-muted text-xs leading-[1.45] m-0 mt-1">
                     Paste a video link. Gemini extracts the recipe from the caption
                     and embeds the playable video on the card.
                   </p>
                 </div>
-              </button>
-            </div>
-
-            <div className="add-recipe-modal__hub-footer flex flex-wrap items-center justify-center gap-2 mt-3.5 pt-3 border-t border-line text-muted text-[13px]">
-              <span>Have an existing recipe JSON or backup file?</span>
-              <button
-                type="button"
-                className="add-recipe-modal__file-import-btn inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-ink font-semibold bg-transparent border-0 cursor-pointer hover:bg-ink/5 transition-colors"
-                onClick={() =>
-                  handleOptionClick(() => {
-                    onImportFile?.();
-                    onClose();
-                  })
-                }
-              >
-                <Upload size={14} />
-                <span>Import file</span>
               </button>
             </div>
           </div>

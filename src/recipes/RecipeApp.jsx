@@ -8,12 +8,9 @@ import publishedRecipes from "./data/recipes.json";
 import {
   getCategories,
   EMPTY_LIBRARY,
-  parseBackup,
   readLibrary,
   STORAGE_KEY,
-  validateRecipe,
 } from "./library";
-import { parseRecipeFromText } from "./ai";
 import {
   cloudEnabled,
   deleteAccountRecipe,
@@ -109,16 +106,18 @@ export default function RecipeApp() {
   });
   const syncTimerRef = useRef(null);
   const syncingRef = useRef(false);
-  const importInput = useRef(null);
   const accountMenu = useRef(null);
   const activeLibrary = account.session ? account.library : library;
   const personalRecipes = account.session
     ? account.library.recipes
     : library.recipes;
+  const personalRecipeIds = useMemo(
+    () => new Set(personalRecipes.map((r) => r.id)),
+    [personalRecipes],
+  );
   const recipes = useMemo(() => {
-    const personalIds = new Set(personalRecipes.map((r) => r.id));
     const remainingPublished = publishedRecipes.filter(
-      (r) => !personalIds.has(r.id),
+      (r) => !personalRecipeIds.has(r.id),
     );
 
     const sortedPersonal = [...personalRecipes].sort((a, b) => {
@@ -129,7 +128,7 @@ export default function RecipeApp() {
     });
 
     return [...sortedPersonal, ...remainingPublished];
-  }, [personalRecipes]);
+  }, [personalRecipes, personalRecipeIds]);
 
   const [remoteRecipes, setRemoteRecipes] = useState({});
   const [loadingRemoteId, setLoadingRemoteId] = useState(null);
@@ -707,7 +706,7 @@ export default function RecipeApp() {
       return "";
     } catch {
       const message =
-        "Your browser couldn't save this change. Free up some storage or export a backup before trying again.";
+        "Your browser couldn't save this change. Free up some storage before trying again.";
       setNotice(message);
       return message;
     }
@@ -821,120 +820,7 @@ export default function RecipeApp() {
       addToast("Recipe removed from this browser.", "info");
     }
   };
-  const readFileText = async (file) => {
-    if (typeof file.text === "function") {
-      return await file.text();
-    }
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result || "");
-      reader.onerror = () => reject(new Error("Could not read file."));
-      reader.readAsText(file);
-    });
-  };
 
-  const importRecipeFile = async (event) => {
-    const file = event.target.files?.[0];
-    event.target.value = "";
-    if (!file) return;
-    try {
-      if (file.size > 5 * 1024 * 1024) {
-        throw new Error("Please choose a recipe file smaller than 5 MB.");
-      }
-      const fileText = await readFileText(file);
-      let parsedJson = null;
-      try {
-        parsedJson = JSON.parse(fileText);
-      } catch {
-        // Not valid JSON, proceed to AI parsing
-      }
-
-      if (parsedJson) {
-        // Multi-recipe backup or library backup
-        if (
-          parsedJson.version === 1 ||
-          (Array.isArray(parsedJson.recipes) && parsedJson.recipes.length > 1)
-        ) {
-          const backup = parseBackup(fileText);
-          if (account.session) {
-            const systemIds = new Set(publishedRecipes.map(({ id }) => id));
-            const personalBackup = {
-              ...backup,
-              recipes: backup.recipes.filter(({ id }) => !systemIds.has(id)),
-            };
-            await importAccountLibrary(account.session.user.id, {
-              ...personalBackup,
-              progress: {},
-            });
-            const remote = await loadAccountLibrary(account.session.user.id);
-            setAccount((current) => ({ ...current, library: remote }));
-            const msg = `Imported ${personalBackup.recipes.length} personal recipes to your account.`;
-            setNotice(msg);
-            addToast(msg, "success");
-            return;
-          }
-
-          const merged = [
-            ...new Map(
-              [...library.recipes, ...backup.recipes].map((recipe) => [
-                recipe.id,
-                recipe,
-              ]),
-            ).values(),
-          ];
-          const progress = { ...library.progress };
-          backup.recipes.forEach((recipe) => delete progress[recipe.id]);
-          const error = commitLocal({
-            ...library,
-            recipes: merged,
-            favorites: [
-              ...new Set([...library.favorites, ...(backup.favorites || [])]),
-            ],
-            progress,
-          });
-          if (!error) {
-            const msg = `Imported ${backup.recipes.length} recipes. Matching recipe ids were updated.`;
-            setNotice(msg);
-            addToast(msg, "success");
-          }
-          return;
-        }
-
-        // Single recipe JSON object
-        const singleCandidate =
-          Array.isArray(parsedJson.recipes) && parsedJson.recipes.length === 1
-            ? parsedJson.recipes[0]
-            : Array.isArray(parsedJson) && parsedJson.length === 1
-              ? parsedJson[0]
-              : parsedJson;
-
-        if (
-          singleCandidate &&
-          typeof singleCandidate === "object" &&
-          !Array.isArray(singleCandidate)
-        ) {
-          try {
-            const validated = validateRecipe(singleCandidate);
-            setEditor({ recipe: validated });
-            addToast(`Loaded "${validated.title}" into editor.`, "success");
-            return;
-          } catch {
-            // If validation failed (e.g. missing id/servings/timing), fallback to AI extraction
-          }
-        }
-      }
-
-      // Plain text, markdown, or unstructured recipe data - parse with Gemini AI
-      addToast("Analyzing recipe file with Gemini AI...", "info");
-      const parsed = await parseRecipeFromText(fileText);
-      setEditor({ recipe: parsed });
-      addToast(`Parsed "${parsed.title || "recipe"}" with Gemini AI!`, "success");
-    } catch (error) {
-      const msg = error.message || "Failed to read or parse the selected file.";
-      setNotice(msg);
-      addToast(msg, "error");
-    }
-  };
   const handleAddRecipeClick = () => {
     setAddRecipeModalOpen(true);
   };
@@ -991,6 +877,10 @@ export default function RecipeApp() {
       await signOut();
       accountMenu.current?.removeAttribute("open");
       setGrocerySession(readGrocerySession(null));
+      setShelfState((state) => ({
+        ...state,
+        collection: state.collection === "my-recipes" ? "all" : state.collection,
+      }));
       setNotice("Signed out. System recipes are still available.");
       addToast("Signed out. System recipes are still available.", "info");
     } catch (error) {
@@ -1036,9 +926,7 @@ export default function RecipeApp() {
         cloudAvailable={cloudEnabled}
         favoriteCount={activeLibrary.favorites.length}
         groceryRecipeCount={grocerySession.recipes?.length || 0}
-        importInputRef={importInput}
         onAddRecipe={handleAddRecipeClick}
-        onImportRecipeFile={importRecipeFile}
         onSignIn={beginSignIn}
         onSignOut={endSession}
         personalRecipeCount={personalRecipes.length}
@@ -1061,7 +949,6 @@ export default function RecipeApp() {
           setEditor({ recipe: parsedRecipe });
           addToast("Recipe structured with Gemini AI!", "success");
         }}
-        onImportFile={() => importInput.current?.click()}
         requireAuth={cloudEnabled && !account.session}
         onRequireAuth={() => {
           setAddRecipeModalOpen(false);
@@ -1132,8 +1019,7 @@ export default function RecipeApp() {
             <BookOpen size={40} strokeWidth={1.2} className="text-muted" />
             <h1 className="font-serif text-3xl font-normal text-ink m-0">This recipe isn't on the shelf.</h1>
             <p className="text-muted text-sm max-w-md m-0">
-              It may be saved on another device. Import your backup to bring it
-              here.
+              It may be saved on another device.
             </p>
             <a className="button" href="#/">
               <ArrowLeft size={16} />
@@ -1148,6 +1034,8 @@ export default function RecipeApp() {
           onFavorite={favorite}
           state={shelfState}
           onState={setShelfState}
+          isLoggedIn={Boolean(account.session)}
+          personalRecipeIds={personalRecipeIds}
           onAdd={handleAddRecipeClick}
         />
       )}

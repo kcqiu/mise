@@ -19,6 +19,9 @@ export default function RecipeLibrary({
   onFavorite,
   state,
   onState,
+  isLoggedIn = false,
+  personalRecipeIds = new Set(),
+  onAdd,
 }) {
   const { query, category, collection, sort } = state;
   const search = useMemo(() => createSearch(recipes), [recipes]);
@@ -27,7 +30,8 @@ export default function RecipeLibrary({
     const selected = search(query).filter(
       (recipe) =>
         (!category || recipe.category === category) &&
-        (collection !== "favorites" || favorites.includes(recipe.id)),
+        (collection !== "favorites" || favorites.includes(recipe.id)) &&
+        (collection !== "my-recipes" || personalRecipeIds.has(recipe.id)),
     );
     if (sort === "time") {
       selected.sort((a, b) => totalMinutes(a) - totalMinutes(b));
@@ -44,10 +48,12 @@ export default function RecipeLibrary({
       });
     }
     return selected;
-  }, [search, query, category, collection, favorites, sort]);
+  }, [search, query, category, collection, favorites, personalRecipeIds, sort]);
   const set = (patch) => onState({ ...state, ...patch });
   const isEmptyFavorites =
     collection === "favorites" && !query && !category;
+  const isEmptyMyRecipes =
+    collection === "my-recipes" && !query && !category;
   const hasActiveFilters = Boolean(query || category);
 
   return (
@@ -101,6 +107,21 @@ export default function RecipeLibrary({
               >
                 All recipes
               </button>
+              {isLoggedIn && (
+                <button
+                  type="button"
+                  className={cn(
+                    "inline-flex items-center justify-center p-0 pt-1 pb-1.5 border-0 border-b-2 bg-transparent text-[13px] font-medium leading-[1.4] whitespace-nowrap cursor-pointer transition-colors",
+                    collection === "my-recipes"
+                      ? "active border-ink text-ink font-semibold"
+                      : "border-transparent text-muted hover:text-ink"
+                  )}
+                  aria-pressed={collection === "my-recipes"}
+                  onClick={() => set({ collection: "my-recipes" })}
+                >
+                  My recipes
+                </button>
+              )}
               <button
                 type="button"
                 className={cn(
@@ -170,7 +191,7 @@ export default function RecipeLibrary({
             </label>
           </div>
         </div>
-        {(query || category || collection === "favorites") && (
+        {(query || category || collection === "favorites" || collection === "my-recipes") && (
           <div className="results-bar flex items-center justify-between gap-4 min-h-[40px] mb-5">
             <p aria-live="polite" className="flex items-center gap-2.5 m-0 text-muted text-[13px]">
               <strong className="text-ink font-semibold">
@@ -179,6 +200,8 @@ export default function RecipeLibrary({
                   : category ||
                     (collection === "favorites"
                       ? "Your favorites"
+                      : collection === "my-recipes"
+                      ? "Your recipes"
                       : "The whole collection")}
               </strong>
               <span>
@@ -212,23 +235,40 @@ export default function RecipeLibrary({
         ) : (
           <div className="empty-state flex max-w-[460px] flex-col items-start border-t border-line pt-10 pb-24 text-left text-muted">
             <h2 className="mt-0 mb-3 font-serif text-[30px] leading-[1.2] font-normal text-ink">
-              {isEmptyFavorites ? "No favorites yet." : "No recipes found."}
+              {isEmptyFavorites
+                ? "No favorites yet."
+                : isEmptyMyRecipes
+                ? "No recipes created yet."
+                : "No recipes found."}
             </h2>
             <p className="mb-2.5 max-w-[390px] text-sm leading-[1.6] text-muted">
               {isEmptyFavorites
                 ? "Save a recipe with the bookmark to keep it here."
+                : isEmptyMyRecipes
+                ? "Add your own family favorites or experimental dishes to your shelf."
                 : "Try another ingredient or clear your filters."}
             </p>
-            <Button
-              variant="light"
-              size="default"
-              className="mt-2.5"
-              onClick={() =>
-                set({ query: "", category: "", collection: "all" })
-              }
-            >
-              {hasActiveFilters ? "Clear filters" : "Browse all recipes"}
-            </Button>
+            {isEmptyMyRecipes && onAdd ? (
+              <Button
+                variant="primary"
+                size="default"
+                className="mt-2.5"
+                onClick={onAdd}
+              >
+                Add a recipe
+              </Button>
+            ) : (
+              <Button
+                variant="light"
+                size="default"
+                className="mt-2.5"
+                onClick={() =>
+                  set({ query: "", category: "", collection: "all" })
+                }
+              >
+                {hasActiveFilters ? "Clear filters" : "Browse all recipes"}
+              </Button>
+            )}
           </div>
         )}
         <div className="shelf-footnote flex items-center gap-3 pt-[34px] pb-1 text-muted text-[11px] leading-[1.7]">
