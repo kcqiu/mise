@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from "react";
 
 const GOOGLE_SCRIPT_ID = "google-identity-services";
 const GOOGLE_SCRIPT_SRC = "https://accounts.google.com/gsi/client";
-const GOOGLE_BUTTON_MAX_WIDTH = 320;
+// Google's iframe extends 10px beyond each side of the requested width.
+const GOOGLE_BUTTON_MAX_WIDTH = 300;
 
 let googleScriptPromise;
 
@@ -140,7 +141,7 @@ export default function GoogleIdentityButton({
     <div className="relative flex min-h-11 w-full items-center justify-center">
       <div
         ref={buttonRef}
-        className={`w-full max-w-[320px] ${
+        className={`w-full max-w-[300px] ${
           disabled || working ? "pointer-events-none opacity-60" : ""
         }`}
         aria-label="Continue with Google"

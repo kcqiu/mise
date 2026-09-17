@@ -29,10 +29,10 @@ describe("GoogleIdentityButton", () => {
     );
 
     await waitFor(() => expect(renderButton).toHaveBeenCalledTimes(1));
-    expect(renderButton.mock.calls[0][1]).toMatchObject({ width: 320 });
+    expect(renderButton.mock.calls[0][1]).toMatchObject({ width: 300 });
     expect(
       screen.getByLabelText("Continue with Google"),
-    ).toHaveClass("w-full", "max-w-[320px]");
+    ).toHaveClass("w-full", "max-w-[300px]");
   });
 
   it("passes Google's credential and the matching raw nonce to the app", async () => {
