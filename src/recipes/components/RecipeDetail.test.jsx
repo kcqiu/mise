@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import RecipeDetail from "./RecipeDetail";
@@ -227,6 +227,129 @@ describe("RecipeDetail unit conversion", () => {
     const makeYourOwnButton = screen.getByRole("button", { name: "Make it your own" });
     expect(shareButton).toBeInTheDocument();
     expect(makeYourOwnButton).toBeInTheDocument();
+  });
+
+  describe("keep screen awake toggle", () => {
+    let originalWakeLock;
+    let mockLock;
+
+    beforeEach(() => {
+      originalWakeLock = navigator.wakeLock;
+      mockLock = {
+        released: false,
+        release: vi.fn(async function () {
+          mockLock.released = true;
+          if (this._onrelease) this._onrelease();
+        }),
+        addEventListener: vi.fn((event, callback) => {
+          if (event === "release") {
+            mockLock._onrelease = callback;
+          }
+        }),
+        removeEventListener: vi.fn(),
+      };
+    });
+
+    afterEach(() => {
+      if (originalWakeLock !== undefined) {
+        Object.defineProperty(navigator, "wakeLock", {
+          value: originalWakeLock,
+          configurable: true,
+          writable: true,
+        });
+      } else {
+        delete navigator.wakeLock;
+      }
+      vi.restoreAllMocks();
+    });
+
+    it("does not render awake toggle when wakeLock is unsupported", () => {
+      delete navigator.wakeLock;
+      render(
+        <RecipeDetail
+          recipe={mockRecipe}
+          favorite={false}
+          progress={{ ingredients: [], steps: [] }}
+          onFavorite={vi.fn()}
+          onProgress={vi.fn()}
+          onEdit={vi.fn()}
+          isLocal={true}
+        />
+      );
+
+      expect(screen.queryByRole("button", { name: /keep screen awake/i })).not.toBeInTheDocument();
+    });
+
+    it("renders awake toggle and toggles active state when clicked", async () => {
+      const user = userEvent.setup();
+      const requestMock = vi.fn().mockResolvedValue(mockLock);
+      Object.defineProperty(navigator, "wakeLock", {
+        value: { request: requestMock },
+        configurable: true,
+        writable: true,
+      });
+
+      render(
+        <RecipeDetail
+          recipe={mockRecipe}
+          favorite={false}
+          progress={{ ingredients: [], steps: [] }}
+          onFavorite={vi.fn()}
+          onProgress={vi.fn()}
+          onEdit={vi.fn()}
+          isLocal={true}
+        />
+      );
+
+      const toggleBtn = screen.getByRole("button", { name: /keep screen awake/i });
+      expect(toggleBtn).toBeInTheDocument();
+      expect(toggleBtn).toHaveAttribute("aria-pressed", "false");
+      expect(toggleBtn.classList.contains("active")).toBe(false);
+
+      // Click to enable
+      await user.click(toggleBtn);
+      expect(requestMock).toHaveBeenCalledWith("screen");
+      expect(toggleBtn).toHaveAttribute("aria-pressed", "true");
+      expect(toggleBtn.classList.contains("active")).toBe(true);
+      expect(screen.getByText("Screen stays awake")).toBeInTheDocument();
+
+      // Click to disable
+      await user.click(toggleBtn);
+      expect(mockLock.release).toHaveBeenCalled();
+      expect(toggleBtn).toHaveAttribute("aria-pressed", "false");
+      expect(toggleBtn.classList.contains("active")).toBe(false);
+      expect(screen.getByText("Keep screen awake")).toBeInTheDocument();
+    });
+
+    it("shows device warning if wakeLock request is denied", async () => {
+      const user = userEvent.setup();
+      const requestMock = vi.fn().mockRejectedValue(new Error("NotAllowedError"));
+      Object.defineProperty(navigator, "wakeLock", {
+        value: { request: requestMock },
+        configurable: true,
+        writable: true,
+      });
+
+      render(
+        <RecipeDetail
+          recipe={mockRecipe}
+          favorite={false}
+          progress={{ ingredients: [], steps: [] }}
+          onFavorite={vi.fn()}
+          onProgress={vi.fn()}
+          onEdit={vi.fn()}
+          isLocal={true}
+        />
+      );
+
+      const toggleBtn = screen.getByRole("button", { name: /keep screen awake/i });
+      await user.click(toggleBtn);
+
+      expect(toggleBtn).toHaveAttribute("aria-pressed", "false");
+      expect(
+        screen.getByText(/couldn't keep the screen awake/i)
+      ).toBeInTheDocument();
+    });
   });
 });
 

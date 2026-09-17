@@ -30,58 +30,7 @@ import {
   generateUUID,
   formatGroceryListText,
 } from "../groceries";
-
-function useKeepAwake() {
-  const [enabled, setEnabled] = useState(false);
-  const [error, setError] = useState("");
-
-  useEffect(() => {
-    if (!enabled) return;
-    let active = true;
-    let lock;
-
-    const request = async () => {
-      if (document.visibilityState !== "visible") return;
-      if (lock && !lock.released) return;
-      try {
-        const next = await navigator.wakeLock.request("screen");
-        if (!active) {
-          await next.release();
-          return;
-        }
-        lock = next;
-        next.addEventListener("release", () => {
-          if (active && document.visibilityState === "visible") {
-            setEnabled(false);
-          }
-        });
-      } catch {
-        if (active) {
-          setEnabled(false);
-          setError("Screen auto-lock could not be disabled on this device.");
-        }
-      }
-    };
-
-    request();
-    document.addEventListener("visibilitychange", request);
-    return () => {
-      active = false;
-      lock?.release();
-      document.removeEventListener("visibilitychange", request);
-    };
-  }, [enabled]);
-
-  return {
-    supported: typeof navigator !== "undefined" && "wakeLock" in navigator,
-    enabled,
-    toggle: () => {
-      setError("");
-      setEnabled(!enabled);
-    },
-    error,
-  };
-}
+import useKeepAwake from "../useKeepAwake";
 
 export default function GroceryListView({
   session = EMPTY_GROCERY_SESSION,

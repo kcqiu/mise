@@ -18,6 +18,7 @@ import { convertMeasurement } from "../units";
 import RecipeArtwork from "./RecipeArtwork";
 import RecipeVideo from "./RecipeVideo";
 import ShareRecipeButton from "./ShareRecipeButton";
+import useKeepAwake from "../useKeepAwake";
 import { IconButton } from "@/components/ui/IconButton";
 import { TextButton } from "@/components/ui/TextButton";
 import { cn } from "@/lib/utils";
@@ -80,54 +81,6 @@ function IngredientList({
       })}
     </ul>
   );
-}
-
-function useKeepAwake() {
-  const [enabled, setEnabled] = useState(false);
-  const [error, setError] = useState("");
-  useEffect(() => {
-    if (!enabled) return;
-    let active = true;
-    let lock;
-    const request = async () => {
-      if (document.visibilityState !== "visible") return;
-      if (lock && !lock.released) return;
-      try {
-        const next = await navigator.wakeLock.request("screen");
-        if (!active) {
-          await next.release();
-          return;
-        }
-        lock = next;
-        next.addEventListener("release", () => {
-          if (active && document.visibilityState === "visible")
-            setEnabled(false);
-        });
-      } catch {
-        if (active) {
-          setEnabled(false);
-          setError(
-            "Your device couldn't keep the screen awake. Check its auto-lock setting instead.",
-          );
-        }
-      }
-    };
-    request();
-    document.addEventListener("visibilitychange", request);
-    return () => {
-      active = false;
-      lock?.release();
-      document.removeEventListener("visibilitychange", request);
-    };
-  }, [enabled]);
-  return {
-    supported: "wakeLock" in navigator,
-    toggle: () => {
-      setError("");
-      setEnabled(!enabled);
-    },
-    error,
-  };
 }
 
 export default function RecipeDetail({
