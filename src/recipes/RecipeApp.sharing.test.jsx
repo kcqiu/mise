@@ -147,4 +147,26 @@ describe("Shared Recipe Direct Link & Auth Gating", () => {
     expect(await screen.findByRole("heading", { name: "This recipe isn't on the shelf." })).toBeInTheDocument();
     expect(cloudMocks.loadRecipeById).toHaveBeenCalledWith("unknown-recipe-id");
   });
+
+  it("allows unauthenticated user to view AddRecipeModal and prompts login when any option is clicked", async () => {
+    const user = userEvent.setup();
+    window.history.replaceState(null, "", "/recipe/#/");
+
+    render(<RecipeApp />);
+
+    // Click Add recipe button in header
+    const addRecipeBtn = screen.getByRole("button", { name: "Add recipe" });
+    await user.click(addRecipeBtn);
+
+    // Modal showcases the ways to add recipes
+    expect(screen.getByText(/Choose how you'd like to add this recipe to your shelf:/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Scan from photo/i })).toBeInTheDocument();
+
+    // Clicking any option prompts the user to log in
+    await user.click(screen.getByRole("button", { name: /Scan from photo/i }));
+
+    // Auth modal is shown with intent 'create'
+    expect(screen.getByRole("heading", { name: "Sign in to write your own recipes" })).toBeInTheDocument();
+  });
 });
+
