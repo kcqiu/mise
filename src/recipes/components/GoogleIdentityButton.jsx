@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 
 const GOOGLE_SCRIPT_ID = "google-identity-services";
 const GOOGLE_SCRIPT_SRC = "https://accounts.google.com/gsi/client";
+const GOOGLE_BUTTON_MAX_WIDTH = 320;
 
 let googleScriptPromise;
 
@@ -110,7 +111,10 @@ export default function GoogleIdentityButton({
           shape: "rectangular",
           text: "continue_with",
           logo_alignment: "left",
-          width: Math.min(measuredWidth || 400, 400),
+          width: Math.min(
+            measuredWidth || GOOGLE_BUTTON_MAX_WIDTH,
+            GOOGLE_BUTTON_MAX_WIDTH,
+          ),
         });
       } catch (error) {
         if (active) onError(error);
@@ -136,7 +140,9 @@ export default function GoogleIdentityButton({
     <div className="relative flex min-h-11 w-full items-center justify-center">
       <div
         ref={buttonRef}
-        className={disabled || working ? "pointer-events-none opacity-60" : ""}
+        className={`w-full max-w-[320px] ${
+          disabled || working ? "pointer-events-none opacity-60" : ""
+        }`}
         aria-label="Continue with Google"
       />
       {working && (
