@@ -115,9 +115,38 @@ export default function RecipeApp() {
     () => new Set(personalRecipes.map((r) => r.id)),
     [personalRecipes],
   );
+  const [remoteRecipes, setRemoteRecipes] = useState({});
+  const [loadingRemoteId, setLoadingRemoteId] = useState(null);
+  const [notFoundRemoteIds, setNotFoundRemoteIds] = useState(() => new Set());
+
+  const sharedRecipes = useMemo(
+    () => (account.session ? account.library.sharedRecipes || [] : []),
+    [account.session, account.library?.sharedRecipes],
+  );
+
+  const allSharedRecipes = useMemo(() => {
+    const map = new Map();
+    for (const r of sharedRecipes) {
+      if (r && r.id) map.set(r.id, r);
+    }
+    for (const [id, r] of Object.entries(remoteRecipes)) {
+      if (
+        r &&
+        r.id &&
+        activeLibrary.favorites.includes(id) &&
+        !personalRecipeIds.has(id)
+      ) {
+        map.set(id, r);
+      }
+    }
+    return Array.from(map.values());
+  }, [sharedRecipes, remoteRecipes, activeLibrary.favorites, personalRecipeIds]);
+
   const recipes = useMemo(() => {
+    const personalIds = personalRecipeIds;
+    const sharedIds = new Set(allSharedRecipes.map((r) => r.id));
     const remainingPublished = publishedRecipes.filter(
-      (r) => !personalRecipeIds.has(r.id),
+      (r) => !personalIds.has(r.id) && !sharedIds.has(r.id),
     );
 
     const sortedPersonal = [...personalRecipes].sort((a, b) => {
@@ -127,12 +156,8 @@ export default function RecipeApp() {
       return 0;
     });
 
-    return [...sortedPersonal, ...remainingPublished];
-  }, [personalRecipes, personalRecipeIds]);
-
-  const [remoteRecipes, setRemoteRecipes] = useState({});
-  const [loadingRemoteId, setLoadingRemoteId] = useState(null);
-  const [notFoundRemoteIds, setNotFoundRemoteIds] = useState(() => new Set());
+    return [...sortedPersonal, ...allSharedRecipes, ...remainingPublished];
+  }, [personalRecipes, allSharedRecipes, personalRecipeIds]);
 
   const isRecipeRoute = Boolean(
     route && route !== "groceries" && route !== "not-found",
@@ -728,16 +753,35 @@ export default function RecipeApp() {
       commitLocal({ ...library, favorites });
       return;
     }
-    setAccount((current) => ({
-      ...current,
-      library: { ...current.library, favorites },
-    }));
+    const targetRecipe =
+      remoteRecipes[id] || allRecipes.find((r) => r.id === id);
+    setAccount((current) => {
+      const currentShared = current.library.sharedRecipes || [];
+      let nextShared = currentShared;
+      if (wasFavorite) {
+        nextShared = currentShared.filter((r) => r.id !== id);
+      } else if (
+        targetRecipe &&
+        !personalRecipes.some((r) => r.id === id) &&
+        !currentShared.some((r) => r.id === id)
+      ) {
+        nextShared = [...currentShared, targetRecipe];
+      }
+      return {
+        ...current,
+        library: { ...current.library, favorites, sharedRecipes: nextShared },
+      };
+    });
     try {
       await setAccountFavorite(account.session.user.id, id, !wasFavorite);
     } catch (error) {
       setAccount((current) => ({
         ...current,
-        library: { ...current.library, favorites: activeLibrary.favorites },
+        library: {
+          ...current.library,
+          favorites: activeLibrary.favorites,
+          sharedRecipes: activeLibrary.sharedRecipes || [],
+        },
       }));
       const msg = `Favorite could not sync: ${error.message}`;
       setNotice(msg);
@@ -759,12 +803,37 @@ export default function RecipeApp() {
       recipe,
       ...personalRecipes.filter((item) => item.id !== recipe.id),
     ];
+
+    const forkedFromId = editor?.forkedFromId;
+    const wasForkedFavorite = Boolean(
+      forkedFromId && activeLibrary.favorites.includes(forkedFromId),
+    );
+    let nextFavorites = activeLibrary.favorites;
+    if (wasForkedFavorite) {
+      nextFavorites = nextFavorites.filter((id) => id !== forkedFromId);
+      if (!nextFavorites.includes(recipe.id)) {
+        nextFavorites = [...nextFavorites, recipe.id];
+      }
+    }
+
     if (account.session) {
       try {
         await saveAccountRecipe(account.session.user.id, recipe);
+        if (wasForkedFavorite) {
+          await setAccountFavorite(account.session.user.id, forkedFromId, false).catch(() => {});
+          await setAccountFavorite(account.session.user.id, recipe.id, true).catch(() => {});
+        }
         setAccount((current) => ({
           ...current,
-          library: { ...current.library, recipes: nextRecipes, progress },
+          library: {
+            ...current.library,
+            recipes: nextRecipes,
+            favorites: nextFavorites,
+            sharedRecipes: (current.library.sharedRecipes || []).filter(
+              (r) => r.id !== forkedFromId,
+            ),
+            progress,
+          },
         }));
         setEditor(null);
         setNotice("Recipe saved to your account.");
@@ -778,7 +847,12 @@ export default function RecipeApp() {
         return message;
       }
     }
-    const error = commitLocal({ ...library, recipes: nextRecipes, progress });
+    const error = commitLocal({
+      ...library,
+      recipes: nextRecipes,
+      favorites: nextFavorites,
+      progress,
+    });
     if (!error) {
       setEditor(null);
       setNotice("Recipe saved on this browser.");
@@ -834,7 +908,12 @@ export default function RecipeApp() {
       setNotice("Sign in with Google to create and manage your recipes.");
       return;
     }
-    setEditor({ recipe });
+    const isOwned = recipe && personalRecipes.some((r) => r.id === recipe.id);
+    setEditor({
+      recipe,
+      fromIntake: !recipe,
+      forkedFromId: recipe && !isOwned ? recipe.id : null,
+    });
   };
   const beginSignIn = () => {
     setAuthModal({ open: true, intent: "signin", error: "" });
@@ -944,9 +1023,15 @@ export default function RecipeApp() {
       <AddRecipeModal
         isOpen={addRecipeModalOpen}
         onClose={() => setAddRecipeModalOpen(false)}
-        onSelectManual={() => setEditor({ recipe: null })}
+        onSelectManual={() =>
+          setEditor({ recipe: null, fromIntake: true, forkedFromId: null })
+        }
         onParsedRecipe={(parsedRecipe) => {
-          setEditor({ recipe: parsedRecipe });
+          setEditor({
+            recipe: parsedRecipe,
+            fromIntake: true,
+            forkedFromId: null,
+          });
           addToast("Recipe structured with Gemini AI!", "success");
         }}
         requireAuth={cloudEnabled && !account.session}
@@ -1053,6 +1138,14 @@ export default function RecipeApp() {
           onSave={save}
           onDelete={remove}
           onClose={() => setEditor(null)}
+          onBack={
+            editor.fromIntake
+              ? () => {
+                  setEditor(null);
+                  setAddRecipeModalOpen(true);
+                }
+              : null
+          }
         />
       )}
       {guestMergeModal.open && (

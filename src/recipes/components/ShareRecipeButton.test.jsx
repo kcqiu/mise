@@ -37,7 +37,59 @@ describe("ShareRecipeButton", () => {
     expect(button).toHaveTextContent("Share");
   });
 
-  it("invokes navigator.share on mobile devices when available", async () => {
+  it("opens share modal with link preview and copy button when clicked", async () => {
+    render(<ShareRecipeButton recipe={mockRecipe} />);
+    const trigger = screen.getByRole("button", { name: "Share recipe" });
+
+    await act(async () => {
+      fireEvent.click(trigger);
+    });
+
+    expect(screen.getByRole("heading", { name: "Share recipe" })).toBeInTheDocument();
+    const linkInput = screen.getByLabelText("Recipe share link");
+    expect(linkInput.value).toContain("#/recipe/salted-butter-roast-chicken");
+    expect(screen.getByRole("button", { name: /Copy recipe link/i })).toBeInTheDocument();
+  });
+
+  it("copies link to clipboard and provides visual feedback when Copy recipe link is clicked", async () => {
+    const mockWriteText = vi.fn().mockResolvedValue(undefined);
+    const onToast = vi.fn();
+
+    Object.defineProperty(global, "navigator", {
+      value: {
+        ...originalNavigator,
+        clipboard: {
+          writeText: mockWriteText,
+        },
+      },
+      configurable: true,
+      writable: true,
+    });
+
+    render(<ShareRecipeButton recipe={mockRecipe} onToast={onToast} />);
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Share recipe" }));
+    });
+
+    const copyBtn = screen.getByRole("button", { name: /Copy recipe link/i });
+    await act(async () => {
+      fireEvent.click(copyBtn);
+    });
+
+    expect(mockWriteText).toHaveBeenCalledWith(
+      expect.stringContaining("#/recipe/salted-butter-roast-chicken")
+    );
+    expect(onToast).toHaveBeenCalledWith("Recipe link copied to clipboard", "info");
+    expect(screen.getByText("Copied to clipboard!")).toBeInTheDocument();
+
+    // Advance timer by 2000ms to verify reverted label
+    act(() => {
+      vi.advanceTimersByTime(2000);
+    });
+    expect(screen.getByText("Copy recipe link")).toBeInTheDocument();
+  });
+
+  it("invokes navigator.share with url only (no page title) when Share via apps is clicked", async () => {
     const mockShare = vi.fn().mockResolvedValue(undefined);
     const mockCanShare = vi.fn().mockReturnValue(true);
 
@@ -52,85 +104,47 @@ describe("ShareRecipeButton", () => {
     });
 
     render(<ShareRecipeButton recipe={mockRecipe} />);
-    const button = screen.getByRole("button", { name: "Share recipe" });
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Share recipe" }));
+    });
+
+    const appsBtn = screen.getByRole("button", { name: /Share via apps\.\.\./i });
+    expect(appsBtn).toBeInTheDocument();
 
     await act(async () => {
-      fireEvent.click(button);
+      fireEvent.click(appsBtn);
     });
 
     expect(mockShare).toHaveBeenCalledTimes(1);
-    expect(mockShare).toHaveBeenCalledWith(
-      expect.objectContaining({
-        title: "Salted Butter Roast Chicken | mise.",
-        text: mockRecipe.description,
-        url: expect.stringContaining("#/recipe/salted-butter-roast-chicken"),
-      })
-    );
+    // Crucial check: title should NOT be included in share payload so mobile "Copy" doesn't copy title
+    const sharePayload = mockShare.mock.calls[0][0];
+    expect(sharePayload.url).toContain("#/recipe/salted-butter-roast-chicken");
+    expect(sharePayload.title).toBeUndefined();
   });
 
-  it("gracefully handles user cancellation (AbortError) in navigator.share", async () => {
-    const abortError = new Error("User canceled share");
-    abortError.name = "AbortError";
-    const mockShare = vi.fn().mockRejectedValue(abortError);
-    const onToast = vi.fn();
-
-    Object.defineProperty(global, "navigator", {
-      value: {
-        ...originalNavigator,
-        share: mockShare,
-      },
-      configurable: true,
-      writable: true,
+  it("closes modal on close button click and escape key", async () => {
+    render(<ShareRecipeButton recipe={mockRecipe} />);
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Share recipe" }));
     });
+    expect(screen.getByRole("heading", { name: "Share recipe" })).toBeInTheDocument();
 
-    render(<ShareRecipeButton recipe={mockRecipe} onToast={onToast} />);
-    const button = screen.getByRole("button", { name: "Share recipe" });
+    // Close via close button
+    const closeBtn = screen.getByRole("button", { name: "Close dialog" });
+    await act(async () => {
+      fireEvent.click(closeBtn);
+    });
+    expect(screen.queryByRole("heading", { name: "Share recipe" })).not.toBeInTheDocument();
+
+    // Reopen and close via Escape
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Share recipe" }));
+    });
+    expect(screen.getByRole("heading", { name: "Share recipe" })).toBeInTheDocument();
 
     await act(async () => {
-      fireEvent.click(button);
+      fireEvent.keyDown(window, { key: "Escape" });
     });
-
-    expect(mockShare).toHaveBeenCalledTimes(1);
-    expect(onToast).not.toHaveBeenCalled();
-    expect(screen.getByRole("button", { name: "Share recipe" })).toHaveTextContent("Share");
-  });
-
-  it("copies to clipboard and displays transient feedback when navigator.share is unavailable", async () => {
-    const mockWriteText = vi.fn().mockResolvedValue(undefined);
-    const onToast = vi.fn();
-
-    Object.defineProperty(global, "navigator", {
-      value: {
-        ...originalNavigator,
-        share: undefined,
-        clipboard: {
-          writeText: mockWriteText,
-        },
-      },
-      configurable: true,
-      writable: true,
-    });
-
-    render(<ShareRecipeButton recipe={mockRecipe} onToast={onToast} />);
-    const button = screen.getByRole("button", { name: "Share recipe" });
-
-    await act(async () => {
-      fireEvent.click(button);
-    });
-
-    expect(mockWriteText).toHaveBeenCalledWith(
-      expect.stringContaining("#/recipe/salted-butter-roast-chicken")
-    );
-    expect(onToast).toHaveBeenCalledWith("Recipe link copied to clipboard", "info");
-
-    const copiedButton = screen.getByRole("button", { name: "Recipe link copied" });
-    expect(copiedButton).toHaveTextContent("Copied link!");
-
-    // Advance timer by 2000ms
-    act(() => {
-      vi.advanceTimersByTime(2000);
-    });
-
-    expect(screen.getByRole("button", { name: "Share recipe" })).toHaveTextContent("Share");
+    expect(screen.queryByRole("heading", { name: "Share recipe" })).not.toBeInTheDocument();
   });
 });

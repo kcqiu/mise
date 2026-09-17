@@ -128,8 +128,7 @@ describe("AddRecipeModal intake hub", () => {
     await user.click(screen.getByRole("button", { name: /From recipe website/i }));
     expect(screen.getByRole("heading", { name: "From recipe website" })).toBeInTheDocument();
     expect(screen.getByPlaceholderText(/seriouseats\.com/i)).toBeInTheDocument();
-    expect(screen.getByText("NYT Cooking")).toBeInTheDocument();
-    expect(screen.getByText("Serious Eats")).toBeInTheDocument();
+    expect(screen.queryByText(/Works with:/i)).not.toBeInTheDocument();
 
     // Click back to menu
     await user.click(screen.getByRole("button", { name: "Back to creation options" }));
