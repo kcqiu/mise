@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Download, Share, X } from "lucide-react";
 
@@ -26,9 +26,14 @@ function isIosDevice() {
   );
 }
 
-function isIosChrome() {
-  if (!isIosDevice()) return false;
-  return /CriOS/i.test(navigator.userAgent);
+function getIosBrowserName() {
+  if (!isIosDevice()) return "your browser";
+  if (/CriOS/i.test(navigator.userAgent)) return "Chrome";
+  if (/FxiOS/i.test(navigator.userAgent)) return "Firefox";
+  if (/EdgiOS/i.test(navigator.userAgent)) return "Edge";
+  if (/OPiOS/i.test(navigator.userAgent)) return "Opera";
+  if (/Safari/i.test(navigator.userAgent)) return "Safari";
+  return "your browser";
 }
 
 function isStandalone() {
@@ -41,6 +46,9 @@ function isStandalone() {
 
 export default function InstallAppMenuItem() {
   const buttonRef = useRef(null);
+  const dialogRef = useRef(null);
+  const closeButtonRef = useRef(null);
+  const returnFocusRef = useRef(null);
   const [installPrompt, setInstallPrompt] = useState(deferredInstallPrompt);
   const [installed, setInstalled] = useState(isStandalone);
   const [showIosGuide, setShowIosGuide] = useState(false);
@@ -61,11 +69,52 @@ export default function InstallAppMenuItem() {
     };
   }, []);
 
+  const closeGuide = useCallback(() => setShowIosGuide(false), []);
+
+  useEffect(() => {
+    if (!showIosGuide) return undefined;
+
+    const dialog = dialogRef.current;
+    closeButtonRef.current?.focus();
+
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        closeGuide();
+        return;
+      }
+
+      if (event.key !== "Tab" || !dialog) return;
+
+      const focusable = Array.from(dialog.querySelectorAll("button"));
+      const first = focusable[0];
+      const last = focusable.at(-1);
+      if (!first || !last) return;
+
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      returnFocusRef.current?.focus();
+    };
+  }, [closeGuide, showIosGuide]);
+
   if (installed || (!ios && !installPrompt)) return null;
 
   const handleInstall = async () => {
     if (ios) {
-      buttonRef.current?.closest("details")?.removeAttribute("open");
+      const accountMenu = buttonRef.current?.closest("details");
+      returnFocusRef.current =
+        accountMenu?.querySelector("summary") || buttonRef.current;
+      accountMenu?.removeAttribute("open");
       setShowIosGuide(true);
       return;
     }
@@ -82,8 +131,7 @@ export default function InstallAppMenuItem() {
   };
 
   const buttonLabel = ios ? "Add MISE to Home Screen" : "Install MISE";
-  const chrome = isIosChrome();
-  const browserName = chrome ? "Chrome" : "Safari";
+  const browserName = getIosBrowserName();
 
   return (
     <>
@@ -101,10 +149,11 @@ export default function InstallAppMenuItem() {
         <div
           className="fixed inset-0 z-[210] flex items-end justify-center bg-ink/45 p-3 pb-[calc(12px+env(safe-area-inset-bottom))] backdrop-blur-[2px] sm:items-center sm:p-6"
           onMouseDown={(event) => {
-            if (event.target === event.currentTarget) setShowIosGuide(false);
+            if (event.target === event.currentTarget) closeGuide();
           }}
         >
           <section
+            ref={dialogRef}
             role="dialog"
             aria-modal="true"
             aria-labelledby="mise-install-title"
@@ -119,13 +168,14 @@ export default function InstallAppMenuItem() {
                   id="mise-install-title"
                   className="m-0 font-serif text-[28px] font-medium leading-tight text-ink"
                 >
-                  Add MISE to your iPhone
+                  Add MISE to your Home Screen
                 </h2>
               </div>
               <button
                 type="button"
                 aria-label="Close install instructions"
-                onClick={() => setShowIosGuide(false)}
+                ref={closeButtonRef}
+                onClick={closeGuide}
                 className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-0 bg-transparent text-ink transition-colors hover:bg-ink/[0.06] cursor-pointer"
               >
                 <X size={18} />
@@ -162,7 +212,7 @@ export default function InstallAppMenuItem() {
 
             <button
               type="button"
-              onClick={() => setShowIosGuide(false)}
+              onClick={closeGuide}
               className="mt-5 inline-flex min-h-11 w-full items-center justify-center rounded-md border border-ink bg-ink px-4 text-sm font-semibold text-white transition-colors hover:bg-[#383630] cursor-pointer"
             >
               Got it
