@@ -17,27 +17,37 @@ export const supabase = cloudEnabled
     })
   : null;
 
+let customClient = null;
+
+export function setSupabaseClientForTesting(client) {
+  customClient = client;
+}
+
+const getClient = () => customClient || supabase;
+
 const throwIfError = ({ error }) => {
   if (error) throw error;
 };
 
 export async function getSession() {
-  if (!supabase) return null;
-  const { data, error } = await supabase.auth.getSession();
+  const client = getClient();
+  if (!client) return null;
+  const { data, error } = await client.auth.getSession();
   if (error) throw error;
   return data.session;
 }
 
 export function watchSession(callback) {
-  if (!supabase) return () => {};
-  const { data } = supabase.auth.onAuthStateChange((_event, session) => {
+  const client = getClient();
+  if (!client) return () => {};
+  const { data } = client.auth.onAuthStateChange((_event, session) => {
     setTimeout(() => callback(session), 0);
   });
-  return () => data.subscription.unsubscribe();
+  return () => data?.subscription?.unsubscribe?.();
 }
 
 export async function signInWithGoogle({ idToken, nonce } = {}) {
-  const client = customClient || supabase;
+  const client = getClient();
   if (!client) return;
   if (!idToken) {
     throw new Error("Google did not return a sign-in credential.");
@@ -83,22 +93,24 @@ export function extractAuthErrorFromUrl() {
 }
 
 export async function signOut() {
-  if (!supabase) return;
-  const { error } = await supabase.auth.signOut();
+  const client = getClient();
+  if (!client) return;
+  const { error } = await client.auth.signOut();
   if (error) throw error;
 }
 
 export async function loadAccountLibrary(userId) {
-  if (!supabase) return { recipes: [], favorites: [], progress: {} };
+  const client = getClient();
+  if (!client) return { recipes: [], favorites: [], sharedRecipes: [], progress: {} };
   const [recipesResult, favoritesResult, progressResult] = await Promise.all([
-    supabase
+    client
       .from("recipes")
       .select("id, payload")
       .eq("owner_id", userId)
       .eq("is_system", false)
       .order("updated_at", { ascending: false }),
-    supabase.from("favorites").select("recipe_id").eq("user_id", userId),
-    supabase
+    client.from("favorites").select("recipe_id").eq("user_id", userId),
+    client
       .from("recipe_progress")
       .select("recipe_id, progress")
       .eq("user_id", userId),
@@ -106,9 +118,35 @@ export async function loadAccountLibrary(userId) {
   throwIfError(recipesResult);
   throwIfError(favoritesResult);
   throwIfError(progressResult);
+
+  const favoriteIds = favoritesResult.data.map(({ recipe_id }) => recipe_id);
+  const ownedRecipeIds = new Set(recipesResult.data.map(({ id }) => id));
+  const externalFavoriteIds = favoriteIds.filter((id) => !ownedRecipeIds.has(id));
+
+  let sharedRecipes = [];
+  if (externalFavoriteIds.length > 0) {
+    try {
+      const sharedResult = await client
+        .from("recipes")
+        .select("id, payload, owner_id")
+        .in("id", externalFavoriteIds);
+      if (!sharedResult.error && Array.isArray(sharedResult.data)) {
+        sharedRecipes = sharedResult.data.map(({ id, payload, owner_id }) => ({
+          ...payload,
+          id,
+          ownerId: owner_id,
+          isShared: true,
+        }));
+      }
+    } catch {
+      // Gracefully continue with available local data if external lookup fails
+    }
+  }
+
   return {
     recipes: recipesResult.data.map(({ id, payload }) => ({ ...payload, id })),
-    favorites: favoritesResult.data.map(({ recipe_id }) => recipe_id),
+    sharedRecipes,
+    favorites: favoriteIds,
     progress: Object.fromEntries(
       progressResult.data.map(({ recipe_id, progress }) => [
         recipe_id,
@@ -119,7 +157,7 @@ export async function loadAccountLibrary(userId) {
 }
 
 export async function loadRecipeById(recipeId) {
-  const client = customClient || supabase;
+  const client = getClient();
   if (!client || !recipeId) return null;
   const result = await client
     .from("recipes")
@@ -135,7 +173,9 @@ export async function loadRecipeById(recipeId) {
 }
 
 export async function saveAccountRecipe(userId, recipe) {
-  const result = await supabase.from("recipes").upsert(
+  const client = getClient();
+  if (!client) return;
+  const result = await client.from("recipes").upsert(
     {
       id: recipe.id,
       owner_id: userId,
@@ -148,7 +188,9 @@ export async function saveAccountRecipe(userId, recipe) {
 }
 
 export async function deleteAccountRecipe(userId, recipeId) {
-  const result = await supabase
+  const client = getClient();
+  if (!client) return;
+  const result = await client
     .from("recipes")
     .delete()
     .eq("id", recipeId)
@@ -157,8 +199,10 @@ export async function deleteAccountRecipe(userId, recipeId) {
 }
 
 export async function setAccountFavorite(userId, recipeId, favorite) {
+  const client = getClient();
+  if (!client) return;
   const result = favorite
-    ? await supabase
+    ? await client
         .from("favorites")
         .upsert(
           { user_id: userId, recipe_id: recipeId },
@@ -167,7 +211,7 @@ export async function setAccountFavorite(userId, recipeId, favorite) {
             ignoreDuplicates: true,
           },
         )
-    : await supabase
+    : await client
         .from("favorites")
         .delete()
         .eq("user_id", userId)
@@ -176,7 +220,9 @@ export async function setAccountFavorite(userId, recipeId, favorite) {
 }
 
 export async function setAccountProgress(userId, recipeId, progress) {
-  const result = await supabase.from("recipe_progress").upsert(
+  const client = getClient();
+  if (!client) return;
+  const result = await client.from("recipe_progress").upsert(
     { user_id: userId, recipe_id: recipeId, progress },
     { onConflict: "user_id,recipe_id" },
   );
@@ -184,8 +230,10 @@ export async function setAccountProgress(userId, recipeId, progress) {
 }
 
 export async function importAccountLibrary(userId, library) {
+  const client = getClient();
+  if (!client) return;
   if (library.recipes.length) {
-    const result = await supabase.from("recipes").upsert(
+    const result = await client.from("recipes").upsert(
       library.recipes.map((recipe) => ({
         id: recipe.id,
         owner_id: userId,
@@ -197,7 +245,7 @@ export async function importAccountLibrary(userId, library) {
     throwIfError(result);
   }
   if (library.favorites.length) {
-    const result = await supabase.from("favorites").upsert(
+    const result = await client.from("favorites").upsert(
       library.favorites.map((recipeId) => ({
         user_id: userId,
         recipe_id: recipeId,
@@ -260,14 +308,6 @@ export async function deleteRecipeCover(publicUrl) {
 // Phase 2: Groceries Cloud Synchronization & Realtime
 // -----------------------------------------------------------------------------
 
-let customClient = null;
-
-/**
- * For testing purposes only: allows injecting a mock Supabase client.
- */
-export function setSupabaseClientForTesting(client) {
-  customClient = client;
-}
 
 /**
  * Loads the currently active grocery session for the authenticated user.

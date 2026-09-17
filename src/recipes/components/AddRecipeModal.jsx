@@ -555,16 +555,6 @@ export default function AddRecipeModal({
               />
             </div>
 
-            <div className="url-suggestions flex flex-wrap items-center gap-1.5 text-xs">
-              <span className="url-suggestions-label text-muted text-[11px] font-medium mr-0.5">Works with:</span>
-              <span className="tag-pill px-2 py-0.5 rounded-md bg-[#f0f4ee] border border-[#dce4d9] text-ink text-[11px]">NYT Cooking</span>
-              <span className="tag-pill px-2 py-0.5 rounded-md bg-[#f0f4ee] border border-[#dce4d9] text-ink text-[11px]">Serious Eats</span>
-              <span className="tag-pill px-2 py-0.5 rounded-md bg-[#f0f4ee] border border-[#dce4d9] text-ink text-[11px]">Bon Appétit</span>
-              <span className="tag-pill px-2 py-0.5 rounded-md bg-[#f0f4ee] border border-[#dce4d9] text-ink text-[11px]">Sally&apos;s Baking</span>
-              <span className="tag-pill px-2 py-0.5 rounded-md bg-[#f0f4ee] border border-[#dce4d9] text-ink text-[11px]">Allrecipes</span>
-              <span className="tag-pill px-2 py-0.5 rounded-md bg-[#f0f4ee] border border-[#dce4d9] text-ink text-[11px]">Food blogs</span>
-            </div>
-
             <div className="add-recipe-modal__actions flex items-center justify-end gap-2.5 mt-2.5">
               <Button
                 type="button"

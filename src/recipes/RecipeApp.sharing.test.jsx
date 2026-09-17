@@ -8,6 +8,9 @@ const cloudMocks = vi.hoisted(() => ({
   loadAccountLibrary: vi.fn(),
   loadAccountGrocerySession: vi.fn(),
   loadRecipeById: vi.fn(),
+  saveAccountRecipe: vi.fn(),
+  setAccountFavorite: vi.fn(),
+  deleteAccountRecipe: vi.fn(),
 }));
 
 vi.mock("./cloud", async () => {
@@ -20,6 +23,9 @@ vi.mock("./cloud", async () => {
     loadAccountLibrary: cloudMocks.loadAccountLibrary,
     loadAccountGrocerySession: cloudMocks.loadAccountGrocerySession,
     loadRecipeById: cloudMocks.loadRecipeById,
+    saveAccountRecipe: cloudMocks.saveAccountRecipe,
+    setAccountFavorite: cloudMocks.setAccountFavorite,
+    deleteAccountRecipe: cloudMocks.deleteAccountRecipe,
   };
 });
 
@@ -67,11 +73,15 @@ beforeEach(() => {
   cloudMocks.loadAccountLibrary.mockReset();
   cloudMocks.loadAccountGrocerySession.mockReset();
   cloudMocks.loadRecipeById.mockReset();
+  cloudMocks.saveAccountRecipe.mockReset().mockResolvedValue(undefined);
+  cloudMocks.setAccountFavorite.mockReset().mockResolvedValue(undefined);
+  cloudMocks.deleteAccountRecipe.mockReset().mockResolvedValue(undefined);
 
   cloudMocks.getSession.mockResolvedValue(null);
   cloudMocks.loadAccountLibrary.mockResolvedValue({
     recipes: [],
     favorites: [],
+    sharedRecipes: [],
     progress: {},
   });
   cloudMocks.loadAccountGrocerySession.mockResolvedValue({ session: null });
@@ -111,7 +121,7 @@ describe("Shared Recipe Direct Link & Auth Gating", () => {
     ).toBeInTheDocument();
   });
 
-  it("allows unauthenticated recipient to share the direct link", async () => {
+  it("opens share modal with copy link and native share options", async () => {
     const mockShare = vi.fn().mockResolvedValue(undefined);
     Object.defineProperty(global.navigator, "share", {
       value: mockShare,
@@ -129,13 +139,50 @@ describe("Shared Recipe Direct Link & Auth Gating", () => {
       fireEvent.click(shareBtn);
     });
 
+    // Share modal opens
+    expect(screen.getByRole("heading", { name: "Share recipe" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Copy recipe link/i })).toBeInTheDocument();
+
+    const shareViaAppsBtn = screen.getByRole("button", { name: /Share via apps/i });
+    await act(async () => {
+      fireEvent.click(shareViaAppsBtn);
+    });
+
     expect(mockShare).toHaveBeenCalledTimes(1);
-    expect(mockShare).toHaveBeenCalledWith(
-      expect.objectContaining({
-        title: "Grandma's Secret Focaccia | mise.",
-        url: expect.stringContaining("#/recipe/shared-recipe-uuid-1234"),
-      })
+    // Verified: does NOT pass title, ensuring mobile iOS/Android copies URL
+    expect(mockShare).toHaveBeenCalledWith({
+      url: expect.stringContaining("#/recipe/shared-recipe-uuid-1234"),
+      text: expect.stringContaining("#/recipe/shared-recipe-uuid-1234"),
+    });
+  });
+
+  it("allows copying the direct recipe link from the share modal", async () => {
+    const mockWriteText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(global.navigator, "clipboard", {
+      value: { writeText: mockWriteText },
+      configurable: true,
+      writable: true,
+    });
+
+    cloudMocks.loadRecipeById.mockResolvedValue(mockSharedRecipe);
+    window.history.replaceState(null, "", "/recipe/#/recipe/shared-recipe-uuid-1234");
+
+    render(<RecipeApp />);
+
+    const shareBtn = await screen.findByRole("button", { name: "Share recipe" });
+    await act(async () => {
+      fireEvent.click(shareBtn);
+    });
+
+    const copyBtn = screen.getByRole("button", { name: /Copy recipe link/i });
+    await act(async () => {
+      fireEvent.click(copyBtn);
+    });
+
+    expect(mockWriteText).toHaveBeenCalledWith(
+      expect.stringContaining("#/recipe/shared-recipe-uuid-1234")
     );
+    expect(screen.getByText("Copied to clipboard!")).toBeInTheDocument();
   });
 
   it("displays missing recipe state when shared recipe is not found in cloud", async () => {
@@ -167,6 +214,145 @@ describe("Shared Recipe Direct Link & Auth Gating", () => {
 
     // Auth modal is shown with intent 'create'
     expect(screen.getByRole("heading", { name: "Sign in to write your own recipes" })).toBeInTheDocument();
+  });
+
+  it("allows authenticated user to favorite a shared recipe and view it in Favorites tab", async () => {
+    cloudMocks.getSession.mockResolvedValue({ user: { id: "user-456" } });
+    cloudMocks.loadAccountLibrary.mockResolvedValue({
+      recipes: [],
+      favorites: [],
+      sharedRecipes: [],
+      progress: {},
+    });
+    cloudMocks.loadRecipeById.mockResolvedValue(mockSharedRecipe);
+    window.history.replaceState(null, "", "/recipe/#/recipe/shared-recipe-uuid-1234");
+
+    render(<RecipeApp />);
+
+    expect(await screen.findByRole("heading", { name: "Grandma's Secret Focaccia" })).toBeInTheDocument();
+
+    const favoriteBtn = screen.getByRole("button", { name: "Save to favorites" });
+    await act(async () => {
+      fireEvent.click(favoriteBtn);
+    });
+
+    expect(cloudMocks.setAccountFavorite).toHaveBeenCalledWith(
+      "user-456",
+      "shared-recipe-uuid-1234",
+      true
+    );
+
+    // Navigate to shelf
+    await act(async () => {
+      window.location.hash = "#/";
+      window.dispatchEvent(new HashChangeEvent("hashchange"));
+    });
+
+    expect(await screen.findByRole("heading", { name: /The recipe/i })).toBeInTheDocument();
+
+    // Click Favorites tab
+    const favoritesTab = screen.getByRole("button", { name: /^Favorites/i });
+    await act(async () => {
+      fireEvent.click(favoritesTab);
+    });
+    expect(screen.getByText("Grandma's Secret Focaccia")).toBeInTheDocument();
+
+    // Click My recipes tab
+    const myRecipesTab = screen.getByRole("button", { name: /^My recipes/i });
+    await act(async () => {
+      fireEvent.click(myRecipesTab);
+    });
+    // Should NOT be in My recipes because it was authored by someone else
+    expect(screen.queryByText("Grandma's Secret Focaccia")).not.toBeInTheDocument();
+  });
+
+  it("migrates favorite to new recipe when user edits a favorited shared recipe via 'Make it your own'", async () => {
+    const user = userEvent.setup();
+    cloudMocks.getSession.mockResolvedValue({ user: { id: "user-456" } });
+    cloudMocks.loadAccountLibrary.mockResolvedValue({
+      recipes: [],
+      favorites: ["shared-recipe-uuid-1234"],
+      sharedRecipes: [mockSharedRecipe],
+      progress: {},
+    });
+    cloudMocks.loadRecipeById.mockResolvedValue(mockSharedRecipe);
+    window.history.replaceState(null, "", "/recipe/#/recipe/shared-recipe-uuid-1234");
+
+    render(<RecipeApp />);
+
+    expect(await screen.findByRole("heading", { name: "Grandma's Secret Focaccia" })).toBeInTheDocument();
+
+    // Click Make it your own
+    const makeYourOwnBtn = screen.getByRole("button", { name: "Make it your own" });
+    await user.click(makeYourOwnBtn);
+
+    // Recipe editor opens
+    expect(screen.getByRole("heading", { name: "Make it yours." })).toBeInTheDocument();
+
+    // Edit title
+    const titleInput = screen.getByLabelText(/Recipe name/i);
+    await user.clear(titleInput);
+    await user.type(titleInput, "My Custom Rosemary Focaccia");
+
+    // Click Save recipe
+    const saveBtn = screen.getByRole("button", { name: /Save recipe/i });
+    await act(async () => {
+      fireEvent.submit(saveBtn.closest("form"));
+    });
+
+    // saveAccountRecipe was called with new UUID recipe ID (not the original shared id)
+    expect(cloudMocks.saveAccountRecipe).toHaveBeenCalledTimes(1);
+    const savedRecipe = cloudMocks.saveAccountRecipe.mock.calls[0][1];
+    expect(savedRecipe.id).not.toBe("shared-recipe-uuid-1234");
+    expect(savedRecipe.id).toMatch(/^recipe-/);
+    expect(savedRecipe.title).toBe("My Custom Rosemary Focaccia");
+
+    // Unfavorites original and favorites the new one
+    expect(cloudMocks.setAccountFavorite).toHaveBeenCalledWith(
+      "user-456",
+      "shared-recipe-uuid-1234",
+      false
+    );
+    expect(cloudMocks.setAccountFavorite).toHaveBeenCalledWith(
+      "user-456",
+      savedRecipe.id,
+      true
+    );
+  });
+
+  it("allows navigating back from manual entry to AddRecipeModal", async () => {
+    const user = userEvent.setup();
+    cloudMocks.getSession.mockResolvedValue({ user: { id: "user-456" } });
+    cloudMocks.loadAccountLibrary.mockResolvedValue({
+      recipes: [],
+      favorites: [],
+      sharedRecipes: [],
+      progress: {},
+    });
+    window.history.replaceState(null, "", "/recipe/#/");
+
+    render(<RecipeApp />);
+
+    // Click Add recipe
+    const addRecipeBtn = await screen.findByRole("button", { name: "Add recipe" });
+    await user.click(addRecipeBtn);
+
+    // In Add recipe modal, click Manual entry
+    const manualBtn = screen.getByRole("button", { name: /Manual entry/i });
+    await user.click(manualBtn);
+
+    // Recipe editor is open
+    expect(screen.getByRole("heading", { name: "A new keeper." })).toBeInTheDocument();
+
+    // Back button is present
+    const backBtn = screen.getByRole("button", { name: "Back to creation options" });
+    expect(backBtn).toBeInTheDocument();
+
+    await user.click(backBtn);
+
+    // Recipe editor is closed and AddRecipeModal is open again
+    expect(screen.queryByRole("heading", { name: "A new keeper." })).not.toBeInTheDocument();
+    expect(screen.getByText(/Choose how you'd like to add this recipe to your shelf:/i)).toBeInTheDocument();
   });
 });
 

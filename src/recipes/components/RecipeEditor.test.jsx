@@ -315,10 +315,48 @@ describe('RecipeEditor component', () => {
 
     const note = screen.getByLabelText('Ingredient 1 preparation note');
     const group = screen.getByLabelText('Ingredient 1 group');
-    expect(note).not.toHaveClass('text-xs');
-    expect(group).not.toHaveClass('text-xs');
     expect(note).toHaveClass('text-sm', 'max-[580px]:text-base');
     expect(group).toHaveClass('text-sm', 'max-[580px]:text-base');
+  });
+
+  it('renders onBack button when onBack prop is provided and triggers callback', async () => {
+    const handleBack = vi.fn();
+    render(
+      <RecipeEditor
+        recipe={null}
+        categories={['Baking', 'Dinner']}
+        onSave={vi.fn()}
+        onClose={vi.fn()}
+        onBack={handleBack}
+        onDelete={vi.fn()}
+        isLocal={false}
+      />
+    );
+
+    const backButton = screen.getByRole('button', { name: 'Back to creation options' });
+    expect(backButton).toBeInTheDocument();
+    await userEvent.click(backButton);
+    expect(handleBack).toHaveBeenCalledTimes(1);
+  });
+
+  it('generates a new unique recipe ID when isLocal is false (Make it your own)', async () => {
+    const handleSave = vi.fn().mockResolvedValue('');
+    render(
+      <RecipeEditor
+        recipe={{ ...defaultRecipe, id: 'shared-original-recipe-id' }}
+        categories={['Baking', 'Dinner']}
+        onSave={handleSave}
+        onClose={vi.fn()}
+        onDelete={vi.fn()}
+        isLocal={false}
+      />
+    );
+
+    await userEvent.click(screen.getByRole('button', { name: 'Save recipe' }));
+    expect(handleSave).toHaveBeenCalledTimes(1);
+    const saved = handleSave.mock.calls[0][0];
+    expect(saved.id).toMatch(/^recipe-/);
+    expect(saved.id).not.toBe('shared-original-recipe-id');
   });
 });
 

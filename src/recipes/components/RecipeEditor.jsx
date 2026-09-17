@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import {
+  ArrowLeft,
   Cloud,
   Loader2,
   Plus,
@@ -115,6 +116,7 @@ export default function RecipeEditor({
   categories,
   onSave,
   onClose,
+  onBack = null,
   onDelete,
   isLocal,
   isCloud = false,
@@ -296,9 +298,12 @@ export default function RecipeEditor({
     setError("");
 
     try {
+      const newId = isLocal
+        ? recipe.id
+        : `recipe-${typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2, 10)}`;
       const saved = validateRecipe({
         ...draft,
-        id: isLocal ? recipe.id : (draft.id && draft.id.startsWith("recipe-") ? draft.id : `recipe-${crypto.randomUUID()}`),
+        id: newId,
         example: false,
         createdAt: draft.createdAt || recipe?.createdAt || new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -341,16 +346,29 @@ export default function RecipeEditor({
         onSubmit={submit}
       >
         <div className="editor-header z-[2] flex shrink-0 items-center justify-between gap-3.5 border-b border-line bg-paper px-8 pt-6 pb-5 max-[580px]:px-5 max-[580px]:pt-[max(22px,env(safe-area-inset-top))] max-[580px]:pb-[17px]">
-          <div>
-            <span className="eyebrow block text-[10px] font-semibold tracking-[0.08em] uppercase text-muted">
-              From your kitchen
-            </span>
-            <h2
-              id="editor-title"
-              className="font-serif font-normal text-[32px] mt-[7px] mb-0 leading-tight max-[580px]:text-[29px]"
-            >
-              {recipe ? "Make it yours." : "A new keeper."}
-            </h2>
+          <div className="flex items-center gap-3 min-w-0">
+            {onBack && (
+              <IconButton
+                size="default"
+                onClick={onBack}
+                aria-label="Back to creation options"
+                title="Back to creation options"
+                className="rounded-full shrink-0 -ml-2 text-ink hover:bg-[rgba(36,35,31,0.06)]"
+              >
+                <ArrowLeft size={20} />
+              </IconButton>
+            )}
+            <div>
+              <span className="eyebrow block text-[10px] font-semibold tracking-[0.08em] uppercase text-muted">
+                From your kitchen
+              </span>
+              <h2
+                id="editor-title"
+                className="font-serif font-normal text-[32px] mt-[7px] mb-0 leading-tight max-[580px]:text-[29px]"
+              >
+                {recipe ? "Make it yours." : "A new keeper."}
+              </h2>
+            </div>
           </div>
           <div className="flex items-center gap-2.5">
             <button
