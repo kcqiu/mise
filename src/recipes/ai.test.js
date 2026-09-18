@@ -185,4 +185,49 @@ describe("src/recipes/ai.js AI client bridge", () => {
     expect(cdnUrl).toBe("https://supabase.co/storage/v1/object/public/recipe-covers/user-123/recipe-1-12345.jpg");
     expect(cloudModule.uploadRecipeCover).toHaveBeenCalled();
   });
+
+  it("attaches Authorization header when user has active session", async () => {
+    vi.spyOn(cloudModule, "getSession").mockResolvedValueOnce({
+      access_token: "jwt-token-xyz-123",
+    });
+
+    global.fetch = vi.fn().mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ success: true, recipe: { title: "Auth Recipe" } }),
+    });
+
+    await parseRecipeFromText("Recipe text");
+    expect(global.fetch).toHaveBeenCalledWith("/api/ai/parse-recipe", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: "Bearer jwt-token-xyz-123",
+      },
+      body: JSON.stringify({ mode: "text", text: "Recipe text" }),
+    });
+  });
+
+  it("normalizes 401 Unauthorized into user-friendly message", async () => {
+    global.fetch = vi.fn().mockResolvedValueOnce({
+      ok: false,
+      status: 401,
+      json: async () => ({ error: "Authentication required." }),
+    });
+
+    await expect(parseRecipeFromText("Some text")).rejects.toThrow(
+      /Authentication required/i
+    );
+  });
+
+  it("normalizes 429 Rate Limit into user-friendly message", async () => {
+    global.fetch = vi.fn().mockResolvedValueOnce({
+      ok: false,
+      status: 429,
+      json: async () => ({ error: "Hourly limit reached (30 requests/hour)." }),
+    });
+
+    await expect(parseRecipeFromText("Some text")).rejects.toThrow(
+      /Hourly limit reached/i
+    );
+  });
 });

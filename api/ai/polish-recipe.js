@@ -1,4 +1,5 @@
 import { GoogleGenAI } from "@google/genai";
+import { requireAiAuth } from "../../server/aiAuth.js";
 
 const RECIPE_SCHEMA = {
   type: "object",
@@ -76,6 +77,9 @@ export default async function handler(req, res) {
     res.setHeader("Allow", "POST");
     return res.status(405).json({ error: "Method not allowed. Use POST." });
   }
+
+  const user = await requireAiAuth(req, res, { action: "polish", quota: 20 });
+  if (!user) return;
 
   const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
   if (!apiKey) {

@@ -7,7 +7,7 @@
  * 3. Photorealistic food photography generation using Gemini Imagen 3, synced to Supabase Storage.
  */
 
-import { uploadRecipeCover } from "./cloud";
+import { getSession, uploadRecipeCover } from "./cloud";
 
 /**
  * Constructs an optimized food photography prompt for Gemini Image Generation.
@@ -32,20 +32,41 @@ export function buildCoverPrompt(recipe) {
  * Helper to execute an AI API endpoint with user-friendly error normalization.
  */
 async function callAiEndpoint(endpoint, payload) {
+  const headers = {
+    "Content-Type": "application/json",
+  };
+
+  try {
+    const session = await getSession();
+    if (session?.access_token) {
+      headers["Authorization"] = `Bearer ${session.access_token}`;
+    }
+  } catch {
+    // Continue without token if session check fails
+  }
+
   const response = await fetch(endpoint, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
+    headers,
     body: JSON.stringify(payload),
   });
 
   const data = await response.json().catch(() => ({}));
 
   if (!response.ok) {
+    if (response.status === 401) {
+      throw new Error(
+        data?.error || "Please sign in to your account to use AI features.",
+      );
+    }
+    if (response.status === 429) {
+      throw new Error(
+        data?.error || "AI rate limit reached. Please try again later.",
+      );
+    }
     if (data?.missingKey) {
       throw new Error(
-        "Gemini API key is not configured. Please add GEMINI_API_KEY in your Vercel Project Environment Variables to enable AI capabilities."
+        "Gemini API key is not configured. Please add GEMINI_API_KEY in your Vercel Project Environment Variables to enable AI capabilities.",
       );
     }
     const err = new Error(data?.error || `AI operation failed (${response.status})`);

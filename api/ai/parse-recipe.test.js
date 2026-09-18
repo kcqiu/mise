@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import handler from "./parse-recipe.js";
+import { resetRateLimitsForTesting } from "../../server/aiAuth.js";
 
 const { generateContent } = vi.hoisted(() => ({ generateContent: vi.fn() }));
 vi.mock("@google/genai", () => ({
@@ -28,6 +29,7 @@ vi.mock("node:dns/promises", () => ({
 }));
 
 beforeEach(() => {
+  resetRateLimitsForTesting();
   vi.stubEnv("GEMINI_API_KEY", "test-gemini-key");
   vi.stubGlobal("fetch", vi.fn());
   generateContent.mockReset();
@@ -38,18 +40,59 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-async function invoke(body) {
+async function invoke(body, headers = {}) {
   const res = {
     status: vi.fn().mockReturnThis(),
     json: vi.fn().mockReturnThis(),
     setHeader: vi.fn(),
   };
-  await handler({ method: "POST", body }, res);
+  await handler(
+    {
+      method: "POST",
+      headers: { authorization: "Bearer test-valid-token", ...headers },
+      body,
+    },
+    res,
+  );
   return {
     status: res.status.mock.calls.at(-1)[0],
     body: res.json.mock.calls.at(-1)[0],
   };
 }
+
+describe("parse-recipe handler - Authentication & Rate Limiting", () => {
+  it("rejects unauthenticated request with 401", async () => {
+    const res = await invoke({ mode: "text", text: "soup" }, { authorization: "" });
+    expect(res.status).toBe(401);
+    expect(res.body.code).toBe("AUTH_REQUIRED");
+    expect(generateContent).not.toHaveBeenCalled();
+  });
+
+  it("rejects invalid token with 401", async () => {
+    const res = await invoke(
+      { mode: "text", text: "soup" },
+      { authorization: "Bearer invalid-token-xyz" },
+    );
+    expect(res.status).toBe(401);
+    expect(res.body.code).toBe("INVALID_TOKEN");
+    expect(generateContent).not.toHaveBeenCalled();
+  });
+
+  it("enforces 30 requests/hour rate limit", async () => {
+    generateContent.mockResolvedValue({ text: JSON.stringify({ title: "Quick Soup", category: "Soups", ingredients: [], steps: [] }) });
+
+    // Call 30 times
+    for (let i = 0; i < 30; i++) {
+      const okRes = await invoke({ mode: "text", text: `soup ${i}` });
+      expect(okRes.status).toBe(200);
+    }
+
+    // 31st call should be throttled with 429
+    const throttled = await invoke({ mode: "text", text: "soup 31" });
+    expect(throttled.status).toBe(429);
+    expect(throttled.body.code).toBe("RATE_LIMIT_EXCEEDED");
+  });
+});
 
 describe("parse-recipe handler - SSRF protection for mode: 'url'", () => {
   it.each([

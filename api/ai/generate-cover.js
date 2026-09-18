@@ -1,8 +1,17 @@
+import { requireAiAuth } from "../../server/aiAuth.js";
+
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     res.setHeader("Allow", "POST");
     return res.status(405).json({ error: "Method not allowed. Use POST." });
   }
+
+  const user = await requireAiAuth(req, res, {
+    action: "cover",
+    quota: 5,
+    dualIpThrottle: true,
+  });
+  if (!user) return;
 
   const cfToken = process.env.CLOUDFLARE_API_TOKEN;
   const cfAccountId = process.env.CLOUDFLARE_ACCOUNT_ID;
