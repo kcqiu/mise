@@ -1,4 +1,6 @@
+import { randomUUID } from "node:crypto";
 import { GoogleGenAI } from "@google/genai";
+import { requireAiAuth } from "../../server/aiAuth.js";
 
 const RECIPE_SCHEMA = {
   type: "object",
@@ -72,16 +74,25 @@ Refinement Objectives:
 6. Output strictly valid JSON matching the schema.`;
 
 export default async function handler(req, res) {
+  const requestId =
+    req.headers["x-request-id"] ||
+    req.headers["x-vercel-id"] ||
+    randomUUID();
+
   if (req.method !== "POST") {
     res.setHeader("Allow", "POST");
-    return res.status(405).json({ error: "Method not allowed. Use POST." });
+    return res.status(405).json({ error: "Method not allowed. Use POST.", requestId });
   }
+
+  const user = await requireAiAuth(req, res, { action: "polish", quota: 20 });
+  if (!user) return;
 
   const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
   if (!apiKey) {
+    console.error(`[AI Polish Error][${requestId}] Missing Gemini API key`);
     return res.status(503).json({
-      error: "Gemini API key is not configured. Please add GEMINI_API_KEY in your Vercel Project Environment Variables.",
-      missingKey: true
+      error: "AI polishing service is currently unavailable.",
+      requestId
     });
   }
 
@@ -135,13 +146,14 @@ export default async function handler(req, res) {
 
     return res.status(200).json({
       success: true,
-      recipe: polishedRecipe
+      recipe: polishedRecipe,
+      requestId
     });
   } catch (err) {
-    console.error("AI Polish Error:", err);
+    console.error(`[AI Polish Error][${requestId}]:`, err);
     return res.status(500).json({
-      error: err.message || "Failed to polish recipe with Gemini AI.",
-      details: err.toString()
+      error: "Failed to polish recipe with Gemini AI. Please try again.",
+      requestId
     });
   }
 }

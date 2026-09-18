@@ -13,7 +13,10 @@ const caption = "Matcha latte: whisk 1 tsp matcha with 2 tbsp water. Add 1 cup m
 const recipe = { title: "Matcha latte", ingredients: [{ name: "matcha" }], steps: [{ instruction: "Whisk matcha with water." }] };
 const providerPost = { shortcode: "CvvEAHStYXS", url: "https://www.instagram.com/p/CvvEAHStYXS/", caption, author: "chef" };
 
+import { resetRateLimitsForTesting } from "./aiAuth.js";
+
 beforeEach(() => {
+  resetRateLimitsForTesting();
   vi.stubEnv("CHOCODATA_API_KEY", "test-chocodata-key");
   vi.stubEnv("GEMINI_API_KEY", "test-gemini-key");
   vi.stubGlobal("fetch", vi.fn());
@@ -27,7 +30,14 @@ function respond(data, status = 200) {
 }
 async function invoke(body) {
   const res = { status: vi.fn().mockReturnThis(), json: vi.fn().mockReturnThis(), setHeader: vi.fn() };
-  await handler({ method: "POST", body: { mode: "social", url, ...body } }, res);
+  await handler(
+    {
+      method: "POST",
+      headers: { authorization: "Bearer test-valid-token" },
+      body: { mode: "social", url, ...body },
+    },
+    res,
+  );
   return { status: res.status.mock.calls.at(-1)[0], body: res.json.mock.calls.at(-1)[0] };
 }
 

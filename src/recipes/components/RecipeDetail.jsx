@@ -92,6 +92,7 @@ export default function RecipeDetail({
   onEdit,
   onSearchTag,
   isLocal,
+  isCloud = false,
   inGroceries = false,
   onToggleGroceries,
   onToast,
@@ -136,7 +137,6 @@ export default function RecipeDetail({
     });
   };
   useEffect(() => {
-    window.scrollTo(0, 0);
     titleRef.current?.focus({ preventScroll: true });
   }, [recipe.id]);
   return (
@@ -154,7 +154,12 @@ export default function RecipeDetail({
           Back to the shelf
         </a>
         <div className="detail-toolbar-actions flex items-center gap-3">
-          <ShareRecipeButton recipe={recipe} onToast={onToast} />
+          <ShareRecipeButton
+            recipe={recipe}
+            onToast={onToast}
+            isLocal={isLocal}
+            isCloud={isCloud}
+          />
           <TextButton
             className="text-muted hover:text-ink text-xs max-[580px]:text-[11px] gap-1.5 max-[580px]:gap-1.5 min-h-[44px]"
             onClick={() => onEdit(recipe)}

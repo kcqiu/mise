@@ -222,6 +222,53 @@ describe("Groceries Cloud Synchronization Client", () => {
       expect(res.currentActiveSession.id).toBe("new-session");
     });
 
+    it("handles REVISION_CONFLICT when mutations are applied against stale revision", async () => {
+      const mockRpc = vi.fn().mockResolvedValue({
+        data: {
+          success: false,
+          code: "REVISION_CONFLICT",
+          sessionId: "session-stale-1",
+          currentRevision: 5,
+          session: {
+            id: "session-stale-1",
+            status: "active",
+            revision: 5,
+            recipes: [],
+            custom_items: [],
+            item_overrides: {},
+          },
+        },
+        error: null,
+      });
+
+      cloud.setSupabaseClientForTesting({ rpc: mockRpc });
+
+      const res = await cloud.saveAccountGroceryMutations("user-123", "session-stale-1", 3, []);
+      expect(res.success).toBe(false);
+      expect(res.code).toBe("REVISION_CONFLICT");
+      expect(res.currentRevision).toBe(5);
+      expect(res.session.id).toBe("session-stale-1");
+      expect(res.session.revision).toBe(5);
+      expect(res.currentSession.id).toBe("session-stale-1");
+    });
+
+    it("handles MUTATION_BATCH_TOO_LARGE when payload exceeds batch limit", async () => {
+      const mockRpc = vi.fn().mockResolvedValue({
+        data: {
+          success: false,
+          code: "MUTATION_BATCH_TOO_LARGE",
+          message: "Mutation batch exceeds maximum allowed limit of 100",
+        },
+        error: null,
+      });
+
+      cloud.setSupabaseClientForTesting({ rpc: mockRpc });
+
+      const res = await cloud.saveAccountGroceryMutations("user-123", "session-1", 1, []);
+      expect(res.success).toBe(false);
+      expect(res.code).toBe("MUTATION_BATCH_TOO_LARGE");
+    });
+
     it("completes session with action rollover and returns activeSession", async () => {
       const mockRpc = vi.fn().mockResolvedValue({
         data: {
@@ -382,7 +429,7 @@ describe("Groceries Cloud Synchronization Client", () => {
       const unsubscribe = cloud.subscribeGrocerySession("session-realtime-1", onMessage);
 
       expect(mockClient.channel).toHaveBeenCalledWith("grocery:session-realtime-1", {
-        config: { broadcast: { self: false } },
+        config: { private: true, broadcast: { self: false } },
       });
       expect(mockChannel.subscribe).toHaveBeenCalled();
 
@@ -396,6 +443,9 @@ describe("Groceries Cloud Synchronization Client", () => {
 
       // 2. Broadcast
       await cloud.broadcastGroceryMutations("session-realtime-1", { ping: "pong" });
+      expect(mockClient.channel).toHaveBeenLastCalledWith("grocery:session-realtime-1", {
+        config: { private: true, broadcast: { self: false } },
+      });
       expect(mockSend).toHaveBeenCalledWith({
         type: "broadcast",
         event: "grocery_mutations",
@@ -465,6 +515,150 @@ describe("Groceries Cloud Synchronization Client", () => {
       cloud.setSupabaseClientForTesting(mockClient);
       const result = await cloud.loadRecipeById("non-existent");
       expect(result).toBeNull();
+    });
+  });
+
+  describe("Capability recipe sharing RPCs", () => {
+    it("getOrCreateRecipeShare returns share token via RPC", async () => {
+      const mockRpc = vi.fn().mockResolvedValue({
+        data: { success: true, share_token: "tok_test_123" },
+        error: null,
+      });
+      cloud.setSupabaseClientForTesting({ rpc: mockRpc });
+
+      const token = await cloud.getOrCreateRecipeShare("recipe-1");
+      expect(mockRpc).toHaveBeenCalledWith("get_or_create_recipe_share", {
+        p_recipe_id: "recipe-1",
+      });
+      expect(token).toBe("tok_test_123");
+    });
+
+    it("loadRecipeByShareToken fetches recipe via get_shared_recipe RPC", async () => {
+      const mockRecipe = {
+        id: "recipe-1",
+        title: "Shared Souffle",
+        isShared: true,
+      };
+      const mockRpc = vi.fn().mockResolvedValue({
+        data: mockRecipe,
+        error: null,
+      });
+      cloud.setSupabaseClientForTesting({ rpc: mockRpc });
+
+      const recipe = await cloud.loadRecipeByShareToken("tok_test_123");
+      expect(mockRpc).toHaveBeenCalledWith("get_shared_recipe", {
+        p_token: "tok_test_123",
+      });
+      expect(recipe).toEqual(mockRecipe);
+    });
+
+    it("revokeRecipeShare calls revoke RPC", async () => {
+      const mockRpc = vi.fn().mockResolvedValue({
+        data: { success: true },
+        error: null,
+      });
+      cloud.setSupabaseClientForTesting({ rpc: mockRpc });
+
+      const success = await cloud.revokeRecipeShare("recipe-1");
+      expect(mockRpc).toHaveBeenCalledWith("revoke_recipe_share", {
+        p_recipe_id: "recipe-1",
+      });
+      expect(success).toBe(true);
+    });
+  });
+
+  describe("Recipe cover storage (Issue 7)", () => {
+    it("uploads cover to private bucket and returns signed URL", async () => {
+      const mockUpload = vi.fn().mockResolvedValue({
+        data: { path: "user-1/recipe-1-12345.webp" },
+        error: null,
+      });
+      const mockCreateSignedUrl = vi.fn().mockResolvedValue({
+        data: {
+          signedUrl:
+            "https://supabase.co/storage/v1/object/sign/recipe-covers/user-1/recipe-1-12345.webp?token=xyz",
+        },
+        error: null,
+      });
+      const mockGetPublicUrl = vi.fn();
+
+      cloud.setSupabaseClientForTesting({
+        storage: {
+          from: vi.fn(() => ({
+            upload: mockUpload,
+            createSignedUrl: mockCreateSignedUrl,
+            getPublicUrl: mockGetPublicUrl,
+          })),
+        },
+      });
+
+      const blob = new Blob(["fake-image-bytes"], { type: "image/webp" });
+      const url = await cloud.uploadRecipeCover(blob, "recipe-1", "user-1");
+
+      expect(mockUpload).toHaveBeenCalledWith(
+        expect.stringMatching(/^user-1\/recipe-1-\d+\.webp$/),
+        blob,
+        expect.objectContaining({ upsert: true, contentType: "image/webp" }),
+      );
+      expect(mockCreateSignedUrl).toHaveBeenCalledWith(
+        "user-1/recipe-1-12345.webp",
+        31536000,
+      );
+      expect(url).toBe(
+        "https://supabase.co/storage/v1/object/sign/recipe-covers/user-1/recipe-1-12345.webp?token=xyz",
+      );
+      expect(mockGetPublicUrl).not.toHaveBeenCalled();
+    });
+
+    it("falls back to getPublicUrl if createSignedUrl fails", async () => {
+      const mockUpload = vi.fn().mockResolvedValue({
+        data: { path: "user-1/recipe-1-12345.webp" },
+        error: null,
+      });
+      const mockCreateSignedUrl = vi.fn().mockResolvedValue({
+        data: null,
+        error: new Error("Signed URL not supported"),
+      });
+      const mockGetPublicUrl = vi.fn().mockReturnValue({
+        data: {
+          publicUrl:
+            "https://supabase.co/storage/v1/object/public/recipe-covers/user-1/recipe-1-12345.webp",
+        },
+      });
+
+      cloud.setSupabaseClientForTesting({
+        storage: {
+          from: vi.fn(() => ({
+            upload: mockUpload,
+            createSignedUrl: mockCreateSignedUrl,
+            getPublicUrl: mockGetPublicUrl,
+          })),
+        },
+      });
+
+      const blob = new Blob(["fake-image-bytes"], { type: "image/webp" });
+      const url = await cloud.uploadRecipeCover(blob, "recipe-1", "user-1");
+
+      expect(url).toBe(
+        "https://supabase.co/storage/v1/object/public/recipe-covers/user-1/recipe-1-12345.webp",
+      );
+    });
+
+    it("deleteRecipeCover extracts path cleanly and removes object even with signed query params", async () => {
+      const mockRemove = vi.fn().mockResolvedValue({ data: [], error: null });
+      cloud.setSupabaseClientForTesting({
+        storage: {
+          from: vi.fn(() => ({
+            remove: mockRemove,
+          })),
+        },
+      });
+
+      await cloud.deleteRecipeCover(
+        "https://supabase.co/storage/v1/object/sign/recipe-covers/user-1/recipe-1-12345.webp?token=sensitive-signature-query",
+      );
+
+      expect(mockRemove).toHaveBeenCalledWith(["user-1/recipe-1-12345.webp"]);
     });
   });
 });

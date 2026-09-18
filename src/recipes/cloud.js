@@ -172,6 +172,60 @@ export async function loadRecipeById(recipeId) {
   return { ...result.data.payload, id: result.data.id };
 }
 
+export async function getOrCreateRecipeShare(recipeId) {
+  const client = getClient();
+  if (!client || !recipeId) return null;
+  try {
+    const { data, error } = await client.rpc("get_or_create_recipe_share", {
+      p_recipe_id: recipeId,
+    });
+    if (error) {
+      console.error("Failed to get or create recipe share:", error);
+      return null;
+    }
+    return data?.share_token || null;
+  } catch (err) {
+    console.error("Failed to get or create recipe share:", err);
+    return null;
+  }
+}
+
+export async function loadRecipeByShareToken(token) {
+  const client = getClient();
+  if (!client || !token) return null;
+  try {
+    const { data, error } = await client.rpc("get_shared_recipe", {
+      p_token: token,
+    });
+    if (error) {
+      console.error("Failed to load shared recipe by token:", error);
+      return null;
+    }
+    return data || null;
+  } catch (err) {
+    console.error("Failed to load shared recipe by token:", err);
+    return null;
+  }
+}
+
+export async function revokeRecipeShare(recipeId) {
+  const client = getClient();
+  if (!client || !recipeId) return false;
+  try {
+    const { data, error } = await client.rpc("revoke_recipe_share", {
+      p_recipe_id: recipeId,
+    });
+    if (error) {
+      console.error("Failed to revoke recipe share:", error);
+      return false;
+    }
+    return Boolean(data?.success);
+  } catch (err) {
+    console.error("Failed to revoke recipe share:", err);
+    return false;
+  }
+}
+
 export async function saveAccountRecipe(userId, recipe) {
   const client = getClient();
   if (!client) return;
@@ -270,7 +324,8 @@ export async function importAccountLibrary(userId, library) {
 }
 
 export async function uploadRecipeCover(fileOrBlob, recipeId, userId) {
-  if (!supabase || !userId) return null;
+  const client = getClient();
+  if (!client || !userId) return null;
   const ext =
     fileOrBlob.type === "image/png"
       ? "png"
@@ -278,7 +333,7 @@ export async function uploadRecipeCover(fileOrBlob, recipeId, userId) {
         ? "jpg"
         : "webp";
   const filePath = `${userId}/${recipeId}-${Date.now()}.${ext}`;
-  const { data, error } = await supabase.storage
+  const { data, error } = await client.storage
     .from("recipe-covers")
     .upload(filePath, fileOrBlob, {
       cacheControl: "31536000",
@@ -286,18 +341,35 @@ export async function uploadRecipeCover(fileOrBlob, recipeId, userId) {
       contentType: fileOrBlob.type || "image/webp",
     });
   if (error) throw error;
-  const { data: publicData } = supabase.storage
+
+  // Private bucket: generate 1-year signed URL for owner and share recipients
+  try {
+    const { data: signedData, error: signError } = await client.storage
+      .from("recipe-covers")
+      .createSignedUrl(data.path, 31536000); // 1 year in seconds
+
+    if (signedData?.signedUrl && !signError) {
+      return signedData.signedUrl;
+    }
+  } catch {
+    // Fallback if createSignedUrl fails
+  }
+
+  const { data: publicData } = client.storage
     .from("recipe-covers")
     .getPublicUrl(data.path);
-  return publicData.publicUrl;
+  return publicData?.publicUrl || null;
 }
 
-export async function deleteRecipeCover(publicUrl) {
-  if (!supabase || !publicUrl || !publicUrl.includes("/recipe-covers/")) return;
+export async function deleteRecipeCover(coverUrl) {
+  const client = getClient();
+  if (!client || !coverUrl || !coverUrl.includes("/recipe-covers/")) return;
   try {
-    const parts = publicUrl.split("/recipe-covers/");
+    const parts = coverUrl.split("/recipe-covers/");
     if (parts.length === 2) {
-      await supabase.storage.from("recipe-covers").remove([parts[1]]);
+      // Strip query parameters (?token=...) from signed URLs
+      const rawPath = parts[1].split("?")[0];
+      await client.storage.from("recipe-covers").remove([decodeURIComponent(rawPath)]);
     }
   } catch {
     // Non-blocking cleanup
@@ -395,6 +467,21 @@ export async function saveAccountGroceryMutations(userId, sessionId, expectedRev
         error: null,
       };
     }
+    if (data?.code === "REVISION_CONFLICT") {
+      return {
+        success: false,
+        code: "REVISION_CONFLICT",
+        sessionId: data.sessionId,
+        currentRevision: Number(data.currentRevision || data.session?.revision),
+        session: (data.session || data.currentSession)
+          ? dbRecordToGrocerySession(data.session || data.currentSession)
+          : null,
+        currentSession: (data.currentSession || data.session)
+          ? dbRecordToGrocerySession(data.currentSession || data.session)
+          : null,
+        error: null,
+      };
+    }
     return {
       success: false,
       code: data?.code || "MUTATION_FAILED",
@@ -480,6 +567,7 @@ export function subscribeGrocerySession(sessionId, onBroadcastMessage) {
   if (!client || !sessionId) return () => {};
   const channel = client.channel(`grocery:${sessionId}`, {
     config: {
+      private: true,
       broadcast: { self: false },
     },
   });
@@ -503,7 +591,12 @@ export function subscribeGrocerySession(sessionId, onBroadcastMessage) {
 export async function broadcastGroceryMutations(sessionId, payload) {
   const client = customClient || supabase;
   if (!client || !sessionId) return;
-  const channel = client.channel(`grocery:${sessionId}`);
+  const channel = client.channel(`grocery:${sessionId}`, {
+    config: {
+      private: true,
+      broadcast: { self: false },
+    },
+  });
   await channel.send({
     type: "broadcast",
     event: "grocery_mutations",
