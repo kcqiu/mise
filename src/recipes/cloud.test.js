@@ -382,7 +382,7 @@ describe("Groceries Cloud Synchronization Client", () => {
       const unsubscribe = cloud.subscribeGrocerySession("session-realtime-1", onMessage);
 
       expect(mockClient.channel).toHaveBeenCalledWith("grocery:session-realtime-1", {
-        config: { broadcast: { self: false } },
+        config: { private: true, broadcast: { self: false } },
       });
       expect(mockChannel.subscribe).toHaveBeenCalled();
 
@@ -396,6 +396,9 @@ describe("Groceries Cloud Synchronization Client", () => {
 
       // 2. Broadcast
       await cloud.broadcastGroceryMutations("session-realtime-1", { ping: "pong" });
+      expect(mockClient.channel).toHaveBeenLastCalledWith("grocery:session-realtime-1", {
+        config: { private: true, broadcast: { self: false } },
+      });
       expect(mockSend).toHaveBeenCalledWith({
         type: "broadcast",
         event: "grocery_mutations",

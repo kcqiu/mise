@@ -534,6 +534,7 @@ export function subscribeGrocerySession(sessionId, onBroadcastMessage) {
   if (!client || !sessionId) return () => {};
   const channel = client.channel(`grocery:${sessionId}`, {
     config: {
+      private: true,
       broadcast: { self: false },
     },
   });
@@ -557,7 +558,12 @@ export function subscribeGrocerySession(sessionId, onBroadcastMessage) {
 export async function broadcastGroceryMutations(sessionId, payload) {
   const client = customClient || supabase;
   if (!client || !sessionId) return;
-  const channel = client.channel(`grocery:${sessionId}`);
+  const channel = client.channel(`grocery:${sessionId}`, {
+    config: {
+      private: true,
+      broadcast: { self: false },
+    },
+  });
   await channel.send({
     type: "broadcast",
     event: "grocery_mutations",
