@@ -222,6 +222,36 @@ describe("Groceries Cloud Synchronization Client", () => {
       expect(res.currentActiveSession.id).toBe("new-session");
     });
 
+    it("handles REVISION_CONFLICT when mutations are applied against stale revision", async () => {
+      const mockRpc = vi.fn().mockResolvedValue({
+        data: {
+          success: false,
+          code: "REVISION_CONFLICT",
+          sessionId: "session-stale-1",
+          currentRevision: 5,
+          session: {
+            id: "session-stale-1",
+            status: "active",
+            revision: 5,
+            recipes: [],
+            custom_items: [],
+            item_overrides: {},
+          },
+        },
+        error: null,
+      });
+
+      cloud.setSupabaseClientForTesting({ rpc: mockRpc });
+
+      const res = await cloud.saveAccountGroceryMutations("user-123", "session-stale-1", 3, []);
+      expect(res.success).toBe(false);
+      expect(res.code).toBe("REVISION_CONFLICT");
+      expect(res.currentRevision).toBe(5);
+      expect(res.session.id).toBe("session-stale-1");
+      expect(res.session.revision).toBe(5);
+      expect(res.currentSession.id).toBe("session-stale-1");
+    });
+
     it("completes session with action rollover and returns activeSession", async () => {
       const mockRpc = vi.fn().mockResolvedValue({
         data: {

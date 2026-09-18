@@ -449,6 +449,21 @@ export async function saveAccountGroceryMutations(userId, sessionId, expectedRev
         error: null,
       };
     }
+    if (data?.code === "REVISION_CONFLICT") {
+      return {
+        success: false,
+        code: "REVISION_CONFLICT",
+        sessionId: data.sessionId,
+        currentRevision: Number(data.currentRevision || data.session?.revision),
+        session: (data.session || data.currentSession)
+          ? dbRecordToGrocerySession(data.session || data.currentSession)
+          : null,
+        currentSession: (data.currentSession || data.session)
+          ? dbRecordToGrocerySession(data.currentSession || data.session)
+          : null,
+        error: null,
+      };
+    }
     return {
       success: false,
       code: data?.code || "MUTATION_FAILED",

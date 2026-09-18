@@ -321,6 +321,19 @@ export default function RecipeApp() {
         if (recovered.length > 0) {
           setTimeout(() => flushGroceryQueue(userId), 100);
         }
+      } else if (res.code === "REVISION_CONFLICT") {
+        const latestSession = res.currentSession || res.session;
+        if (latestSession) {
+          const remaining = readGroceryQueue(userId);
+          const rebased = rebaseMutationsOverSession(latestSession, remaining);
+          grocerySessionRef.current = rebased;
+          setGrocerySession(rebased);
+          saveGrocerySession(rebased, userId);
+          setSyncStatus("saved");
+          if (remaining.length > 0) {
+            setTimeout(() => flushGroceryQueue(userId), 50);
+          }
+        }
       } else {
         if (typeof navigator !== "undefined" && !navigator.onLine) {
           setSyncStatus("offline");
