@@ -252,6 +252,23 @@ describe("Groceries Cloud Synchronization Client", () => {
       expect(res.currentSession.id).toBe("session-stale-1");
     });
 
+    it("handles MUTATION_BATCH_TOO_LARGE when payload exceeds batch limit", async () => {
+      const mockRpc = vi.fn().mockResolvedValue({
+        data: {
+          success: false,
+          code: "MUTATION_BATCH_TOO_LARGE",
+          message: "Mutation batch exceeds maximum allowed limit of 100",
+        },
+        error: null,
+      });
+
+      cloud.setSupabaseClientForTesting({ rpc: mockRpc });
+
+      const res = await cloud.saveAccountGroceryMutations("user-123", "session-1", 1, []);
+      expect(res.success).toBe(false);
+      expect(res.code).toBe("MUTATION_BATCH_TOO_LARGE");
+    });
+
     it("completes session with action rollover and returns activeSession", async () => {
       const mockRpc = vi.fn().mockResolvedValue({
         data: {
