@@ -566,5 +566,100 @@ describe("Groceries Cloud Synchronization Client", () => {
       expect(success).toBe(true);
     });
   });
+
+  describe("Recipe cover storage (Issue 7)", () => {
+    it("uploads cover to private bucket and returns signed URL", async () => {
+      const mockUpload = vi.fn().mockResolvedValue({
+        data: { path: "user-1/recipe-1-12345.webp" },
+        error: null,
+      });
+      const mockCreateSignedUrl = vi.fn().mockResolvedValue({
+        data: {
+          signedUrl:
+            "https://supabase.co/storage/v1/object/sign/recipe-covers/user-1/recipe-1-12345.webp?token=xyz",
+        },
+        error: null,
+      });
+      const mockGetPublicUrl = vi.fn();
+
+      cloud.setSupabaseClientForTesting({
+        storage: {
+          from: vi.fn(() => ({
+            upload: mockUpload,
+            createSignedUrl: mockCreateSignedUrl,
+            getPublicUrl: mockGetPublicUrl,
+          })),
+        },
+      });
+
+      const blob = new Blob(["fake-image-bytes"], { type: "image/webp" });
+      const url = await cloud.uploadRecipeCover(blob, "recipe-1", "user-1");
+
+      expect(mockUpload).toHaveBeenCalledWith(
+        expect.stringMatching(/^user-1\/recipe-1-\d+\.webp$/),
+        blob,
+        expect.objectContaining({ upsert: true, contentType: "image/webp" }),
+      );
+      expect(mockCreateSignedUrl).toHaveBeenCalledWith(
+        "user-1/recipe-1-12345.webp",
+        31536000,
+      );
+      expect(url).toBe(
+        "https://supabase.co/storage/v1/object/sign/recipe-covers/user-1/recipe-1-12345.webp?token=xyz",
+      );
+      expect(mockGetPublicUrl).not.toHaveBeenCalled();
+    });
+
+    it("falls back to getPublicUrl if createSignedUrl fails", async () => {
+      const mockUpload = vi.fn().mockResolvedValue({
+        data: { path: "user-1/recipe-1-12345.webp" },
+        error: null,
+      });
+      const mockCreateSignedUrl = vi.fn().mockResolvedValue({
+        data: null,
+        error: new Error("Signed URL not supported"),
+      });
+      const mockGetPublicUrl = vi.fn().mockReturnValue({
+        data: {
+          publicUrl:
+            "https://supabase.co/storage/v1/object/public/recipe-covers/user-1/recipe-1-12345.webp",
+        },
+      });
+
+      cloud.setSupabaseClientForTesting({
+        storage: {
+          from: vi.fn(() => ({
+            upload: mockUpload,
+            createSignedUrl: mockCreateSignedUrl,
+            getPublicUrl: mockGetPublicUrl,
+          })),
+        },
+      });
+
+      const blob = new Blob(["fake-image-bytes"], { type: "image/webp" });
+      const url = await cloud.uploadRecipeCover(blob, "recipe-1", "user-1");
+
+      expect(url).toBe(
+        "https://supabase.co/storage/v1/object/public/recipe-covers/user-1/recipe-1-12345.webp",
+      );
+    });
+
+    it("deleteRecipeCover extracts path cleanly and removes object even with signed query params", async () => {
+      const mockRemove = vi.fn().mockResolvedValue({ data: [], error: null });
+      cloud.setSupabaseClientForTesting({
+        storage: {
+          from: vi.fn(() => ({
+            remove: mockRemove,
+          })),
+        },
+      });
+
+      await cloud.deleteRecipeCover(
+        "https://supabase.co/storage/v1/object/sign/recipe-covers/user-1/recipe-1-12345.webp?token=sensitive-signature-query",
+      );
+
+      expect(mockRemove).toHaveBeenCalledWith(["user-1/recipe-1-12345.webp"]);
+    });
+  });
 });
 

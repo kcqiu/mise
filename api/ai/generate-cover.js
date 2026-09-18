@@ -1,9 +1,15 @@
+import { randomUUID } from "node:crypto";
 import { requireAiAuth } from "../../server/aiAuth.js";
 
 export default async function handler(req, res) {
+  const requestId =
+    req.headers["x-request-id"] ||
+    req.headers["x-vercel-id"] ||
+    randomUUID();
+
   if (req.method !== "POST") {
     res.setHeader("Allow", "POST");
-    return res.status(405).json({ error: "Method not allowed. Use POST." });
+    return res.status(405).json({ error: "Method not allowed. Use POST.", requestId });
   }
 
   const user = await requireAiAuth(req, res, {
@@ -16,9 +22,10 @@ export default async function handler(req, res) {
   const cfToken = process.env.CLOUDFLARE_API_TOKEN;
   const cfAccountId = process.env.CLOUDFLARE_ACCOUNT_ID;
   if (!cfToken || !cfAccountId) {
+    console.error(`[AI Cover Error][${requestId}] Missing Cloudflare API credentials`);
     return res.status(503).json({
-      error: "Cloudflare API credentials are not configured. Please add CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID in your Vercel Project Environment Variables.",
-      missingKey: true
+      error: "AI image generation service is currently unavailable.",
+      requestId
     });
   }
 
@@ -26,7 +33,10 @@ export default async function handler(req, res) {
   const recipe = body.recipe;
 
   if (!recipe || typeof recipe !== "object" || !recipe.title) {
-    return res.status(400).json({ error: "Recipe details with at least a title are required to generate a cover." });
+    return res.status(400).json({
+      error: "Recipe details with at least a title are required to generate a cover.",
+      requestId
+    });
   }
 
   const keyIngredients = (recipe.ingredients || [])
@@ -54,36 +64,43 @@ export default async function handler(req, res) {
 
     if (!cfRes.ok) {
       const errBody = await cfRes.text();
-      console.error("Cloudflare AI error:", cfRes.status, errBody);
+      console.error(`[AI Cover Error][${requestId}] Cloudflare AI error (${cfRes.status}):`, errBody);
 
       if (cfRes.status === 429) {
         return res.status(429).json({
           error: "Cloudflare free tier daily limit reached. Try again tomorrow or upload a photo instead!",
-          prompt
+          requestId
         });
       }
-      throw new Error(`Cloudflare AI returned ${cfRes.status}: ${errBody}`);
+      return res.status(500).json({
+        error: "Cover generation failed. Please try again.",
+        requestId
+      });
     }
 
     const data = await cfRes.json();
     const imageBase64 = data?.result?.image;
 
     if (!imageBase64) {
-      throw new Error("No image data was returned from Cloudflare FLUX.");
+      console.error(`[AI Cover Error][${requestId}] No image data returned from Cloudflare FLUX`);
+      return res.status(500).json({
+        error: "Cover generation failed. Please try again.",
+        requestId
+      });
     }
 
     return res.status(200).json({
       success: true,
       base64: imageBase64,
       mimeType: "image/png",
-      prompt
+      prompt,
+      requestId
     });
   } catch (err) {
-    console.error("AI Image Generation Error:", err);
+    console.error(`[AI Cover Error][${requestId}]:`, err);
     return res.status(500).json({
-      error: err.message || "Failed to generate food photo.",
-      prompt,
-      details: err.toString()
+      error: "Cover generation failed. Please try again.",
+      requestId
     });
   }
 }

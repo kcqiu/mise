@@ -324,7 +324,8 @@ export async function importAccountLibrary(userId, library) {
 }
 
 export async function uploadRecipeCover(fileOrBlob, recipeId, userId) {
-  if (!supabase || !userId) return null;
+  const client = getClient();
+  if (!client || !userId) return null;
   const ext =
     fileOrBlob.type === "image/png"
       ? "png"
@@ -332,7 +333,7 @@ export async function uploadRecipeCover(fileOrBlob, recipeId, userId) {
         ? "jpg"
         : "webp";
   const filePath = `${userId}/${recipeId}-${Date.now()}.${ext}`;
-  const { data, error } = await supabase.storage
+  const { data, error } = await client.storage
     .from("recipe-covers")
     .upload(filePath, fileOrBlob, {
       cacheControl: "31536000",
@@ -340,18 +341,35 @@ export async function uploadRecipeCover(fileOrBlob, recipeId, userId) {
       contentType: fileOrBlob.type || "image/webp",
     });
   if (error) throw error;
-  const { data: publicData } = supabase.storage
+
+  // Private bucket: generate 1-year signed URL for owner and share recipients
+  try {
+    const { data: signedData, error: signError } = await client.storage
+      .from("recipe-covers")
+      .createSignedUrl(data.path, 31536000); // 1 year in seconds
+
+    if (signedData?.signedUrl && !signError) {
+      return signedData.signedUrl;
+    }
+  } catch {
+    // Fallback if createSignedUrl fails
+  }
+
+  const { data: publicData } = client.storage
     .from("recipe-covers")
     .getPublicUrl(data.path);
-  return publicData.publicUrl;
+  return publicData?.publicUrl || null;
 }
 
-export async function deleteRecipeCover(publicUrl) {
-  if (!supabase || !publicUrl || !publicUrl.includes("/recipe-covers/")) return;
+export async function deleteRecipeCover(coverUrl) {
+  const client = getClient();
+  if (!client || !coverUrl || !coverUrl.includes("/recipe-covers/")) return;
   try {
-    const parts = publicUrl.split("/recipe-covers/");
+    const parts = coverUrl.split("/recipe-covers/");
     if (parts.length === 2) {
-      await supabase.storage.from("recipe-covers").remove([parts[1]]);
+      // Strip query parameters (?token=...) from signed URLs
+      const rawPath = parts[1].split("?")[0];
+      await client.storage.from("recipe-covers").remove([decodeURIComponent(rawPath)]);
     }
   } catch {
     // Non-blocking cleanup

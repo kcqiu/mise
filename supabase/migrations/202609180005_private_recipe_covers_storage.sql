@@ -1,4 +1,4 @@
--- Ensure the recipe-covers storage bucket exists and is private
+﻿-- Ensure the recipe-covers storage bucket exists and is private
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 values (
   'recipe-covers',

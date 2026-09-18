@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import coverHandler from "./generate-cover.js";
 import polishHandler from "./polish-recipe.js";
+import parseHandler from "./parse-recipe.js";
 import { resetRateLimitsForTesting } from "../../server/aiAuth.js";
 
 const { generateContent } = vi.hoisted(() => ({ generateContent: vi.fn() }));
@@ -172,5 +173,99 @@ describe("/api/ai/generate-cover authentication & rate limiting", () => {
       expect(res.status).not.toHaveBeenCalledWith(429);
       expect(res.setHeader).toHaveBeenCalledWith("X-RateLimit-Limit", "unlimited");
     }
+  });
+});
+
+describe("AI endpoints - Server Error Sanitization & Information Disclosure (Issue 11)", () => {
+  it("sanitizes polish error responses and includes requestId without leaking details", async () => {
+    generateContent.mockRejectedValueOnce(new Error("Upstream Gemini internal model core dump 0xDEADBEEF"));
+    const res = createMockRes();
+
+    await polishHandler(
+      {
+        method: "POST",
+        headers: { authorization: "Bearer test-valid-token" },
+        body: { recipe: { title: "Draft Soup" } },
+      },
+      res,
+    );
+
+    expect(res.status).toHaveBeenCalledWith(500);
+    const body = res.json.mock.calls.at(-1)[0];
+    expect(body.error).toBe("Failed to polish recipe with Gemini AI. Please try again.");
+    expect(body.requestId).toBeDefined();
+    expect(typeof body.requestId).toBe("string");
+    expect(body.details).toBeUndefined();
+    expect(body.prompt).toBeUndefined();
+    expect(JSON.stringify(body)).not.toContain("0xDEADBEEF");
+  });
+
+  it("sanitizes parse error responses and includes requestId without leaking details", async () => {
+    generateContent.mockRejectedValueOnce(new Error("Sensitive database connection timeout in worker"));
+    const res = createMockRes();
+
+    await parseHandler(
+      {
+        method: "POST",
+        headers: { authorization: "Bearer test-valid-token" },
+        body: { mode: "text", text: "Some soup recipe" },
+      },
+      res,
+    );
+
+    expect(res.status).toHaveBeenCalledWith(500);
+    const body = res.json.mock.calls.at(-1)[0];
+    expect(body.error).toBe("Failed to analyze recipe with Gemini AI. Please try again.");
+    expect(body.requestId).toBeDefined();
+    expect(typeof body.requestId).toBe("string");
+    expect(body.details).toBeUndefined();
+    expect(JSON.stringify(body)).not.toContain("Sensitive database connection timeout");
+  });
+
+  it("sanitizes cover error responses when Cloudflare returns an upstream error", async () => {
+    fetch.mockResolvedValueOnce({
+      ok: false,
+      status: 500,
+      text: async () => JSON.stringify({ errors: [{ code: 1000, message: "Internal Cloudflare Worker Panic" }] }),
+    });
+    const res = createMockRes();
+
+    await coverHandler(
+      {
+        method: "POST",
+        headers: { authorization: "Bearer test-valid-token" },
+        body: { recipe: { title: "Apple Pie" } },
+      },
+      res,
+    );
+
+    expect(res.status).toHaveBeenCalledWith(500);
+    const body = res.json.mock.calls.at(-1)[0];
+    expect(body.error).toBe("Cover generation failed. Please try again.");
+    expect(body.requestId).toBeDefined();
+    expect(typeof body.requestId).toBe("string");
+    expect(body.details).toBeUndefined();
+    expect(JSON.stringify(body)).not.toContain("Internal Cloudflare Worker Panic");
+  });
+
+  it("sanitizes missing credentials errors without leaking environment variable names", async () => {
+    vi.stubEnv("CLOUDFLARE_API_TOKEN", "");
+    const res = createMockRes();
+
+    await coverHandler(
+      {
+        method: "POST",
+        headers: { authorization: "Bearer test-valid-token" },
+        body: { recipe: { title: "Apple Pie" } },
+      },
+      res,
+    );
+
+    expect(res.status).toHaveBeenCalledWith(503);
+    const body = res.json.mock.calls.at(-1)[0];
+    expect(body.error).toBe("AI image generation service is currently unavailable.");
+    expect(body.requestId).toBeDefined();
+    expect(body.missingKey).toBeUndefined();
+    expect(JSON.stringify(body)).not.toContain("CLOUDFLARE_API_TOKEN");
   });
 });
