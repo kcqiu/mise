@@ -1,13 +1,20 @@
 import { useEffect, useRef, useState } from "react";
-import { Check, Copy, Link2, Share2, X } from "lucide-react";
+import { Check, Copy, Link2, Loader2, Share2, X } from "lucide-react";
 import { TextButton } from "@/components/ui/TextButton";
 import { Button } from "@/components/ui/Button";
 import { IconButton } from "@/components/ui/IconButton";
 import { cn } from "@/lib/utils";
+import { getOrCreateRecipeShare } from "../cloud";
 
-export function getShareUrl(recipeId) {
-  if (typeof window === "undefined") return `#/recipe/${recipeId}`;
-  return `${window.location.origin}${window.location.pathname}#/recipe/${recipeId}`;
+export function getShareUrl(recipeId, shareToken = null, _isSystem = false) {
+  const base =
+    typeof window === "undefined"
+      ? ""
+      : `${window.location.origin}${window.location.pathname}`;
+  if (shareToken) {
+    return `${base}#/shared/${shareToken}`;
+  }
+  return `${base}#/recipe/${recipeId}`;
 }
 
 export function copyTextFallback(text) {
@@ -33,9 +40,13 @@ export default function ShareRecipeButton({
   recipe,
   onToast,
   className,
+  isLocal = false,
+  isCloud = false,
 }) {
   const [modalOpen, setModalOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [shareToken, setShareToken] = useState(recipe?.shareToken || null);
+  const [loadingToken, setLoadingToken] = useState(false);
   const copyBtnRef = useRef(null);
 
   useEffect(() => {
@@ -53,11 +64,40 @@ export default function ShareRecipeButton({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [modalOpen]);
 
+  // Fetch or generate share token when modal opens for a cloud recipe
+  useEffect(() => {
+    if (!modalOpen || !recipe) return;
+    if (recipe.shareToken) {
+      setShareToken(recipe.shareToken);
+      return;
+    }
+    // If user owns the recipe in cloud, retrieve or create capability token
+    if (isCloud && isLocal && !recipe.isSystem && !recipe.example) {
+      let active = true;
+      setLoadingToken(true);
+      getOrCreateRecipeShare(recipe.id)
+        .then((token) => {
+          if (active) {
+            if (token) setShareToken(token);
+            setLoadingToken(false);
+          }
+        })
+        .catch(() => {
+          if (active) setLoadingToken(false);
+        });
+      return () => {
+        active = false;
+      };
+    }
+  }, [modalOpen, recipe, isCloud, isLocal]);
+
   if (!recipe) return null;
 
-  const shareUrl = getShareUrl(recipe.id);
+  const isSystem = Boolean(recipe.isSystem || recipe.example);
+  const shareUrl = getShareUrl(recipe.id, shareToken, isSystem);
 
   const handleCopyLink = async () => {
+    if (loadingToken) return;
     let success;
     try {
       if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
@@ -79,6 +119,7 @@ export default function ShareRecipeButton({
   };
 
   const handleNativeShare = async () => {
+    if (loadingToken) return;
     if (typeof navigator === "undefined" || typeof navigator.share !== "function") {
       return handleCopyLink();
     }
@@ -157,13 +198,18 @@ export default function ShareRecipeButton({
             </p>
 
             <div className="share-link-box flex items-center gap-2 p-2.5 rounded-xl border border-[#e3ded4] bg-[#f8f5ee]/70 mb-4">
-              <Link2 size={16} className="text-muted shrink-0 ml-1" />
+              {loadingToken ? (
+                <Loader2 size={16} className="text-muted shrink-0 ml-1 spin-icon animate-spin" />
+              ) : (
+                <Link2 size={16} className="text-muted shrink-0 ml-1" />
+              )}
               <input
                 type="text"
                 readOnly
-                value={shareUrl}
+                value={loadingToken ? "Generating secure link..." : shareUrl}
                 aria-label="Recipe share link"
-                className="bg-transparent border-0 text-ink text-xs font-mono flex-1 min-w-0 outline-none select-all"
+                disabled={loadingToken}
+                className="bg-transparent border-0 text-ink text-xs font-mono flex-1 min-w-0 outline-none select-all disabled:opacity-60"
                 onFocus={(e) => e.target.select()}
               />
             </div>
@@ -174,6 +220,7 @@ export default function ShareRecipeButton({
                 type="button"
                 variant="primary"
                 size="default"
+                disabled={loadingToken}
                 className="w-full justify-center gap-2 min-h-[44px]"
                 onClick={handleCopyLink}
               >
@@ -186,6 +233,7 @@ export default function ShareRecipeButton({
                   type="button"
                   variant="light"
                   size="default"
+                  disabled={loadingToken}
                   className="w-full justify-center gap-2 min-h-[44px]"
                   onClick={handleNativeShare}
                 >

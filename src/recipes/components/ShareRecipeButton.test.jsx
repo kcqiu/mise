@@ -1,5 +1,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent, act } from "@testing-library/react";
+vi.mock("../cloud", () => ({
+  getOrCreateRecipeShare: vi.fn(),
+}));
+
+import { getOrCreateRecipeShare } from "../cloud";
 import ShareRecipeButton, { getShareUrl } from "./ShareRecipeButton";
 
 const mockRecipe = {
@@ -13,6 +18,7 @@ describe("ShareRecipeButton", () => {
 
   beforeEach(() => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
+    vi.mocked(getOrCreateRecipeShare).mockReset();
   });
 
   afterEach(() => {
@@ -20,9 +26,12 @@ describe("ShareRecipeButton", () => {
     vi.restoreAllMocks();
   });
 
-  it("constructs a canonical share URL using recipe ID", () => {
-    const url = getShareUrl("my-recipe-123");
-    expect(url).toContain("#/recipe/my-recipe-123");
+  it("constructs a canonical share URL using recipe ID or capability share token", () => {
+    const urlWithoutToken = getShareUrl("my-recipe-123");
+    expect(urlWithoutToken).toContain("#/recipe/my-recipe-123");
+
+    const urlWithToken = getShareUrl("my-recipe-123", "token-xyz-789");
+    expect(urlWithToken).toContain("#/shared/token-xyz-789");
   });
 
   it("returns null if recipe is missing", () => {
@@ -146,5 +155,50 @@ describe("ShareRecipeButton", () => {
       fireEvent.keyDown(window, { key: "Escape" });
     });
     expect(screen.queryByRole("heading", { name: "Share recipe" })).not.toBeInTheDocument();
+  });
+
+  it("fetches and displays capability share token when sharing owned cloud recipe", async () => {
+    vi.mocked(getOrCreateRecipeShare).mockResolvedValue("tok_opaque_456");
+
+    render(
+      <ShareRecipeButton
+        recipe={mockRecipe}
+        isCloud={true}
+        isLocal={true}
+      />
+    );
+
+    const trigger = screen.getByRole("button", { name: "Share recipe" });
+    await act(async () => {
+      fireEvent.click(trigger);
+    });
+
+    expect(getOrCreateRecipeShare).toHaveBeenCalledWith("salted-butter-roast-chicken");
+    const linkInput = screen.getByLabelText("Recipe share link");
+    expect(linkInput.value).toContain("#/shared/tok_opaque_456");
+  });
+
+  it("displays existing shareToken when recipe already contains shareToken", async () => {
+    const sharedRecipe = {
+      ...mockRecipe,
+      shareToken: "tok_preset_789",
+    };
+
+    render(
+      <ShareRecipeButton
+        recipe={sharedRecipe}
+        isCloud={true}
+        isLocal={false}
+      />
+    );
+
+    const trigger = screen.getByRole("button", { name: "Share recipe" });
+    await act(async () => {
+      fireEvent.click(trigger);
+    });
+
+    expect(getOrCreateRecipeShare).not.toHaveBeenCalled();
+    const linkInput = screen.getByLabelText("Recipe share link");
+    expect(linkInput.value).toContain("#/shared/tok_preset_789");
   });
 });

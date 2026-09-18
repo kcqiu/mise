@@ -172,6 +172,60 @@ export async function loadRecipeById(recipeId) {
   return { ...result.data.payload, id: result.data.id };
 }
 
+export async function getOrCreateRecipeShare(recipeId) {
+  const client = getClient();
+  if (!client || !recipeId) return null;
+  try {
+    const { data, error } = await client.rpc("get_or_create_recipe_share", {
+      p_recipe_id: recipeId,
+    });
+    if (error) {
+      console.error("Failed to get or create recipe share:", error);
+      return null;
+    }
+    return data?.share_token || null;
+  } catch (err) {
+    console.error("Failed to get or create recipe share:", err);
+    return null;
+  }
+}
+
+export async function loadRecipeByShareToken(token) {
+  const client = getClient();
+  if (!client || !token) return null;
+  try {
+    const { data, error } = await client.rpc("get_shared_recipe", {
+      p_token: token,
+    });
+    if (error) {
+      console.error("Failed to load shared recipe by token:", error);
+      return null;
+    }
+    return data || null;
+  } catch (err) {
+    console.error("Failed to load shared recipe by token:", err);
+    return null;
+  }
+}
+
+export async function revokeRecipeShare(recipeId) {
+  const client = getClient();
+  if (!client || !recipeId) return false;
+  try {
+    const { data, error } = await client.rpc("revoke_recipe_share", {
+      p_recipe_id: recipeId,
+    });
+    if (error) {
+      console.error("Failed to revoke recipe share:", error);
+      return false;
+    }
+    return Boolean(data?.success);
+  } catch (err) {
+    console.error("Failed to revoke recipe share:", err);
+    return false;
+  }
+}
+
 export async function saveAccountRecipe(userId, recipe) {
   const client = getClient();
   if (!client) return;

@@ -467,5 +467,54 @@ describe("Groceries Cloud Synchronization Client", () => {
       expect(result).toBeNull();
     });
   });
+
+  describe("Capability recipe sharing RPCs", () => {
+    it("getOrCreateRecipeShare returns share token via RPC", async () => {
+      const mockRpc = vi.fn().mockResolvedValue({
+        data: { success: true, share_token: "tok_test_123" },
+        error: null,
+      });
+      cloud.setSupabaseClientForTesting({ rpc: mockRpc });
+
+      const token = await cloud.getOrCreateRecipeShare("recipe-1");
+      expect(mockRpc).toHaveBeenCalledWith("get_or_create_recipe_share", {
+        p_recipe_id: "recipe-1",
+      });
+      expect(token).toBe("tok_test_123");
+    });
+
+    it("loadRecipeByShareToken fetches recipe via get_shared_recipe RPC", async () => {
+      const mockRecipe = {
+        id: "recipe-1",
+        title: "Shared Souffle",
+        isShared: true,
+      };
+      const mockRpc = vi.fn().mockResolvedValue({
+        data: mockRecipe,
+        error: null,
+      });
+      cloud.setSupabaseClientForTesting({ rpc: mockRpc });
+
+      const recipe = await cloud.loadRecipeByShareToken("tok_test_123");
+      expect(mockRpc).toHaveBeenCalledWith("get_shared_recipe", {
+        p_token: "tok_test_123",
+      });
+      expect(recipe).toEqual(mockRecipe);
+    });
+
+    it("revokeRecipeShare calls revoke RPC", async () => {
+      const mockRpc = vi.fn().mockResolvedValue({
+        data: { success: true },
+        error: null,
+      });
+      cloud.setSupabaseClientForTesting({ rpc: mockRpc });
+
+      const success = await cloud.revokeRecipeShare("recipe-1");
+      expect(mockRpc).toHaveBeenCalledWith("revoke_recipe_share", {
+        p_recipe_id: "recipe-1",
+      });
+      expect(success).toBe(true);
+    });
+  });
 });
 

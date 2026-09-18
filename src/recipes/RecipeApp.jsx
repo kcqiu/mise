@@ -19,6 +19,7 @@ import {
   importAccountLibrary,
   loadAccountLibrary,
   loadRecipeById,
+  loadRecipeByShareToken,
   saveAccountRecipe,
   setAccountFavorite,
   setAccountProgress,
@@ -129,14 +130,14 @@ export default function RecipeApp() {
     for (const r of sharedRecipes) {
       if (r && r.id) map.set(r.id, r);
     }
-    for (const [id, r] of Object.entries(remoteRecipes)) {
+    for (const [, r] of Object.entries(remoteRecipes)) {
       if (
         r &&
         r.id &&
-        activeLibrary.favorites.includes(id) &&
-        !personalRecipeIds.has(id)
+        activeLibrary.favorites.includes(r.id) &&
+        !personalRecipeIds.has(r.id)
       ) {
-        map.set(id, r);
+        map.set(r.id, r);
       }
     }
     return Array.from(map.values());
@@ -159,11 +160,15 @@ export default function RecipeApp() {
     return [...sortedPersonal, ...allSharedRecipes, ...remainingPublished];
   }, [personalRecipes, allSharedRecipes, personalRecipeIds]);
 
+  const isSharedRoute =
+    typeof route === "string" && route.startsWith("shared:");
+  const shareToken = isSharedRoute ? route.slice(7) : null;
   const isRecipeRoute = Boolean(
     route && route !== "groceries" && route !== "not-found",
   );
-  const knownRecipe =
-    recipes.find((recipe) => recipe.id === route) || remoteRecipes[route];
+  const knownRecipe = isSharedRoute
+    ? remoteRecipes[route]
+    : recipes.find((recipe) => recipe.id === route) || remoteRecipes[route];
 
   useEffect(() => {
     if (!isRecipeRoute || knownRecipe || notFoundRemoteIds.has(route)) {
@@ -173,12 +178,23 @@ export default function RecipeApp() {
     let active = true;
     setLoadingRemoteId(route);
 
-    loadRecipeById(route)
+    const fetcher = isSharedRoute
+      ? loadRecipeByShareToken(shareToken)
+      : loadRecipeById(route);
+
+    if (!fetcher || typeof fetcher.then !== "function") {
+      return;
+    }
+
+    fetcher
       .then((loaded) => {
         if (!active) return;
         setLoadingRemoteId((current) => (current === route ? null : current));
         if (loaded) {
-          setRemoteRecipes((prev) => ({ ...prev, [route]: loaded }));
+          const recipeToStore = isSharedRoute
+            ? { ...loaded, shareToken }
+            : loaded;
+          setRemoteRecipes((prev) => ({ ...prev, [route]: recipeToStore }));
         } else {
           setNotFoundRemoteIds((prev) => new Set(prev).add(route));
         }
@@ -192,7 +208,14 @@ export default function RecipeApp() {
     return () => {
       active = false;
     };
-  }, [isRecipeRoute, knownRecipe, route, notFoundRemoteIds]);
+  }, [
+    isRecipeRoute,
+    isSharedRoute,
+    shareToken,
+    knownRecipe,
+    route,
+    notFoundRemoteIds,
+  ]);
 
   const current = knownRecipe || null;
 
@@ -754,7 +777,9 @@ export default function RecipeApp() {
       return;
     }
     const targetRecipe =
-      remoteRecipes[id] || allRecipes.find((r) => r.id === id);
+      remoteRecipes[id] ||
+      Object.values(remoteRecipes).find((r) => r && r.id === id) ||
+      allRecipes.find((r) => r.id === id);
     setAccount((current) => {
       const currentShared = current.library.sharedRecipes || [];
       let nextShared = currentShared;
@@ -1079,6 +1104,7 @@ export default function RecipeApp() {
             onEdit={(recipe) => openEditor(recipe)}
             onSearchTag={searchByTag}
             isLocal={personalRecipes.some((recipe) => recipe.id === current.id)}
+            isCloud={Boolean(account.session)}
             inGroceries={(grocerySession.recipes || []).some(
               (r) => r.recipeId === current.id,
             )}

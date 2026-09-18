@@ -8,6 +8,9 @@ const cloudMocks = vi.hoisted(() => ({
   loadAccountLibrary: vi.fn(),
   loadAccountGrocerySession: vi.fn(),
   loadRecipeById: vi.fn(),
+  getOrCreateRecipeShare: vi.fn(),
+  loadRecipeByShareToken: vi.fn(),
+  revokeRecipeShare: vi.fn(),
   saveAccountRecipe: vi.fn(),
   setAccountFavorite: vi.fn(),
   deleteAccountRecipe: vi.fn(),
@@ -23,6 +26,9 @@ vi.mock("./cloud", async () => {
     loadAccountLibrary: cloudMocks.loadAccountLibrary,
     loadAccountGrocerySession: cloudMocks.loadAccountGrocerySession,
     loadRecipeById: cloudMocks.loadRecipeById,
+    getOrCreateRecipeShare: cloudMocks.getOrCreateRecipeShare,
+    loadRecipeByShareToken: cloudMocks.loadRecipeByShareToken,
+    revokeRecipeShare: cloudMocks.revokeRecipeShare,
     saveAccountRecipe: cloudMocks.saveAccountRecipe,
     setAccountFavorite: cloudMocks.setAccountFavorite,
     deleteAccountRecipe: cloudMocks.deleteAccountRecipe,
@@ -72,7 +78,10 @@ beforeEach(() => {
   cloudMocks.watchSession.mockClear();
   cloudMocks.loadAccountLibrary.mockReset();
   cloudMocks.loadAccountGrocerySession.mockReset();
-  cloudMocks.loadRecipeById.mockReset();
+  cloudMocks.loadRecipeById.mockReset().mockResolvedValue(null);
+  cloudMocks.getOrCreateRecipeShare.mockReset().mockResolvedValue("tok-mock-12345");
+  cloudMocks.loadRecipeByShareToken.mockReset().mockResolvedValue(null);
+  cloudMocks.revokeRecipeShare.mockReset().mockResolvedValue(undefined);
   cloudMocks.saveAccountRecipe.mockReset().mockResolvedValue(undefined);
   cloudMocks.setAccountFavorite.mockReset().mockResolvedValue(undefined);
   cloudMocks.deleteAccountRecipe.mockReset().mockResolvedValue(undefined);
@@ -90,14 +99,14 @@ beforeEach(() => {
 afterEach(cleanup);
 
 describe("Shared Recipe Direct Link & Auth Gating", () => {
-  it("loads and displays a shared cloud recipe when accessed by direct link", async () => {
-    cloudMocks.loadRecipeById.mockResolvedValue(mockSharedRecipe);
-    window.history.replaceState(null, "", "/recipe/#/recipe/shared-recipe-uuid-1234");
+  it("loads and displays a shared cloud recipe when accessed by capability share link", async () => {
+    cloudMocks.loadRecipeByShareToken.mockResolvedValue(mockSharedRecipe);
+    window.history.replaceState(null, "", "/recipe/#/shared/test-token-abc");
 
     render(<RecipeApp />);
 
     expect(await screen.findByRole("heading", { name: "Grandma's Secret Focaccia" })).toBeInTheDocument();
-    expect(cloudMocks.loadRecipeById).toHaveBeenCalledWith("shared-recipe-uuid-1234");
+    expect(cloudMocks.loadRecipeByShareToken).toHaveBeenCalledWith("test-token-abc");
 
     // Has Share button and Make it your own button
     expect(screen.getByRole("button", { name: "Share recipe" })).toBeInTheDocument();
@@ -106,8 +115,8 @@ describe("Shared Recipe Direct Link & Auth Gating", () => {
 
   it("blocks unauthenticated user with Google auth modal when clicking 'Make it your own'", async () => {
     const user = userEvent.setup();
-    cloudMocks.loadRecipeById.mockResolvedValue(mockSharedRecipe);
-    window.history.replaceState(null, "", "/recipe/#/recipe/shared-recipe-uuid-1234");
+    cloudMocks.loadRecipeByShareToken.mockResolvedValue(mockSharedRecipe);
+    window.history.replaceState(null, "", "/recipe/#/shared/test-token-abc");
 
     render(<RecipeApp />);
 
@@ -121,7 +130,7 @@ describe("Shared Recipe Direct Link & Auth Gating", () => {
     ).toBeInTheDocument();
   });
 
-  it("opens share modal with copy link and native share options", async () => {
+  it("opens share modal with copy link and native share options using capability token", async () => {
     const mockShare = vi.fn().mockResolvedValue(undefined);
     Object.defineProperty(global.navigator, "share", {
       value: mockShare,
@@ -129,10 +138,12 @@ describe("Shared Recipe Direct Link & Auth Gating", () => {
       writable: true,
     });
 
-    cloudMocks.loadRecipeById.mockResolvedValue(mockSharedRecipe);
-    window.history.replaceState(null, "", "/recipe/#/recipe/shared-recipe-uuid-1234");
+    cloudMocks.loadRecipeByShareToken.mockResolvedValue(mockSharedRecipe);
+    window.history.replaceState(null, "", "/recipe/#/shared/test-token-abc");
 
     render(<RecipeApp />);
+
+    expect(await screen.findByRole("heading", { name: "Grandma's Secret Focaccia" })).toBeInTheDocument();
 
     const shareBtn = await screen.findByRole("button", { name: "Share recipe" });
     await act(async () => {
@@ -149,14 +160,13 @@ describe("Shared Recipe Direct Link & Auth Gating", () => {
     });
 
     expect(mockShare).toHaveBeenCalledTimes(1);
-    // Verified: does NOT pass title, ensuring mobile iOS/Android copies URL
     expect(mockShare).toHaveBeenCalledWith({
-      url: expect.stringContaining("#/recipe/shared-recipe-uuid-1234"),
-      text: expect.stringContaining("#/recipe/shared-recipe-uuid-1234"),
+      url: expect.stringContaining("#/shared/test-token-abc"),
+      text: expect.stringContaining("#/shared/test-token-abc"),
     });
   });
 
-  it("allows copying the direct recipe link from the share modal", async () => {
+  it("allows copying the capability share link from the share modal", async () => {
     const mockWriteText = vi.fn().mockResolvedValue(undefined);
     Object.defineProperty(global.navigator, "clipboard", {
       value: { writeText: mockWriteText },
@@ -164,10 +174,12 @@ describe("Shared Recipe Direct Link & Auth Gating", () => {
       writable: true,
     });
 
-    cloudMocks.loadRecipeById.mockResolvedValue(mockSharedRecipe);
-    window.history.replaceState(null, "", "/recipe/#/recipe/shared-recipe-uuid-1234");
+    cloudMocks.loadRecipeByShareToken.mockResolvedValue(mockSharedRecipe);
+    window.history.replaceState(null, "", "/recipe/#/shared/test-token-abc");
 
     render(<RecipeApp />);
+
+    expect(await screen.findByRole("heading", { name: "Grandma's Secret Focaccia" })).toBeInTheDocument();
 
     const shareBtn = await screen.findByRole("button", { name: "Share recipe" });
     await act(async () => {
@@ -180,19 +192,50 @@ describe("Shared Recipe Direct Link & Auth Gating", () => {
     });
 
     expect(mockWriteText).toHaveBeenCalledWith(
-      expect.stringContaining("#/recipe/shared-recipe-uuid-1234")
+      expect.stringContaining("#/shared/test-token-abc")
     );
     expect(screen.getByText("Copied to clipboard!")).toBeInTheDocument();
   });
 
-  it("displays missing recipe state when shared recipe is not found in cloud", async () => {
-    cloudMocks.loadRecipeById.mockResolvedValue(null);
-    window.history.replaceState(null, "", "/recipe/#/recipe/unknown-recipe-id");
+  it("generates capability share token when authenticated owner shares their recipe", async () => {
+    const ownedRecipe = {
+      ...mockSharedRecipe,
+      id: "recipe-owned-999",
+      title: "My Artisan Sourdough",
+    };
+    cloudMocks.getSession.mockResolvedValue({ user: { id: "user-owner-1" } });
+    cloudMocks.loadAccountLibrary.mockResolvedValue({
+      recipes: [ownedRecipe],
+      favorites: [],
+      sharedRecipes: [],
+      progress: {},
+    });
+    cloudMocks.getOrCreateRecipeShare.mockResolvedValue("tok-secure-new-999");
+    window.history.replaceState(null, "", "/recipe/#/recipe/recipe-owned-999");
+
+    render(<RecipeApp />);
+
+    expect(await screen.findByRole("heading", { name: "My Artisan Sourdough" })).toBeInTheDocument();
+
+    const shareBtn = await screen.findByRole("button", { name: "Share recipe" });
+    await act(async () => {
+      fireEvent.click(shareBtn);
+    });
+
+    expect(cloudMocks.getOrCreateRecipeShare).toHaveBeenCalledWith("recipe-owned-999");
+
+    const copyBtn = screen.getByRole("button", { name: /Copy recipe link/i });
+    expect(copyBtn).toBeInTheDocument();
+  });
+
+  it("displays missing recipe state when shared capability token is not found or invalid", async () => {
+    cloudMocks.loadRecipeByShareToken.mockResolvedValue(null);
+    window.history.replaceState(null, "", "/recipe/#/shared/unknown-token");
 
     render(<RecipeApp />);
 
     expect(await screen.findByRole("heading", { name: "This recipe isn't on the shelf." })).toBeInTheDocument();
-    expect(cloudMocks.loadRecipeById).toHaveBeenCalledWith("unknown-recipe-id");
+    expect(cloudMocks.loadRecipeByShareToken).toHaveBeenCalledWith("unknown-token");
   });
 
   it("allows unauthenticated user to view AddRecipeModal and prompts login when any option is clicked", async () => {
@@ -216,6 +259,15 @@ describe("Shared Recipe Direct Link & Auth Gating", () => {
     expect(screen.getByRole("heading", { name: "Sign in to write your own recipes" })).toBeInTheDocument();
   });
 
+  it("allows direct link loading for system recipes", async () => {
+    window.history.replaceState(null, "", "/recipe/#/recipe/air-fryer-butter-lobster");
+
+    render(<RecipeApp />);
+
+    // System recipe exists in default shelf, should load directly without cloud RPC
+    expect(await screen.findByRole("heading", { name: "Air fryer butter lobster" })).toBeInTheDocument();
+  });
+
   it("allows authenticated user to favorite a shared recipe and view it in Favorites tab", async () => {
     cloudMocks.getSession.mockResolvedValue({ user: { id: "user-456" } });
     cloudMocks.loadAccountLibrary.mockResolvedValue({
@@ -224,8 +276,8 @@ describe("Shared Recipe Direct Link & Auth Gating", () => {
       sharedRecipes: [],
       progress: {},
     });
-    cloudMocks.loadRecipeById.mockResolvedValue(mockSharedRecipe);
-    window.history.replaceState(null, "", "/recipe/#/recipe/shared-recipe-uuid-1234");
+    cloudMocks.loadRecipeByShareToken.mockResolvedValue(mockSharedRecipe);
+    window.history.replaceState(null, "", "/recipe/#/shared/tok-focaccia-123");
 
     render(<RecipeApp />);
 
@@ -275,8 +327,8 @@ describe("Shared Recipe Direct Link & Auth Gating", () => {
       sharedRecipes: [mockSharedRecipe],
       progress: {},
     });
-    cloudMocks.loadRecipeById.mockResolvedValue(mockSharedRecipe);
-    window.history.replaceState(null, "", "/recipe/#/recipe/shared-recipe-uuid-1234");
+    cloudMocks.loadRecipeByShareToken.mockResolvedValue(mockSharedRecipe);
+    window.history.replaceState(null, "", "/recipe/#/shared/tok-focaccia-123");
 
     render(<RecipeApp />);
 
