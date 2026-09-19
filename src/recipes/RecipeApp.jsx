@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowLeft,
   BookOpen,
@@ -9,6 +9,8 @@ import {
   getCategories,
   EMPTY_LIBRARY,
   readLibrary,
+  readAccountLibrary,
+  saveAccountLibrary,
   STORAGE_KEY,
 } from "./library";
 import {
@@ -229,7 +231,7 @@ export default function RecipeApp() {
     saveGrocerySession(nextSession, userId);
   };
 
-  const flushGroceryQueue = async (userId) => {
+  const flushGroceryQueue = useCallback(async (userId) => {
     if (!userId || syncingRef.current) return;
     if (typeof navigator !== "undefined" && !navigator.onLine) {
       setSyncStatus("offline");
@@ -329,7 +331,7 @@ export default function RecipeApp() {
     } finally {
       syncingRef.current = false;
     }
-  };
+  }, [addToast]);
 
   const dispatchGroceryMutation = (mutation) => {
     const userId = account.session?.user?.id || null;
@@ -435,7 +437,7 @@ export default function RecipeApp() {
       setAuthModal({ open: true, intent: "signin", error: authErr });
       addToast(authErr, "error", "Sign-in Notice");
     }
-  }, []);
+  }, [addToast]);
 
   useEffect(() => {
     if (window.location.hash === "#/login") {
@@ -531,7 +533,7 @@ export default function RecipeApp() {
     };
     window.addEventListener("storage", sync);
     return () => window.removeEventListener("storage", sync);
-  }, []);
+  }, [addToast]);
 
   useEffect(() => {
     if (!cloudEnabled) return undefined;
@@ -544,7 +546,17 @@ export default function RecipeApp() {
         return;
       }
       setAuthModal((prev) => ({ ...prev, open: false, error: "" }));
-      setAccount((current) => ({ ...current, session, loading: true }));
+      const cachedAccountLib = readAccountLibrary(session.user.id);
+      const hasCachedAccount =
+        cachedAccountLib.recipes.length > 0 ||
+        cachedAccountLib.favorites.length > 0 ||
+        Object.keys(cachedAccountLib.progress || {}).length > 0;
+      setAccount((current) => ({
+        ...current,
+        session,
+        library: hasCachedAccount ? cachedAccountLib : current.library,
+        loading: true,
+      }));
       try {
         const pending = libraryRef.current;
         const hasLocalData =
@@ -563,7 +575,10 @@ export default function RecipeApp() {
           }
         }
         const remote = await loadAccountLibrary(session.user.id);
-        if (active) setAccount({ session, library: remote, loading: false });
+        if (active) {
+          setAccount({ session, library: remote, loading: false });
+          saveAccountLibrary(session.user.id, remote);
+        }
 
         // Phase 2: Groceries Auth Hydration & Guest Migration
         try {
@@ -662,8 +677,9 @@ export default function RecipeApp() {
         }
       } catch (error) {
         if (active) {
+          console.error("[Account Sync Error]:", error);
           setAccount((current) => ({ ...current, loading: false }));
-          const msg = `Your account connected, but recipes could not sync: ${error.message}`;
+          const msg = "Couldn't reach your cookbook. Check your connection and try again.";
           setNotice(msg);
           addToast(msg, "error");
         }
@@ -673,8 +689,9 @@ export default function RecipeApp() {
       .then(hydrate)
       .catch((error) => {
         if (active) {
-          setAccount({ session: null, library: EMPTY_LIBRARY, loading: false });
-          const msg = `Sign-in could not be restored: ${error.message}`;
+          console.error("[Auth Restore Error]:", error);
+          setAccount((current) => ({ ...current, session: null, loading: false }));
+          const msg = "Couldn't reach your cookbook. Check your connection and try again.";
           setNotice(msg);
           addToast(msg, "error");
         }
@@ -684,7 +701,7 @@ export default function RecipeApp() {
       active = false;
       stopWatching();
     };
-  }, []);
+  }, [addToast, flushGroceryQueue]);
 
   // Realtime channel subscription for multi-device sync
   useEffect(() => {
@@ -712,7 +729,7 @@ export default function RecipeApp() {
     return () => {
       unsubscribe();
     };
-  }, [account.session?.user?.id, grocerySession?.id]);
+  }, [account.session?.user?.id, addToast, grocerySession?.id]);
 
   // Online / Offline synchronization
   useEffect(() => {
@@ -737,7 +754,13 @@ export default function RecipeApp() {
       window.removeEventListener("online", handleOnline);
       window.removeEventListener("offline", handleOffline);
     };
-  }, [account.session?.user?.id]);
+  }, [account.session?.user?.id, flushGroceryQueue]);
+
+  // Keep authenticated library cached in local storage for offline access
+  useEffect(() => {
+    if (!account.session?.user?.id) return;
+    saveAccountLibrary(account.session.user.id, account.library);
+  }, [account.session?.user?.id, account.library]);
 
   const commitLocal = (next) => {
     try {

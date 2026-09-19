@@ -2,10 +2,13 @@ import { describe, expect, it } from "vitest";
 import recipes from "./data/recipes.json";
 import {
   createSearch,
+  getAccountLibraryStorageKey,
   getCategories,
   getRecipeVideo,
   parseBackup,
   quantityLabel,
+  readAccountLibrary,
+  saveAccountLibrary,
   validateRecipe,
 } from "./library";
 
@@ -121,5 +124,29 @@ describe("recipe search and content", () => {
         "https://www.tiktok.com/player/v1/7276566593939787014?controls=1&description=0&music_info=0&loop=0",
     });
     expect(getRecipeVideo("https://example.com/video")).toBeNull();
+  });
+
+  it("persists and reads user-scoped account libraries in local storage", () => {
+    const userId = "user-test-offline-123";
+    expect(getAccountLibraryStorageKey(userId)).toBe("mise-library-v1:user:user-test-offline-123");
+    expect(getAccountLibraryStorageKey(null)).toBe("mise-library-v1");
+
+    // Initially empty
+    expect(readAccountLibrary(userId).recipes).toEqual([]);
+
+    // Save and re-read
+    const sampleLib = {
+      recipes: [{ ...recipes[0], id: "custom-pie", title: "Custom Apple Pie" }],
+      favorites: ["custom-pie"],
+      progress: { "custom-pie": { steps: [0] } },
+      sharedRecipes: [],
+    };
+    saveAccountLibrary(userId, sampleLib);
+
+    const reloaded = readAccountLibrary(userId);
+    expect(reloaded.recipes).toHaveLength(1);
+    expect(reloaded.recipes[0].title).toBe("Custom Apple Pie");
+    expect(reloaded.favorites).toEqual(["custom-pie"]);
+    expect(reloaded.progress["custom-pie"].steps).toEqual([0]);
   });
 });

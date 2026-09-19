@@ -407,5 +407,48 @@ describe("Shared Recipe Direct Link & Auth Gating", () => {
     expect(screen.queryByRole("heading", { name: "A new keeper." })).not.toBeInTheDocument();
     expect(screen.getByText(/Choose how you'd like to add this recipe to your shelf:/i)).toBeInTheDocument();
   });
+
+  it("retains and renders cached personal library when offline and displays user-friendly notice", async () => {
+    const userId = "user-offline-cook";
+    cloudMocks.getSession.mockResolvedValue({ user: { id: userId } });
+    // Network fails to load cloud library
+    cloudMocks.loadAccountLibrary.mockRejectedValue(new Error("Failed to fetch"));
+
+    // Pre-seed offline cached library
+    const cachedRecipe = {
+      id: "cached-steak-id",
+      title: "Offline Kitchen Ribeye",
+      category: "Dinner",
+      servings: 2,
+      prepMinutes: 10,
+      cookMinutes: 15,
+      tags: ["Steak"],
+      keywords: ["ribeye"],
+      ingredients: [{ name: "ribeye steak", quantity: 1, unit: "lb" }],
+      steps: [{ instruction: "Sear in hot cast iron skillet" }],
+      artwork: "steak",
+    };
+    window.localStorage.setItem(
+      `mise-library-v1:user:${userId}`,
+      JSON.stringify({
+        recipes: [cachedRecipe],
+        favorites: ["cached-steak-id"],
+        sharedRecipes: [],
+        progress: {},
+      }),
+    );
+    window.history.replaceState(null, "", "/recipe/#/");
+
+    render(<RecipeApp />);
+
+    // Personal recipe is still available from local cache
+    expect(await screen.findByText("Offline Kitchen Ribeye")).toBeInTheDocument();
+
+    // Friendly error notice and toast shown instead of raw 'Failed to fetch'
+    const notices = await screen.findAllByText(
+      "Couldn't reach your cookbook. Check your connection and try again.",
+    );
+    expect(notices.length).toBeGreaterThanOrEqual(1);
+  });
 });
 

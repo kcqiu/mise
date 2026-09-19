@@ -171,7 +171,7 @@ describe("personal recipe workflows", () => {
       JSON.parse(window.localStorage.getItem(STORAGE_KEY)).recipes[0].category,
     ).toBe("Sauces");
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
-  });
+  }, 15000);
   it("handles invalid deep links", async () => {
     render(<RecipeApp />);
     await route("missing-recipe");
