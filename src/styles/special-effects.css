@@ -1,6 +1,5 @@
 /* Dialog Backdrops and Keyframe Animations */
-.recipe-card__gradient,
-.culinary-glass-card__gradient {
+.recipe-card__gradient {
   background: linear-gradient(
     to top,
     rgba(36, 35, 31, 0.96) 0%,

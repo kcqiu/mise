@@ -17,5 +17,35 @@ export default defineConfig({
   build: {
     outDir: "dist",
     sourcemap: false,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          const normalized = id.replace(/\\/g, "/");
+          if (normalized.includes("node_modules")) {
+            if (normalized.includes("@supabase")) {
+              return "vendor-supabase";
+            }
+            if (normalized.includes("framer-motion")) {
+              return "vendor-motion";
+            }
+            if (normalized.includes("lucide-react")) {
+              return "vendor-icons";
+            }
+            if (normalized.includes("fuse.js")) {
+              return "vendor-search";
+            }
+          }
+          if (normalized.includes("src/recipes/components/RecipeEditor")) {
+            return "recipe-editor";
+          }
+          if (normalized.includes("src/recipes/components/GroceryListView")) {
+            return "grocery-view";
+          }
+          if (normalized.includes("src/recipes/components/AddRecipeModal")) {
+            return "add-recipe-modal";
+          }
+        },
+      },
+    },
   },
 });

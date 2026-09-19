@@ -1,7 +1,8 @@
-import { useEffect } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import RecipeApp from "./RecipeApp";
-import PrivacyPolicy from "./components/PrivacyPolicy";
-import TermsOfService from "./components/TermsOfService";
+
+const PrivacyPolicy = lazy(() => import("./components/PrivacyPolicy"));
+const TermsOfService = lazy(() => import("./components/TermsOfService"));
 
 export default function RootPage({ pathname = window.location.pathname }) {
   const normalizedPath = pathname.replace(/\/+$/, "") || "/";
@@ -14,7 +15,19 @@ export default function RootPage({ pathname = window.location.pathname }) {
     document.title = titles[normalizedPath] || "mise. | The recipe shelf";
   }, [normalizedPath]);
 
-  if (normalizedPath === "/privacy") return <PrivacyPolicy />;
-  if (normalizedPath === "/terms") return <TermsOfService />;
+  if (normalizedPath === "/privacy") {
+    return (
+      <Suspense fallback={<div className="min-h-screen bg-paper" />}>
+        <PrivacyPolicy />
+      </Suspense>
+    );
+  }
+  if (normalizedPath === "/terms") {
+    return (
+      <Suspense fallback={<div className="min-h-screen bg-paper" />}>
+        <TermsOfService />
+      </Suspense>
+    );
+  }
   return <RecipeApp />;
 }
