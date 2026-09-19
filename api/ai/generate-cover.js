@@ -56,9 +56,9 @@ export default async function handler(req, res) {
     .join(", ");
   const cuisine = recipe.cuisine ? `${recipe.cuisine} style` : "gourmet";
 
-  const prompt = `Vertical portrait composition, professional high-end editorial food photography of ${recipe.title}, ${cuisine}. ${
+  const prompt = `Vertical portrait composition, professional high-end culinary food photograph of ${recipe.title}, ${cuisine}. ${
     recipe.description ? recipe.description + "." : ""
-  } Featuring: ${keyIngredients || "fresh ingredients"}. Plated appetizingly on artisanal rustic ceramic ware, angled from a 45-degree perspective, main dish clearly framed in the upper two-thirds of the image, leaving soft ambient rustic tabletop depth in the lower third for editorial text overlay. Warm directional natural window side lighting, gentle steam, shallow depth of field, rich organic textures, 8k resolution, food magazine cover style, photorealistic.`;
+  } Featuring: ${keyIngredients || "fresh ingredients"}. Beautifully plated on artisanal matte ceramic tableware with natural garnish, shot on 50mm f/2.8 lens, angled 45-degree three-quarter perspective, main dish in upper two-thirds with soft ambient tabletop depth below. Soft directional morning window side lighting, gentle rising steam, shallow depth of field with rich organic textures, editorial food magazine style, photorealistic, 8k resolution.`;
 
   try {
     const cfUrl = `https://api.cloudflare.com/client/v4/accounts/${cfAccountId}/ai/run/@cf/black-forest-labs/flux-1-schnell`;
