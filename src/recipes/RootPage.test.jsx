@@ -3,20 +3,20 @@ import { describe, expect, it } from "vitest";
 import RootPage from "./RootPage";
 
 describe("RootPage", () => {
-  it("serves the privacy policy at the public privacy path", () => {
+  it("serves the privacy policy at the public privacy path", async () => {
     render(<RootPage pathname="/privacy" />);
 
     expect(
-      screen.getByRole("heading", { name: "Privacy policy." }),
+      await screen.findByRole("heading", { name: "Privacy policy." }),
     ).toBeInTheDocument();
     expect(document.title).toBe("Privacy policy | mise.");
   });
 
-  it("serves the terms at the public terms path", () => {
+  it("serves the terms at the public terms path", async () => {
     render(<RootPage pathname="/terms" />);
 
     expect(
-      screen.getByRole("heading", { name: "Terms of service." }),
+      await screen.findByRole("heading", { name: "Terms of service." }),
     ).toBeInTheDocument();
     expect(document.title).toBe("Terms of service | mise.");
   });

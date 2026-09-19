@@ -47,9 +47,12 @@ export default function RecipeCard({
         href={`#/recipe/${recipe.id}`}
         aria-label={`Cook ${recipe.title}`}
       >
-        <div
-          className="recipe-card__bg absolute inset-0 bg-cover [background-position:center_30%] transition-transform duration-600 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] group-hover:scale-108"
-          style={{ backgroundImage: `url(${imageUrl})` }}
+        <img
+          src={imageUrl}
+          alt=""
+          loading="lazy"
+          decoding="async"
+          className="recipe-card__bg absolute inset-0 w-full h-full object-cover object-[center_30%] transition-transform duration-600 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] group-hover:scale-108 pointer-events-none"
         />
         <div className="recipe-card__gradient absolute inset-0 bg-gradient-to-t from-[#24231f]/[0.96] from-0% via-[#24231f]/[0.72] via-[38%] via-[#24231f]/20 via-[65%] to-transparent to-[85%] pointer-events-none" />
 

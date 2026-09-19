@@ -56,7 +56,7 @@ import GroceryListView from "./components/GroceryListView";
 import { AppFooter, AppHeader } from "./components/AppShell";
 import useHashRoute from "./useHashRoute";
 import { resolveGroceryCompletion } from "./groceryCompletion";
-import { appendToast } from "./toastQueue";
+import useToasts from "./useToasts";
 
 const GROCERY_AUTH_PROMPT_SEEN_KEY =
   "mise-groceries-auth-prompt-seen-v1";
@@ -72,11 +72,7 @@ export default function RecipeApp() {
     loading: cloudEnabled,
   });
   const [notice, setNotice] = useState(initial.error);
-  const [toasts, setToasts] = useState(() =>
-    initial.error
-      ? [{ id: "init", message: initial.error, type: "error" }]
-      : [],
-  );
+  const { toasts, addToast, dismissToast } = useToasts(initial.error);
   const [authModal, setAuthModal] = useState({
     open: typeof window !== "undefined" && window.location.hash === "#/login",
     intent: "signin",
@@ -226,23 +222,6 @@ export default function RecipeApp() {
     const extra = remoteList.filter((r) => !existing.has(r.id));
     return [...recipes, ...extra];
   }, [recipes, remoteRecipes]);
-
-  const addToast = (message, type = "info", title = "") => {
-    if (!message) return;
-    const createdAt = Date.now();
-    setToasts((prev) =>
-      appendToast(prev, {
-        id: `toast-${createdAt}-${Math.random().toString(36).slice(2, 6)}`,
-        message,
-        type,
-        title,
-        createdAt,
-      }),
-    );
-  };
-  const dismissToast = (id) => {
-    setToasts((prev) => prev.filter((t) => t.id !== id));
-  };
 
   const updateGrocerySession = (nextSession) => {
     const userId = account.session?.user?.id || null;
