@@ -565,6 +565,109 @@ describe("Groceries Cloud Synchronization Client", () => {
       });
       expect(success).toBe(true);
     });
+
+    it("favoriteSharedRecipe calls favorite_shared_recipe RPC with token", async () => {
+      const mockRpc = vi.fn().mockResolvedValue({
+        data: { success: true },
+        error: null,
+      });
+      cloud.setSupabaseClientForTesting({ rpc: mockRpc });
+
+      const result = await cloud.favoriteSharedRecipe("tok_secret_abc");
+      expect(mockRpc).toHaveBeenCalledWith("favorite_shared_recipe", {
+        p_share_token: "tok_secret_abc",
+      });
+      expect(result).toEqual({ success: true });
+    });
+
+    it("setAccountFavorite delegates to favorite_shared_recipe RPC when shareToken is provided", async () => {
+      const mockRpc = vi.fn().mockResolvedValue({
+        data: { success: true },
+        error: null,
+      });
+      cloud.setSupabaseClientForTesting({ rpc: mockRpc });
+
+      await cloud.setAccountFavorite("user-1", "recipe-shared-99", true, "tok_secret_abc");
+      expect(mockRpc).toHaveBeenCalledWith("favorite_shared_recipe", {
+        p_share_token: "tok_secret_abc",
+      });
+    });
+
+    it("loadAccountLibrary does not leak database owner_id on shared recipes", async () => {
+      const mockRecipesSelect = vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            order: vi.fn().mockResolvedValue({
+              data: [{ id: "owned-1", payload: { title: "Owned Cake" } }],
+              error: null,
+            }),
+          }),
+        }),
+      });
+
+      const mockFavoritesSelect = vi.fn().mockReturnValue({
+        eq: vi.fn().mockResolvedValue({
+          data: [{ recipe_id: "owned-1" }, { recipe_id: "shared-author-recipe" }],
+          error: null,
+        }),
+      });
+
+      const mockProgressSelect = vi.fn().mockReturnValue({
+        eq: vi.fn().mockResolvedValue({
+          data: [],
+          error: null,
+        }),
+      });
+
+      const mockClient = {
+        from: vi.fn((table) => {
+          if (table === "recipes") {
+            return {
+              select: vi.fn((cols) => {
+                if (cols.includes("payload")) {
+                  return {
+                    eq: vi.fn().mockReturnValue({
+                      eq: vi.fn().mockReturnValue({
+                        order: vi.fn().mockResolvedValue({
+                          data: [{ id: "owned-1", payload: { title: "Owned Cake" } }],
+                          error: null,
+                        }),
+                      }),
+                    }),
+                    in: vi.fn().mockResolvedValue({
+                      data: [
+                        {
+                          id: "shared-author-recipe",
+                          payload: { title: "Alice's Secret Pie" },
+                        },
+                      ],
+                      error: null,
+                    }),
+                  };
+                }
+                return mockRecipesSelect();
+              }),
+            };
+          }
+          if (table === "favorites") {
+            return { select: mockFavoritesSelect };
+          }
+          if (table === "recipe_progress") {
+            return { select: mockProgressSelect };
+          }
+          return {};
+        }),
+      };
+
+      cloud.setSupabaseClientForTesting(mockClient);
+
+      const library = await cloud.loadAccountLibrary("user-me");
+      expect(library.sharedRecipes).toHaveLength(1);
+      expect(library.sharedRecipes[0].title).toBe("Alice's Secret Pie");
+      expect(library.sharedRecipes[0].isShared).toBe(true);
+      expect(library.sharedRecipes[0].owner_id).toBeUndefined();
+      expect(library.sharedRecipes[0].ownerId).toBeUndefined();
+    });
   });
 
   describe("Recipe cover storage (Issue 7)", () => {

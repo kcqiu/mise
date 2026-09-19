@@ -128,13 +128,12 @@ export async function loadAccountLibrary(userId) {
     try {
       const sharedResult = await client
         .from("recipes")
-        .select("id, payload, owner_id")
+        .select("id, payload")
         .in("id", externalFavoriteIds);
       if (!sharedResult.error && Array.isArray(sharedResult.data)) {
-        sharedRecipes = sharedResult.data.map(({ id, payload, owner_id }) => ({
+        sharedRecipes = sharedResult.data.map(({ id, payload }) => ({
           ...payload,
           id,
-          ownerId: owner_id,
           isShared: true,
         }));
       }
@@ -252,25 +251,70 @@ export async function deleteAccountRecipe(userId, recipeId) {
   throwIfError(result);
 }
 
-export async function setAccountFavorite(userId, recipeId, favorite) {
+export async function favoriteSharedRecipe(token) {
+  const client = getClient();
+  if (!client || !token) return null;
+  const { data, error } = await client.rpc("favorite_shared_recipe", {
+    p_share_token: token,
+  });
+  if (error) {
+    console.error("Failed to favorite shared recipe:", error);
+    throw error;
+  }
+  return data;
+}
+
+export async function getSharedCoverUrl(token) {
+  if (!token) return null;
+  try {
+    const res = await fetch(
+      `/api/ai/shared-cover?token=${encodeURIComponent(token)}`,
+    );
+    if (res.ok) {
+      const data = await res.json();
+      return data.signedUrl || null;
+    }
+  } catch {
+    // Non-fatal
+  }
+  return null;
+}
+
+export async function setAccountFavorite(
+  userId,
+  recipeId,
+  favorite,
+  shareToken = null,
+) {
   const client = getClient();
   if (!client) return;
-  const result = favorite
-    ? await client
-        .from("favorites")
-        .upsert(
-          { user_id: userId, recipe_id: recipeId },
-          {
-            onConflict: "user_id,recipe_id",
-            ignoreDuplicates: true,
-          },
-        )
-    : await client
-        .from("favorites")
-        .delete()
-        .eq("user_id", userId)
-        .eq("recipe_id", recipeId);
-  throwIfError(result);
+  if (favorite) {
+    if (shareToken) {
+      try {
+        const { error } = await client.rpc("favorite_shared_recipe", {
+          p_share_token: shareToken,
+        });
+        if (!error) return;
+      } catch {
+        // Fall back to direct upsert if RPC is unavailable
+      }
+    }
+    const result = await client.from("favorites").upsert(
+      { user_id: userId, recipe_id: recipeId },
+      {
+        onConflict: "user_id,recipe_id",
+        ignoreDuplicates: true,
+      },
+    );
+    throwIfError(result);
+  } else {
+    const result = await client
+      .from("favorites")
+      .delete()
+      .eq("user_id", userId)
+      .eq("recipe_id", recipeId);
+    throwIfError(result);
+  }
 }
 
 export async function setAccountProgress(userId, recipeId, progress) {

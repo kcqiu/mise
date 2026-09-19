@@ -1,4 +1,4 @@
-﻿import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
@@ -20,14 +20,16 @@ describe("vercel.json Security Headers", () => {
     expect(headers["X-Content-Type-Options"]).toBe("nosniff");
     expect(headers["Referrer-Policy"]).toBe("strict-origin-when-cross-origin");
     expect(headers["X-Frame-Options"]).toBe("DENY");
+    expect(headers["Strict-Transport-Security"]).toBe("max-age=31536000");
+    expect(headers["Permissions-Policy"]).toBe("camera=(), microphone=(), geolocation=()");
   });
 
-  it("configures Content-Security-Policy-Report-Only with all required origins", () => {
+  it("configures enforced Content-Security-Policy with all required origins", () => {
     const headers = Object.fromEntries(
       headersBlock.headers.map((item) => [item.key, item.value]),
     );
 
-    const csp = headers["Content-Security-Policy-Report-Only"];
+    const csp = headers["Content-Security-Policy"];
     expect(csp).toBeDefined();
 
     // Key security controls

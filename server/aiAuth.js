@@ -1,4 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
+import net from "node:net";
+import crypto from "node:crypto";
 
 const DEFAULT_SUPABASE_URL = "https://spalxnqfgizpkeqxpxwv.supabase.co";
 const DEFAULT_SUPABASE_KEY = "sb_publishable_8XRvxdQmezjsgSmhGAHDsA_MG5nf_08";
@@ -23,11 +25,36 @@ function getSupabaseClient() {
   });
 }
 
+export function getServiceRoleSupabaseClient() {
+  const url =
+    process.env.VITE_SUPABASE_URL ||
+    process.env.SUPABASE_URL ||
+    DEFAULT_SUPABASE_URL;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!serviceRoleKey) return null;
+
+  return createClient(url.trim(), serviceRoleKey.trim(), {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+    },
+  });
+}
+
 export function extractBearerToken(req) {
   const authHeader = req.headers?.authorization || req.headers?.Authorization;
   if (!authHeader || typeof authHeader !== "string") return null;
   const match = authHeader.match(/^Bearer\s+(.+)$/i);
   return match ? match[1].trim() : null;
+}
+
+export function isJwtStructurallyValid(token, allowTestTokens = process.env.NODE_ENV === "test") {
+  if (!token || typeof token !== "string") return false;
+  if (allowTestTokens && !token.includes(".")) return true;
+  const parts = token.split(".");
+  if (parts.length !== 3) return false;
+  const base64UrlRegex = /^[A-Za-z0-9_-]+$/;
+  return parts.every((p) => p.length > 0 && base64UrlRegex.test(p));
 }
 
 export async function verifySupabaseToken(token, options = {}) {
@@ -74,18 +101,37 @@ export function isRateLimitExempt(user) {
 }
 
 export function getClientIp(req) {
+  const vercelForwarded = req.headers?.["x-vercel-forwarded-for"];
+  if (vercelForwarded) {
+    const candidate =
+      typeof vercelForwarded === "string"
+        ? vercelForwarded.split(",")[0].trim()
+        : vercelForwarded[0]?.trim();
+    if (candidate && net.isIP(candidate)) return candidate;
+  }
   const forwarded = req.headers?.["x-forwarded-for"];
   if (forwarded) {
-    const first =
-      typeof forwarded === "string" ? forwarded.split(",")[0] : forwarded[0];
-    if (first) return first.trim();
+    const candidate =
+      typeof forwarded === "string"
+        ? forwarded.split(",")[0].trim()
+        : forwarded[0]?.trim();
+    if (candidate && net.isIP(candidate)) return candidate;
   }
-  return (
-    req.headers?.["x-real-ip"] ||
+  const realIp = req.headers?.["x-real-ip"];
+  if (realIp && typeof realIp === "string" && net.isIP(realIp.trim())) {
+    return realIp.trim();
+  }
+  const remote =
     req.socket?.remoteAddress ||
     req.connection?.remoteAddress ||
-    "127.0.0.1"
-  );
+    "";
+  if (remote && net.isIP(remote)) return remote;
+  return "127.0.0.1";
+}
+
+export function hashIp(ip) {
+  const salt = process.env.RATE_LIMIT_SALT || "mise-ip-salt-rate-limit";
+  return crypto.createHmac("sha256", salt).update(String(ip || "")).digest("hex").slice(0, 32);
 }
 
 const requestLogs = new Map();
@@ -135,20 +181,67 @@ export function resetRateLimitsForTesting() {
   requestLogs.clear();
 }
 
+export async function consumeDurableQuota(key, limit, windowSeconds = 3600, options = {}) {
+  const client = options.serviceClient || getServiceRoleSupabaseClient();
+  if (!client) return null;
+  try {
+    const { data, error } = await client.schema("private").rpc("consume_ai_quota", {
+      p_key: key,
+      p_limit: limit,
+      p_window_seconds: windowSeconds,
+    });
+    if (error) {
+      console.warn("[RateLimit] consume_ai_quota RPC error:", error.message);
+      return null;
+    }
+    return data;
+  } catch (err) {
+    console.warn("[RateLimit] durable quota check exception:", err.message);
+    return null;
+  }
+}
+
 export async function requireAiAuth(req, res, options = {}) {
   const {
     action = "ai",
     quota = 30,
     dualIpThrottle = false,
     windowMs = 3600000,
+    preauthLimit = 60,
+    preauthWindowMs = 600000,
     verifyTokenFn = verifySupabaseToken,
+    serviceClient = null,
   } = options;
+
+  const clientIp = getClientIp(req);
+  const hashedIp = hashIp(clientIp);
+
+  // 1. Pre-auth IP throttle: prevents high-volume token attacks against auth backend
+  const preauthRate = checkRateLimit(`ip:${hashedIp}:preauth`, preauthLimit, preauthWindowMs);
+  if (!preauthRate.allowed) {
+    res.setHeader("Retry-After", String(preauthRate.retryAfterSeconds));
+    res.status(429).json({
+      error: "Too many authentication attempts. Please slow down.",
+      code: "PREAUTH_RATE_LIMIT_EXCEEDED",
+    });
+    return null;
+  }
 
   const token = extractBearerToken(req);
   if (!token) {
     res.status(401).json({
       error: "Authentication required. Please sign in to use MISE AI.",
       code: "AUTH_REQUIRED",
+    });
+    return null;
+  }
+
+  // Structural JWT format check
+  const enforceJwt = options.enforceJwtStructure ?? (process.env.NODE_ENV !== "test");
+  if (enforceJwt && !isJwtStructurallyValid(token, false)) {
+    res.status(401).json({
+      error: "Invalid or malformed authentication token. Please sign in again.",
+      code: "INVALID_TOKEN",
     });
     return null;
   }
@@ -169,8 +262,10 @@ export async function requireAiAuth(req, res, options = {}) {
     return user;
   }
 
-  // 1. Check user rate limit
-  const userRate = checkRateLimit(`${action}:user:${user.id}`, quota, windowMs);
+  const windowSeconds = Math.max(1, Math.ceil(windowMs / 1000));
+
+  // 2. Check user rate limit (in-memory fast layer)
+  const userRate = checkRateLimit(`user:${user.id}:${action}`, quota, windowMs);
   if (!userRate.allowed) {
     res.setHeader("Retry-After", String(userRate.retryAfterSeconds));
     res.setHeader("X-RateLimit-Limit", String(quota));
@@ -184,10 +279,25 @@ export async function requireAiAuth(req, res, options = {}) {
     return null;
   }
 
-  // 2. Dual IP throttling if enabled (e.g. image generation)
+  // 3. Check durable rate limit for user (if service role client available)
+  const durableUser = await consumeDurableQuota(`user:${user.id}:${action}`, quota, windowSeconds, { serviceClient });
+  if (durableUser && !durableUser.allowed) {
+    const retrySec = durableUser.retry_after_seconds || userRate.retryAfterSeconds;
+    const minutes = Math.ceil(retrySec / 60);
+    res.setHeader("Retry-After", String(retrySec));
+    res.setHeader("X-RateLimit-Limit", String(quota));
+    res.setHeader("X-RateLimit-Remaining", "0");
+    res.status(429).json({
+      error: `Hourly limit reached (${quota} requests/hour for this feature). Please try again in ${minutes} minute${minutes === 1 ? "" : "s"}.`,
+      retryAfterSeconds: retrySec,
+      code: "RATE_LIMIT_EXCEEDED",
+    });
+    return null;
+  }
+
+  // 4. Dual IP throttling if enabled (e.g. image generation)
   if (dualIpThrottle) {
-    const clientIp = getClientIp(req);
-    const ipRate = checkRateLimit(`${action}:ip:${clientIp}`, quota, windowMs);
+    const ipRate = checkRateLimit(`ip:${hashedIp}:${action}`, quota, windowMs);
     if (!ipRate.allowed) {
       res.setHeader("Retry-After", String(ipRate.retryAfterSeconds));
       res.setHeader("X-RateLimit-Limit", String(quota));
@@ -200,6 +310,22 @@ export async function requireAiAuth(req, res, options = {}) {
       });
       return null;
     }
+
+    const durableIp = await consumeDurableQuota(`ip:${hashedIp}:${action}`, quota, windowSeconds, { serviceClient });
+    if (durableIp && !durableIp.allowed) {
+      const retrySec = durableIp.retry_after_seconds || ipRate.retryAfterSeconds;
+      const minutes = Math.ceil(retrySec / 60);
+      res.setHeader("Retry-After", String(retrySec));
+      res.setHeader("X-RateLimit-Limit", String(quota));
+      res.setHeader("X-RateLimit-Remaining", "0");
+      res.status(429).json({
+        error: `Hourly limit reached for your network (${quota} requests/hour). Please try again in ${minutes} minute${minutes === 1 ? "" : "s"}.`,
+        retryAfterSeconds: retrySec,
+        code: "RATE_LIMIT_EXCEEDED",
+      });
+      return null;
+    }
+
     res.setHeader(
       "X-RateLimit-Remaining",
       String(Math.min(userRate.remaining, ipRate.remaining)),

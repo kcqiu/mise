@@ -176,4 +176,29 @@ describe("parse-recipe handler - SSRF protection for mode: 'url'", () => {
     expect(fetch).toHaveBeenCalledTimes(1);
     expect(generateContent).toHaveBeenCalledTimes(1);
   });
+
+  it("rejects text payload exceeding 100KB with HTTP 413", async () => {
+    const hugeText = "a".repeat(105 * 1024);
+    const res = await invoke({ mode: "text", text: hugeText });
+    expect(res.status).toBe(413);
+    expect(res.body.code).toBe("PAYLOAD_TOO_LARGE");
+  });
+
+  it("rejects non-canonical YouTube URL with HTTP 400", async () => {
+    const res = await invoke({
+      mode: "social",
+      url: "https://youtube.com/invalid-video-path",
+    });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatch(/standard YouTube video/i);
+  });
+
+  it("rejects non-canonical TikTok URL with HTTP 400", async () => {
+    const res = await invoke({
+      mode: "social",
+      url: "https://tiktok.com/invalid-path",
+    });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatch(/standard TikTok video/i);
+  });
 });
