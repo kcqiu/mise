@@ -19,6 +19,16 @@ export default async function handler(req, res) {
   });
   if (!user) return;
 
+  const rawBody = typeof req.body === "string" ? req.body : JSON.stringify(req.body || {});
+  const byteLength = Buffer.byteLength(rawBody, "utf8");
+  if (byteLength > 100 * 1024) {
+    return res.status(413).json({
+      error: `Request payload too large (${Math.round(byteLength / 1024)}KB). Maximum allowed is 100KB.`,
+      code: "PAYLOAD_TOO_LARGE",
+      requestId,
+    });
+  }
+
   const cfToken = process.env.CLOUDFLARE_API_TOKEN;
   const cfAccountId = process.env.CLOUDFLARE_ACCOUNT_ID;
   if (!cfToken || !cfAccountId) {

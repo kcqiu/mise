@@ -29,8 +29,7 @@ function cropAndCompressImage(file, targetSize = 800) {
     reader.onload = (e) => {
       const dataUrl = e.target.result;
       if (typeof document === "undefined") {
-        resolve({ blob: file, dataUrl });
-        return;
+        return reject(new Error("Image processing not available in this environment"));
       }
       const img = new Image();
       img.onload = () => {
@@ -40,8 +39,7 @@ function cropAndCompressImage(file, targetSize = 800) {
           canvas.height = targetSize;
           const ctx = canvas.getContext("2d");
           if (!ctx) {
-            resolve({ blob: file, dataUrl });
-            return;
+            return reject(new Error("Canvas 2D context not available"));
           }
           // Symmetrical square center-crop
           const minDim = Math.min(img.width, img.height);
@@ -61,8 +59,7 @@ function cropAndCompressImage(file, targetSize = 800) {
           canvas.toBlob(
             (blob) => {
               if (!blob) {
-                resolve({ blob: file, dataUrl });
-                return;
+                return reject(new Error("Failed to convert image to WebP"));
               }
               const webpDataUrl = canvas.toDataURL("image/webp", 0.85);
               resolve({ blob, dataUrl: webpDataUrl });
@@ -70,11 +67,11 @@ function cropAndCompressImage(file, targetSize = 800) {
             "image/webp",
             0.85,
           );
-        } catch {
-          resolve({ blob: file, dataUrl });
+        } catch (err) {
+          reject(err);
         }
       };
-      img.onerror = () => resolve({ blob: file, dataUrl });
+      img.onerror = () => reject(new Error("Failed to load image for processing"));
       img.src = dataUrl;
     };
     reader.onerror = reject;

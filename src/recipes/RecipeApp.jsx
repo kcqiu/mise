@@ -811,7 +811,16 @@ export default function RecipeApp() {
       };
     });
     try {
-      await setAccountFavorite(account.session.user.id, id, !wasFavorite);
+      const effectiveToken =
+        (targetRecipe && targetRecipe.shareToken) ||
+        (isSharedRoute && shareToken) ||
+        null;
+      await setAccountFavorite(
+        account.session.user.id,
+        id,
+        !wasFavorite,
+        effectiveToken,
+      );
     } catch (error) {
       setAccount((current) => ({
         ...current,
@@ -994,6 +1003,9 @@ export default function RecipeApp() {
       await signOut();
       accountMenu.current?.removeAttribute("open");
       setGrocerySession(readGrocerySession(null));
+      setRemoteRecipes({});
+      setNotFoundRemoteIds(new Set());
+      setLoadingRemoteId(null);
       setShelfState((state) => ({
         ...state,
         collection: state.collection === "my-recipes" ? "all" : state.collection,

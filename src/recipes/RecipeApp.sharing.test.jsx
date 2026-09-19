@@ -291,7 +291,8 @@ describe("Shared Recipe Direct Link & Auth Gating", () => {
     expect(cloudMocks.setAccountFavorite).toHaveBeenCalledWith(
       "user-456",
       "shared-recipe-uuid-1234",
-      true
+      true,
+      "tok-focaccia-123",
     );
 
     // Navigate to shelf

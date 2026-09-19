@@ -220,4 +220,116 @@ describe("server/aiAuth.js - requireAiAuth middleware", () => {
       expect(res.status).not.toHaveBeenCalledWith(429);
     }
   });
+
+  it("prioritizes x-vercel-forwarded-for and validates IP format", () => {
+    expect(
+      getClientIp({
+        headers: {
+          "x-vercel-forwarded-for": "198.51.100.42, 10.0.0.1",
+          "x-forwarded-for": "203.0.113.1",
+        },
+      }),
+    ).toBe("198.51.100.42");
+  });
+
+  it("validates JWT structural integrity", async () => {
+    const { isJwtStructurallyValid } = await import("./aiAuth.js");
+    expect(isJwtStructurallyValid("eyJhbGciOi.eyJzdWIiOi.c2lnbmF0dXJl", false)).toBe(true);
+    expect(isJwtStructurallyValid("not-a-jwt", false)).toBe(false);
+    expect(isJwtStructurallyValid("part1.part2", false)).toBe(false);
+    expect(isJwtStructurallyValid("part1.part2.part3.part4", false)).toBe(false);
+    expect(isJwtStructurallyValid("part1..part3", false)).toBe(false);
+  });
+
+  it("blocks request if JWT structure check is enforced and fails", async () => {
+    const res = createMockRes();
+    const req = {
+      headers: {
+        authorization: "Bearer invalid.token",
+        "x-real-ip": "203.0.113.50",
+      },
+    };
+    const mockVerify = vi.fn();
+
+    const user = await requireAiAuth(req, res, {
+      enforceJwtStructure: true,
+      verifyTokenFn: mockVerify,
+    });
+
+    expect(user).toBeNull();
+    expect(mockVerify).not.toHaveBeenCalled();
+    expect(res.status).toHaveBeenCalledWith(401);
+  });
+
+  it("enforces pre-auth IP throttle when too many attempts occur from single IP", async () => {
+    const resList = [];
+    const mockVerify = vi.fn().mockResolvedValue({ user: null, error: new Error("fail") });
+
+    for (let i = 0; i < 3; i++) {
+      const res = createMockRes();
+      resList.push(res);
+      await requireAiAuth(
+        {
+          headers: {
+            authorization: "Bearer test-valid-token",
+            "x-real-ip": "203.0.113.88",
+          },
+        },
+        res,
+        {
+          preauthLimit: 2,
+          preauthWindowMs: 60000,
+          verifyTokenFn: mockVerify,
+        },
+      );
+    }
+
+    // 3rd request should hit preauth rate limit
+    expect(resList[2].status).toHaveBeenCalledWith(429);
+    expect(resList[2].json).toHaveBeenCalledWith(
+      expect.objectContaining({ code: "PREAUTH_RATE_LIMIT_EXCEEDED" }),
+    );
+  });
+
+  it("enforces durable quota via serviceClient when available", async () => {
+    const res = createMockRes();
+    const mockVerify = vi.fn().mockResolvedValue({
+      user: { id: "durable-user-1", email: "user@example.com" },
+      error: null,
+    });
+
+    const mockRpc = vi.fn().mockResolvedValue({
+      data: {
+        allowed: false,
+        retry_after_seconds: 120,
+      },
+      error: null,
+    });
+
+    const mockServiceClient = {
+      schema: vi.fn().mockReturnValue({
+        rpc: mockRpc,
+      }),
+    };
+
+    const user = await requireAiAuth(
+      {
+        headers: {
+          authorization: "Bearer test-valid-token",
+          "x-real-ip": "203.0.113.200",
+        },
+      },
+      res,
+      {
+        action: "parse",
+        quota: 10,
+        verifyTokenFn: mockVerify,
+        serviceClient: mockServiceClient,
+      },
+    );
+
+    expect(user).toBeNull();
+    expect(res.status).toHaveBeenCalledWith(429);
+    expect(res.setHeader).toHaveBeenCalledWith("Retry-After", "120");
+  });
 });

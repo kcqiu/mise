@@ -268,4 +268,83 @@ describe("AI endpoints - Server Error Sanitization & Information Disclosure (Iss
     expect(body.missingKey).toBeUndefined();
     expect(JSON.stringify(body)).not.toContain("CLOUDFLARE_API_TOKEN");
   });
+
+  it("rejects oversized request payload on polish-recipe with HTTP 413", async () => {
+    const res = createMockRes();
+    const largeRecipe = {
+      title: "Huge Recipe",
+      description: "x".repeat(105 * 1024),
+    };
+
+    await polishHandler(
+      {
+        method: "POST",
+        headers: { authorization: "Bearer test-valid-token" },
+        body: { recipe: largeRecipe },
+      },
+      res,
+    );
+
+    expect(res.status).toHaveBeenCalledWith(413);
+    const body = res.json.mock.calls.at(-1)[0];
+    expect(body.code).toBe("PAYLOAD_TOO_LARGE");
+  });
+
+  it("rejects oversized request payload on generate-cover with HTTP 413", async () => {
+    const res = createMockRes();
+    const largeRecipe = {
+      title: "Huge Cover",
+      description: "x".repeat(105 * 1024),
+    };
+
+    await coverHandler(
+      {
+        method: "POST",
+        headers: { authorization: "Bearer test-valid-token" },
+        body: { recipe: largeRecipe },
+      },
+      res,
+    );
+
+    expect(res.status).toHaveBeenCalledWith(413);
+    const body = res.json.mock.calls.at(-1)[0];
+    expect(body.code).toBe("PAYLOAD_TOO_LARGE");
+  });
+});
+
+describe("/api/ai/shared-cover endpoint", () => {
+  it("rejects non-GET methods with HTTP 405", async () => {
+    const { default: sharedCoverHandler } = await import("./shared-cover.js");
+    const res = createMockRes();
+
+    await sharedCoverHandler(
+      {
+        method: "POST",
+        headers: {},
+        query: { token: "valid-share-token-12345" },
+      },
+      res,
+    );
+
+    expect(res.status).toHaveBeenCalledWith(405);
+    expect(res.setHeader).toHaveBeenCalledWith("Allow", "GET");
+  });
+
+  it("rejects invalid or missing token with HTTP 400", async () => {
+    const { default: sharedCoverHandler } = await import("./shared-cover.js");
+    const res = createMockRes();
+
+    await sharedCoverHandler(
+      {
+        method: "GET",
+        headers: {},
+        query: { token: "bad token with spaces" },
+      },
+      res,
+    );
+
+    expect(res.status).toHaveBeenCalledWith(400);
+    const body = res.json.mock.calls.at(-1)[0];
+    expect(body.code).toBe("INVALID_SHARE_TOKEN");
+  });
 });
