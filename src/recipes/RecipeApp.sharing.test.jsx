@@ -14,6 +14,7 @@ const cloudMocks = vi.hoisted(() => ({
   saveAccountRecipe: vi.fn(),
   setAccountFavorite: vi.fn(),
   deleteAccountRecipe: vi.fn(),
+  deleteRecipeCover: vi.fn(),
 }));
 
 vi.mock("./cloud", async () => {
@@ -32,6 +33,7 @@ vi.mock("./cloud", async () => {
     saveAccountRecipe: cloudMocks.saveAccountRecipe,
     setAccountFavorite: cloudMocks.setAccountFavorite,
     deleteAccountRecipe: cloudMocks.deleteAccountRecipe,
+    deleteRecipeCover: cloudMocks.deleteRecipeCover,
   };
 });
 
@@ -85,6 +87,7 @@ beforeEach(() => {
   cloudMocks.saveAccountRecipe.mockReset().mockResolvedValue(undefined);
   cloudMocks.setAccountFavorite.mockReset().mockResolvedValue(undefined);
   cloudMocks.deleteAccountRecipe.mockReset().mockResolvedValue(undefined);
+  cloudMocks.deleteRecipeCover.mockReset().mockResolvedValue(undefined);
 
   cloudMocks.getSession.mockResolvedValue(null);
   cloudMocks.loadAccountLibrary.mockResolvedValue({
@@ -449,6 +452,134 @@ describe("Shared Recipe Direct Link & Auth Gating", () => {
       "Couldn't reach your cookbook. Check your connection and try again.",
     );
     expect(notices.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it("deletes superseded cover object from storage when recipe cover is replaced", async () => {
+    const user = userEvent.setup();
+    const userId = "user-cook-123";
+    const existingRecipe = {
+      ...mockSharedRecipe,
+      id: "recipe-custom-1",
+      artwork:
+        "https://xyz.supabase.co/storage/v1/object/sign/recipe-covers/user-cook-123/recipe-custom-1-old.webp?token=old-token",
+    };
+    cloudMocks.getSession.mockResolvedValue({ user: { id: userId } });
+    cloudMocks.loadAccountLibrary.mockResolvedValue({
+      recipes: [existingRecipe],
+      favorites: [],
+      sharedRecipes: [],
+      progress: {},
+    });
+    window.history.replaceState(null, "", "/recipe/#/recipe/recipe-custom-1");
+
+    render(<RecipeApp />);
+
+    expect(
+      await screen.findByRole("heading", { name: existingRecipe.title }),
+    ).toBeInTheDocument();
+
+    const editBtn = screen.getByRole("button", { name: "Edit recipe" });
+    await user.click(editBtn);
+
+    const coverInput = screen.getByPlaceholderText(/paste an image url/i);
+    await user.clear(coverInput);
+    await user.type(
+      coverInput,
+      "/recipe-covers/user-cook-123/recipe-custom-1-new.webp",
+    );
+
+    const saveBtn = screen.getByRole("button", { name: /Save recipe/i });
+    await act(async () => {
+      fireEvent.submit(saveBtn.closest("form"));
+    });
+
+    expect(cloudMocks.saveAccountRecipe).toHaveBeenCalledTimes(1);
+    expect(cloudMocks.deleteRecipeCover).toHaveBeenCalledWith(
+      existingRecipe.artwork,
+    );
+  });
+
+  it("does not delete cover object if cover is unchanged upon saving", async () => {
+    const user = userEvent.setup();
+    const userId = "user-cook-123";
+    const existingRecipe = {
+      ...mockSharedRecipe,
+      id: "recipe-custom-1",
+      artwork:
+        "https://xyz.supabase.co/storage/v1/object/sign/recipe-covers/user-cook-123/recipe-custom-1-same.webp?token=old-token",
+    };
+    cloudMocks.getSession.mockResolvedValue({ user: { id: userId } });
+    cloudMocks.loadAccountLibrary.mockResolvedValue({
+      recipes: [existingRecipe],
+      favorites: [],
+      sharedRecipes: [],
+      progress: {},
+    });
+    window.history.replaceState(null, "", "/recipe/#/recipe/recipe-custom-1");
+
+    render(<RecipeApp />);
+
+    expect(
+      await screen.findByRole("heading", { name: existingRecipe.title }),
+    ).toBeInTheDocument();
+
+    const editBtn = screen.getByRole("button", { name: "Edit recipe" });
+    await user.click(editBtn);
+
+    const titleInput = screen.getByLabelText(/Recipe name/i);
+    await user.clear(titleInput);
+    await user.type(titleInput, "Updated Focaccia Title");
+
+    const saveBtn = screen.getByRole("button", { name: /Save recipe/i });
+    await act(async () => {
+      fireEvent.submit(saveBtn.closest("form"));
+    });
+
+    expect(cloudMocks.saveAccountRecipe).toHaveBeenCalledTimes(1);
+    expect(cloudMocks.deleteRecipeCover).not.toHaveBeenCalled();
+  });
+
+  it("deletes cover object from storage when an account recipe is deleted", async () => {
+    const user = userEvent.setup();
+    const userId = "user-cook-123";
+    const existingRecipe = {
+      ...mockSharedRecipe,
+      id: "recipe-custom-1",
+      artwork: "/recipe-covers/user-cook-123/recipe-custom-1-to-delete.webp",
+    };
+    cloudMocks.getSession.mockResolvedValue({ user: { id: userId } });
+    cloudMocks.loadAccountLibrary.mockResolvedValue({
+      recipes: [existingRecipe],
+      favorites: [],
+      sharedRecipes: [],
+      progress: {},
+    });
+    window.history.replaceState(null, "", "/recipe/#/recipe/recipe-custom-1");
+
+    render(<RecipeApp />);
+
+    expect(
+      await screen.findByRole("heading", { name: existingRecipe.title }),
+    ).toBeInTheDocument();
+
+    const editBtn = screen.getByRole("button", { name: "Edit recipe" });
+    await user.click(editBtn);
+
+    const deleteTrigger = screen.getByRole("button", { name: /Delete recipe/i });
+    await user.click(deleteTrigger);
+
+    const confirmDeleteBtn = screen.getByRole("button", {
+      name: "Yes, delete",
+    });
+    await user.click(confirmDeleteBtn);
+
+    expect(cloudMocks.deleteAccountRecipe).toHaveBeenCalledWith(
+      userId,
+      "recipe-custom-1",
+    );
+    expect(cloudMocks.deleteRecipeCover).toHaveBeenCalledWith(
+      existingRecipe.artwork,
+    );
   });
 });
 
