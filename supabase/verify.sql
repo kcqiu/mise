@@ -112,4 +112,18 @@ join pg_namespace n on n.oid = p.pronamespace
 where n.nspname = 'public'
   and p.proname = 'revoke_recipe_share';
 
+-- 8. Verify consume_ai_quota atomic functionality
+select private.consume_ai_quota('test:verify:atomic_check', 5, 60) as quota_result;
+delete from private.ai_rate_limits where key = 'test:verify:atomic_check';
+
+-- 9. Verify validate_recipe_payload_trigger definition in pg_proc
+select
+  p.proname as trigger_function,
+  p.prosecdef as is_security_definer,
+  pg_catalog.has_function_privilege('service_role', p.oid, 'EXECUTE') as service_role_can_execute
+from pg_proc p
+join pg_namespace n on n.oid = p.pronamespace
+where n.nspname = 'public'
+  and p.proname = 'validate_recipe_payload_trigger';
+
 

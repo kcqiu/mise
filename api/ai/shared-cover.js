@@ -14,11 +14,19 @@ export default async function handler(req, res) {
     req.headers["x-vercel-id"] ||
     randomUUID();
 
-  if (req.method !== "GET") {
-    res.setHeader("Allow", "GET");
+  // Enforce strict no-store caching headers to protect capability token responses
+  res.setHeader(
+    "Cache-Control",
+    "no-store, no-cache, must-revalidate, proxy-revalidate",
+  );
+  res.setHeader("Pragma", "no-cache");
+  res.setHeader("Expires", "0");
+
+  if (req.method !== "POST" && req.method !== "GET") {
+    res.setHeader("Allow", "POST, GET");
     return res
       .status(405)
-      .json({ error: "Method not allowed. Use GET.", requestId });
+      .json({ error: "Method not allowed. Use POST or GET.", requestId });
   }
 
   const clientIp = getClientIp(req);
@@ -35,8 +43,26 @@ export default async function handler(req, res) {
     });
   }
 
-  const token = req.query?.token;
-  if (!token || typeof token !== "string" || !TOKEN_REGEX.test(token.trim())) {
+  let rawToken;
+  if (req.method === "POST") {
+    let body = req.body;
+    if (typeof body === "string") {
+      try {
+        body = JSON.parse(body || "{}");
+      } catch {
+        body = {};
+      }
+    }
+    rawToken = body?.token;
+  } else {
+    rawToken = req.query?.token;
+  }
+
+  if (
+    !rawToken ||
+    typeof rawToken !== "string" ||
+    !TOKEN_REGEX.test(rawToken.trim())
+  ) {
     return res.status(400).json({
       error: "Invalid or missing share token.",
       code: "INVALID_SHARE_TOKEN",
@@ -44,7 +70,7 @@ export default async function handler(req, res) {
     });
   }
 
-  const cleanToken = token.trim();
+  const cleanToken = rawToken.trim();
   const serviceClient = getServiceRoleSupabaseClient();
   if (!serviceClient) {
     return res.status(503).json({

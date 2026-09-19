@@ -345,13 +345,13 @@ describe("AI endpoints - Server Error Sanitization & Information Disclosure (Iss
 });
 
 describe("/api/ai/shared-cover endpoint", () => {
-  it("rejects non-GET methods with HTTP 405", async () => {
+  it("rejects unsupported methods with HTTP 405", async () => {
     const { default: sharedCoverHandler } = await import("./shared-cover.js");
     const res = createMockRes();
 
     await sharedCoverHandler(
       {
-        method: "POST",
+        method: "DELETE",
         headers: {},
         query: { token: "valid-share-token-12345" },
       },
@@ -359,7 +359,7 @@ describe("/api/ai/shared-cover endpoint", () => {
     );
 
     expect(res.status).toHaveBeenCalledWith(405);
-    expect(res.setHeader).toHaveBeenCalledWith("Allow", "GET");
+    expect(res.setHeader).toHaveBeenCalledWith("Allow", "POST, GET");
   });
 
   it("rejects invalid or missing token with HTTP 400", async () => {
