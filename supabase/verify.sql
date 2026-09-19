@@ -101,3 +101,15 @@ where schemaname = 'public'
 select
   (select relrowsecurity from pg_class where oid = 'private.ai_rate_limits'::regclass) as ai_rate_limits_rls;
 
+-- 7. Verify revoke_recipe_share RPC is SECURITY DEFINER with execution granted to authenticated
+select
+  p.proname as function_name,
+  p.prosecdef as is_security_definer,
+  pg_catalog.has_function_privilege('authenticated', p.oid, 'EXECUTE') as auth_can_execute,
+  pg_catalog.has_function_privilege('anon', p.oid, 'EXECUTE') as anon_can_execute
+from pg_proc p
+join pg_namespace n on n.oid = p.pronamespace
+where n.nspname = 'public'
+  and p.proname = 'revoke_recipe_share';
+
+

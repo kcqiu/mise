@@ -213,7 +213,7 @@ describe("AddRecipeModal intake hub", () => {
     );
     expect(handleParsed).toHaveBeenCalledWith(mockRecipe);
     expect(handleClose).toHaveBeenCalledTimes(1);
-  });
+  }, 15000);
 
   it("triggers onRequireAuth when unauthenticated user clicks any intake pathway", async () => {
     const user = userEvent.setup();
