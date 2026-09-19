@@ -54,15 +54,19 @@ export default async function handler(req, res) {
   }
 
   try {
-    // 1. Fetch the shared recipe via existing get_shared_recipe RPC
-    const { data: recipeData, error: recipeErr } = await serviceClient.rpc(
-      "get_shared_recipe",
-      {
-        p_token: cleanToken,
-      },
-    );
+    // 1. Fetch active share record
+    const { data: shareData, error: shareErr } = await serviceClient
+      .from("recipe_shares")
+      .select("recipe_id, created_by, revoked_at, expires_at")
+      .eq("share_token", cleanToken)
+      .maybeSingle();
 
-    if (recipeErr || !recipeData) {
+    if (
+      shareErr ||
+      !shareData ||
+      shareData.revoked_at ||
+      (shareData.expires_at && new Date(shareData.expires_at) <= new Date())
+    ) {
       return res.status(404).json({
         error: "Shared recipe not found or access link has been revoked.",
         code: "RECIPE_NOT_FOUND",
@@ -70,7 +74,22 @@ export default async function handler(req, res) {
       });
     }
 
-    const artwork = recipeData.artwork;
+    // 2. Fetch the recipe to verify owner and artwork
+    const { data: recipeData, error: recipeErr } = await serviceClient
+      .from("recipes")
+      .select("id, owner_id, payload")
+      .eq("id", shareData.recipe_id)
+      .maybeSingle();
+
+    if (recipeErr || !recipeData || !recipeData.payload) {
+      return res.status(404).json({
+        error: "Shared recipe not found.",
+        code: "RECIPE_NOT_FOUND",
+        requestId,
+      });
+    }
+
+    const artwork = recipeData.payload.artwork;
     if (
       !artwork ||
       typeof artwork !== "string" ||
@@ -83,20 +102,59 @@ export default async function handler(req, res) {
       });
     }
 
-    // 2. Extract storage object path from artwork URL
+    // 3. Extract and enforce strict authorization invariants on storage path
     const parts = artwork.split("/recipe-covers/");
     if (parts.length !== 2) {
       return res.status(400).json({
         error: "Malformed cover image path.",
+        code: "MALFORMED_PATH",
         requestId,
       });
     }
     const rawPath = decodeURIComponent(parts[1].split("?")[0].trim());
+    const segments = rawPath.split("/").filter(Boolean);
 
-    // 3. Generate 30-minute signed URL using service_role
+    // Invariant: Exactly two path segments (<ownerId>/<filename>)
+    if (segments.length !== 2 || rawPath.includes("..")) {
+      return res.status(400).json({
+        error: "Invalid storage path structure.",
+        code: "INVALID_PATH_STRUCTURE",
+        requestId,
+      });
+    }
+
+    const [folder, filename] = segments;
+    const expectedOwnerId = recipeData.owner_id;
+    const expectedRecipeId = recipeData.id;
+
+    // Invariant: Storage folder must strictly match recipe owner ID
+    if (folder !== expectedOwnerId || (shareData.created_by && folder !== shareData.created_by)) {
+      return res.status(403).json({
+        error: "Storage object owner mismatch.",
+        code: "OWNER_MISMATCH",
+        requestId,
+      });
+    }
+
+    // Invariant: Basename must belong to this recipe ID and have an allowed image extension
+    const escapedRecipeId = expectedRecipeId.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const allowedExts = "webp|png|jpe?g";
+    const filenamePattern = new RegExp(`^${escapedRecipeId}(?:-[\\w.-]+)?\\.(?:${allowedExts})$`, "i");
+
+    if (!filenamePattern.test(filename)) {
+      return res.status(403).json({
+        error: "Storage object does not belong to the authorized recipe.",
+        code: "RECIPE_MISMATCH",
+        requestId,
+      });
+    }
+
+    const verifiedPath = `${folder}/${filename}`;
+
+    // 4. Generate 30-minute signed URL using service_role
     const { data: signedData, error: signError } = await serviceClient.storage
       .from("recipe-covers")
-      .createSignedUrl(rawPath, 1800); // 30 minutes in seconds
+      .createSignedUrl(verifiedPath, 1800); // 30 minutes in seconds
 
     if (signError || !signedData?.signedUrl) {
       return res.status(500).json({

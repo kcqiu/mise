@@ -257,8 +257,15 @@ export async function validateExternalUrl(urlString, options = {}) {
 
 import https from "node:https";
 
-function pinnedHttpsFetch(url, options = {}) {
-  const { pinnedIp, timeoutMs = 8000, userAgent, headers = {}, signal } = options;
+export function pinnedHttpsFetch(url, options = {}) {
+  const {
+    pinnedIp,
+    timeoutMs = 8000,
+    maxSizeBytes = 1.5 * 1024 * 1024,
+    userAgent,
+    headers = {},
+    signal,
+  } = options;
   const parsed = new URL(url);
 
   return new Promise((resolve, reject) => {
@@ -300,7 +307,17 @@ function pinnedHttpsFetch(url, options = {}) {
           body: res,
           text: async () => {
             const chunks = [];
-            for await (const chunk of res) chunks.push(chunk);
+            let totalBytes = 0;
+            for await (const chunk of res) {
+              totalBytes += chunk.length;
+              if (totalBytes > maxSizeBytes) {
+                res.destroy();
+                throw new Error(
+                  `Website content exceeded maximum size limit (${Math.round(maxSizeBytes / 1024)} KB).`
+                );
+              }
+              chunks.push(chunk);
+            }
             return Buffer.concat(chunks).toString("utf8");
           },
         });
@@ -312,7 +329,7 @@ function pinnedHttpsFetch(url, options = {}) {
   });
 }
 
-async function readStreamWithLimit(response, maxBytes) {
+export async function readStreamWithLimit(response, maxBytes) {
   if (!response.body || typeof response.body.getReader !== "function") {
     const text = await response.text();
     const byteLength = typeof Buffer !== "undefined" ? Buffer.byteLength(text) : text.length;
@@ -409,6 +426,7 @@ export async function safeFetchHtml(initialUrlString, options = {}) {
             Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
           },
           timeoutMs,
+          maxSizeBytes,
           signal: controller.signal,
         });
       }

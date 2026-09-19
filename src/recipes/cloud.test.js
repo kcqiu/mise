@@ -552,6 +552,34 @@ describe("Groceries Cloud Synchronization Client", () => {
       expect(recipe).toEqual(mockRecipe);
     });
 
+    it("loadRecipeByShareToken auto-resolves private cover image via shared-cover API", async () => {
+      const mockRecipe = {
+        id: "recipe-1",
+        title: "Shared Souffle",
+        artwork: "https://supabase.co/storage/v1/object/public/recipe-covers/user-1/recipe-1-123.webp",
+        isShared: true,
+      };
+      const mockRpc = vi.fn().mockResolvedValue({
+        data: mockRecipe,
+        error: null,
+      });
+      cloud.setSupabaseClientForTesting({ rpc: mockRpc });
+
+      const originalFetch = globalThis.fetch;
+      globalThis.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ signedUrl: "https://supabase.co/storage/v1/object/sign/fresh-signed-cover.webp" }),
+      });
+
+      try {
+        const recipe = await cloud.loadRecipeByShareToken("tok_test_123");
+        expect(recipe.artwork).toBe("https://supabase.co/storage/v1/object/sign/fresh-signed-cover.webp");
+        expect(globalThis.fetch).toHaveBeenCalledWith("/api/ai/shared-cover?token=tok_test_123");
+      } finally {
+        globalThis.fetch = originalFetch;
+      }
+    });
+
     it("revokeRecipeShare calls revoke RPC", async () => {
       const mockRpc = vi.fn().mockResolvedValue({
         data: { success: true },

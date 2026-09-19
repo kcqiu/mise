@@ -1,8 +1,12 @@
+import { EventEmitter } from "node:events";
+import https from "node:https";
 import { describe, expect, it, vi } from "vitest";
 import {
   isForbiddenIp,
   isForbiddenIpv4,
   isForbiddenIpv6,
+  pinnedHttpsFetch,
+  readStreamWithLimit,
   safeFetchHtml,
   validateExternalUrl,
 } from "./safeUrlFetch.js";
@@ -316,5 +320,69 @@ describe("safeUrlFetch - safeFetchHtml", () => {
         maxSizeBytes: 1000, // 1 KB limit
       }),
     ).rejects.toThrow(/exceeded maximum size limit/i);
+  });
+
+  it("cancels web stream reader when chunk bytes exceed limit in readStreamWithLimit", async () => {
+    const cancelMock = vi.fn().mockResolvedValue(undefined);
+    const releaseLockMock = vi.fn();
+    const encoder = new TextEncoder();
+    let chunkCount = 0;
+
+    const mockResponse = {
+      body: {
+        getReader: () => ({
+          read: vi.fn().mockImplementation(async () => {
+            chunkCount++;
+            if (chunkCount === 1) {
+              return { done: false, value: encoder.encode("small chunk ") };
+            }
+            if (chunkCount === 2) {
+              return { done: false, value: encoder.encode("overflow chunk that exceeds limit") };
+            }
+            return { done: true, value: undefined };
+          }),
+          cancel: cancelMock,
+          releaseLock: releaseLockMock,
+        }),
+      },
+    };
+
+    await expect(readStreamWithLimit(mockResponse, 15)).rejects.toThrow(/exceeded maximum size limit/i);
+    expect(cancelMock).toHaveBeenCalled();
+    expect(releaseLockMock).toHaveBeenCalled();
+  });
+
+  it("destroys socket immediately when pinnedHttpsFetch receives chunks exceeding maxSizeBytes", async () => {
+    const destroyMock = vi.fn();
+    const reqMock = new EventEmitter();
+    reqMock.end = vi.fn();
+
+    const httpsSpy = vi.spyOn(https, "request").mockImplementation((_url, _opts, callback) => {
+      const resMock = new EventEmitter();
+      resMock.statusCode = 200;
+      resMock.statusMessage = "OK";
+      resMock.headers = { "content-type": "text/html" };
+      resMock.destroy = destroyMock;
+
+      resMock[Symbol.asyncIterator] = async function* () {
+        yield Buffer.from("small chunk 1 - 18B");
+        yield Buffer.from("massive chunk 2 that blows past the max size threshold");
+      };
+
+      setTimeout(() => callback(resMock), 0);
+      return reqMock;
+    });
+
+    try {
+      const res = await pinnedHttpsFetch("https://example.com/stream-test", {
+        pinnedIp: "93.184.216.34",
+        maxSizeBytes: 20, // 20 bytes threshold
+      });
+
+      await expect(res.text()).rejects.toThrow(/exceeded maximum size limit/i);
+      expect(destroyMock).toHaveBeenCalledTimes(1);
+    } finally {
+      httpsSpy.mockRestore();
+    }
   });
 });

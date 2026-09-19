@@ -88,6 +88,22 @@ describe("/api/ai/polish-recipe authentication & rate limiting", () => {
       expect.objectContaining({ code: "RATE_LIMIT_EXCEEDED" }),
     );
   });
+
+  it("rejects malformed JSON body with 400", async () => {
+    const res = createMockRes();
+    await polishHandler(
+      {
+        method: "POST",
+        headers: { authorization: "Bearer test-valid-token" },
+        body: "{malformed json",
+      },
+      res,
+    );
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({ error: "Invalid JSON body." }),
+    );
+  });
 });
 
 describe("/api/ai/generate-cover authentication & rate limiting", () => {
@@ -173,6 +189,22 @@ describe("/api/ai/generate-cover authentication & rate limiting", () => {
       expect(res.status).not.toHaveBeenCalledWith(429);
       expect(res.setHeader).toHaveBeenCalledWith("X-RateLimit-Limit", "unlimited");
     }
+  });
+
+  it("rejects malformed JSON body with 400", async () => {
+    const res = createMockRes();
+    await coverHandler(
+      {
+        method: "POST",
+        headers: { authorization: "Bearer test-valid-token" },
+        body: "{malformed json",
+      },
+      res,
+    );
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({ error: "Invalid JSON body." }),
+    );
   });
 });
 

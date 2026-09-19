@@ -200,7 +200,23 @@ export async function loadRecipeByShareToken(token) {
       console.error("Failed to load shared recipe by token:", error);
       return null;
     }
-    return data || null;
+    if (!data) return null;
+
+    if (
+      typeof data.artwork === "string" &&
+      data.artwork.includes("/recipe-covers/")
+    ) {
+      try {
+        const signedUrl = await getSharedCoverUrl(token);
+        if (signedUrl) {
+          data.artwork = signedUrl;
+        }
+      } catch {
+        // Fall back to original artwork
+      }
+    }
+
+    return data;
   } catch (err) {
     console.error("Failed to load shared recipe by token:", err);
     return null;

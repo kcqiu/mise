@@ -417,3 +417,62 @@ export function readLibrary() {
     };
   }
 }
+
+export function getAccountLibraryStorageKey(userId) {
+  return userId ? `${STORAGE_KEY}:user:${userId}` : STORAGE_KEY;
+}
+
+export function readAccountLibrary(userId) {
+  if (!userId || typeof window === "undefined" || !window.localStorage) {
+    return EMPTY_LIBRARY;
+  }
+  try {
+    const raw = window.localStorage.getItem(getAccountLibraryStorageKey(userId));
+    if (!raw) return EMPTY_LIBRARY;
+    const parsed = JSON.parse(raw);
+    return {
+      recipes: Array.isArray(parsed?.recipes)
+        ? parsed.recipes
+            .map((r) => {
+              try {
+                return validateRecipe(r);
+              } catch {
+                return null;
+              }
+            })
+            .filter(Boolean)
+        : [],
+      favorites: Array.isArray(parsed?.favorites) ? parsed.favorites : [],
+      progress:
+        parsed?.progress && typeof parsed.progress === "object"
+          ? parsed.progress
+          : {},
+      sharedRecipes: Array.isArray(parsed?.sharedRecipes)
+        ? parsed.sharedRecipes
+        : [],
+    };
+  } catch {
+    return EMPTY_LIBRARY;
+  }
+}
+
+export function saveAccountLibrary(userId, library) {
+  if (!userId || typeof window === "undefined" || !window.localStorage) return;
+  try {
+    const key = getAccountLibraryStorageKey(userId);
+    const toSave = {
+      recipes: Array.isArray(library?.recipes) ? library.recipes : [],
+      favorites: Array.isArray(library?.favorites) ? library.favorites : [],
+      progress:
+        library?.progress && typeof library.progress === "object"
+          ? library.progress
+          : {},
+      sharedRecipes: Array.isArray(library?.sharedRecipes)
+        ? library.sharedRecipes
+        : [],
+    };
+    window.localStorage.setItem(key, JSON.stringify(toSave));
+  } catch {
+    // Non-blocking storage quota error
+  }
+}
