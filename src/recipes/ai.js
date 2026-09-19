@@ -23,9 +23,9 @@ export function buildCoverPrompt(recipe) {
 
   const cuisine = recipe.cuisine ? `${recipe.cuisine} style` : "gourmet";
 
-  return `Professional, high-end culinary food photograph of ${recipe.title || "a homemade dish"}, ${cuisine}. ${
+  return `Vertical portrait composition, professional high-end culinary food photograph of ${recipe.title || "a homemade dish"}, ${cuisine}. ${
     recipe.description ? recipe.description + "." : ""
-  } Featuring: ${keyIngredients || "fresh seasonal ingredients"}. Beautifully plated on rustic ceramic, natural soft warm lighting, steam gently rising, symmetrical composition, shallow depth of field, editorial food magazine style, photorealistic, 8k resolution.`;
+  } Featuring: ${keyIngredients || "fresh seasonal ingredients"}. Beautifully plated on artisanal matte ceramic tableware with natural garnish, shot on 50mm f/2.8 lens, angled 45-degree three-quarter perspective, main dish in upper two-thirds with soft ambient tabletop depth below. Soft directional morning window side lighting, gentle rising steam, shallow depth of field with rich organic textures, editorial food magazine style, photorealistic, 8k resolution.`;
 }
 
 /**
