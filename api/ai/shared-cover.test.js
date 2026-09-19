@@ -49,11 +49,13 @@ describe("/api/ai/shared-cover strict authorization invariant", () => {
     vi.clearAllMocks();
   });
 
-  it("rejects non-GET methods with 405", async () => {
+  it("rejects unsupported methods like PUT with 405", async () => {
     const res = createMockRes();
-    await handler({ method: "POST", headers: {}, query: {} }, res);
+    await handler({ method: "PUT", headers: {}, query: {} }, res);
     expect(res.statusCode).toBe(405);
     expect(res.body.error).toContain("Method not allowed");
+    expect(res.headers["Allow"]).toBe("POST, GET");
+    expect(res.headers["Cache-Control"]).toContain("no-store");
   });
 
   it("rejects missing or malformed share token with 400", async () => {
@@ -85,7 +87,7 @@ describe("/api/ai/shared-cover strict authorization invariant", () => {
   it("returns 404 if recipe has no private cover artwork", async () => {
     const shareRecord = {
       recipe_id: validRecipeId,
-      created_by: validOwnerId,
+      owner_id: validOwnerId,
       revoked_at: null,
       expires_at: null,
     };
@@ -95,6 +97,52 @@ describe("/api/ai/shared-cover strict authorization invariant", () => {
       payload: {
         title: "Apple Pie",
         artwork: "apple-pie", // Preset atlas artwork, not /recipe-covers/
+      },
+    };
+
+    mockServiceClient.from = vi.fn((table) => {
+      if (table === "recipe_shares") {
+        return {
+          select: (fields) => {
+            expect(fields).toContain("owner_id");
+            return {
+              eq: () => ({
+                maybeSingle: vi.fn().mockResolvedValue({ data: shareRecord, error: null }),
+              }),
+            };
+          },
+        };
+      }
+      if (table === "recipes") {
+        return {
+          select: () => ({
+            eq: () => ({
+              maybeSingle: vi.fn().mockResolvedValue({ data: recipeRecord, error: null }),
+            }),
+          }),
+        };
+      }
+    });
+
+    const res = createMockRes();
+    await handler({ method: "GET", headers: {}, query: { token: validToken } }, res);
+    expect(res.statusCode).toBe(404);
+    expect(res.body.code).toBe("NO_COVER");
+  });
+
+  it("rejects with 403 OWNER_MISMATCH if share record owner does not match recipe owner", async () => {
+    const shareRecord = {
+      recipe_id: validRecipeId,
+      owner_id: "different-owner-uuid-4444",
+      revoked_at: null,
+      expires_at: null,
+    };
+    const recipeRecord = {
+      id: validRecipeId,
+      owner_id: validOwnerId,
+      payload: {
+        title: "Apple Pie",
+        artwork: `https://supabase.co/storage/v1/object/public/recipe-covers/${validOwnerId}/${validRecipeId}-123.webp`,
       },
     };
 
@@ -121,15 +169,16 @@ describe("/api/ai/shared-cover strict authorization invariant", () => {
 
     const res = createMockRes();
     await handler({ method: "GET", headers: {}, query: { token: validToken } }, res);
-    expect(res.statusCode).toBe(404);
-    expect(res.body.code).toBe("NO_COVER");
+    expect(res.statusCode).toBe(403);
+    expect(res.body.code).toBe("OWNER_MISMATCH");
+    expect(res.body.error).toBe("Share record owner mismatch.");
   });
 
   it("rejects with 403 OWNER_MISMATCH if storage path folder does not equal recipe owner", async () => {
     const victimOwnerId = "22222222-2222-2222-2222-222222222222";
     const shareRecord = {
       recipe_id: validRecipeId,
-      created_by: validOwnerId,
+      owner_id: validOwnerId,
       revoked_at: null,
       expires_at: null,
     };
@@ -168,13 +217,14 @@ describe("/api/ai/shared-cover strict authorization invariant", () => {
     await handler({ method: "GET", headers: {}, query: { token: validToken } }, res);
     expect(res.statusCode).toBe(403);
     expect(res.body.code).toBe("OWNER_MISMATCH");
+    expect(res.body.error).toBe("Storage object owner mismatch.");
   });
 
   it("rejects with 403 RECIPE_MISMATCH if storage path basename does not belong to recipe ID", async () => {
     const victimRecipeId = "secret-recipe-999";
     const shareRecord = {
       recipe_id: validRecipeId,
-      created_by: validOwnerId,
+      owner_id: validOwnerId,
       revoked_at: null,
       expires_at: null,
     };
@@ -218,7 +268,7 @@ describe("/api/ai/shared-cover strict authorization invariant", () => {
   it("rejects path traversal or malformed path structure with 400", async () => {
     const shareRecord = {
       recipe_id: validRecipeId,
-      created_by: validOwnerId,
+      owner_id: validOwnerId,
       revoked_at: null,
       expires_at: null,
     };
@@ -262,7 +312,7 @@ describe("/api/ai/shared-cover strict authorization invariant", () => {
     const timestamp = 1710000000000;
     const shareRecord = {
       recipe_id: validRecipeId,
-      created_by: validOwnerId,
+      owner_id: validOwnerId,
       revoked_at: null,
       expires_at: null,
     };
@@ -314,5 +364,68 @@ describe("/api/ai/shared-cover strict authorization invariant", () => {
       `${validOwnerId}/${validRecipeId}-${timestamp}.webp`,
       1800,
     );
+  });
+
+  it("successfully handles POST request with token in JSON body", async () => {
+    const timestamp = 1710000000000;
+    const shareRecord = {
+      recipe_id: validRecipeId,
+      owner_id: validOwnerId,
+      revoked_at: null,
+      expires_at: null,
+    };
+    const recipeRecord = {
+      id: validRecipeId,
+      owner_id: validOwnerId,
+      payload: {
+        title: "Apple Pie",
+        artwork: `/recipe-covers/${validOwnerId}/${validRecipeId}-${timestamp}.webp`,
+      },
+    };
+
+    const createSignedUrlMock = vi.fn().mockResolvedValue({
+      data: { signedUrl: "https://supabase.co/signed/post-valid-cover.webp" },
+      error: null,
+    });
+
+    mockServiceClient.from = vi.fn((table) => {
+      if (table === "recipe_shares") {
+        return {
+          select: () => ({
+            eq: () => ({
+              maybeSingle: vi.fn().mockResolvedValue({ data: shareRecord, error: null }),
+            }),
+          }),
+        };
+      }
+      if (table === "recipes") {
+        return {
+          select: () => ({
+            eq: () => ({
+              maybeSingle: vi.fn().mockResolvedValue({ data: recipeRecord, error: null }),
+            }),
+          }),
+        };
+      }
+    });
+
+    mockServiceClient.storage.from = vi.fn().mockReturnValue({
+      createSignedUrl: createSignedUrlMock,
+    });
+
+    const res = createMockRes();
+    await handler(
+      {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: { token: validToken },
+      },
+      res,
+    );
+
+    expect(res.statusCode).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(res.body.signedUrl).toBe("https://supabase.co/signed/post-valid-cover.webp");
+    expect(res.headers["Cache-Control"]).toContain("no-store");
   });
 });

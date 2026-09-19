@@ -169,7 +169,7 @@ async function fetchSocialData(url) {
     } catch {
       // Continue to body fetch
     }
-  } else if (host === "tiktok.com") {
+  } else if (host === "tiktok.com" || host === "vt.tiktok.com" || host === "vm.tiktok.com") {
     if (!TIKTOK_REGEX.test(url)) {
       throw new Error("Invalid TikTok video URL format.");
     }
@@ -310,7 +310,7 @@ export default async function handler(req, res) {
       }
       const socialHost = socialUrl.hostname.replace(/^www\./, "").toLowerCase();
       if (socialUrl.protocol !== "https:" || socialUrl.username || socialUrl.password || socialUrl.port ||
-          !["instagram.com", "tiktok.com", "youtube.com", "youtu.be"].includes(socialHost)) {
+          !["instagram.com", "tiktok.com", "vt.tiktok.com", "vm.tiktok.com", "youtube.com", "youtu.be"].includes(socialHost)) {
         return res.status(400).json({ error: "Please use an HTTPS Instagram, TikTok, or YouTube link." });
       }
 
@@ -318,7 +318,7 @@ export default async function handler(req, res) {
         if (!YOUTUBE_REGEX.test(url.trim())) {
           return res.status(400).json({ error: "Please use a standard YouTube video, Shorts, or youtu.be link." });
         }
-      } else if (socialHost === "tiktok.com") {
+      } else if (socialHost === "tiktok.com" || socialHost === "vt.tiktok.com" || socialHost === "vm.tiktok.com") {
         if (!TIKTOK_REGEX.test(url.trim())) {
           return res.status(400).json({ error: "Please use a standard TikTok video or share link." });
         }

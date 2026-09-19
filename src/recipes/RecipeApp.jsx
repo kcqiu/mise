@@ -16,6 +16,8 @@ import {
 import {
   cloudEnabled,
   deleteAccountRecipe,
+  deleteRecipeCover,
+  toCanonicalCoverPath,
   extractAuthErrorFromUrl,
   getSession,
   importAccountLibrary,
@@ -838,6 +840,9 @@ export default function RecipeApp() {
     }
   };
   const save = async (recipe) => {
+    const existingRecipe = personalRecipes.find((item) => item.id === recipe.id);
+    const previousArtwork = existingRecipe?.artwork;
+
     for (const key of [
       "tags",
       "keywords",
@@ -868,6 +873,20 @@ export default function RecipeApp() {
     if (account.session) {
       try {
         await saveAccountRecipe(account.session.user.id, recipe);
+
+        // Recipe is now safely pointing at the new object. Best-effort cleanup of superseded cover object.
+        const prevCanonical = toCanonicalCoverPath(previousArtwork);
+        const nextCanonical = toCanonicalCoverPath(recipe.artwork);
+        if (
+          prevCanonical &&
+          prevCanonical !== nextCanonical &&
+          prevCanonical.includes("/recipe-covers/")
+        ) {
+          deleteRecipeCover(previousArtwork).catch((error) => {
+            console.warn("Old recipe cover cleanup failed", error);
+          });
+        }
+
         if (wasForkedFavorite) {
           await setAccountFavorite(account.session.user.id, forkedFromId, false).catch(() => {});
           await setAccountFavorite(account.session.user.id, recipe.id, true).catch(() => {});
@@ -911,6 +930,7 @@ export default function RecipeApp() {
     return error;
   };
   const remove = async (id) => {
+    const recipeToDelete = personalRecipes.find((recipe) => recipe.id === id);
     const progress = { ...activeLibrary.progress };
     delete progress[id];
     const next = {
@@ -922,6 +942,17 @@ export default function RecipeApp() {
     if (account.session) {
       try {
         await deleteAccountRecipe(account.session.user.id, id);
+
+        // Best-effort cleanup of deleted recipe cover object
+        if (
+          recipeToDelete?.artwork &&
+          recipeToDelete.artwork.includes("/recipe-covers/")
+        ) {
+          deleteRecipeCover(recipeToDelete.artwork).catch((error) => {
+            console.warn("Deleted recipe cover cleanup failed", error);
+          });
+        }
+
         setAccount((current) => ({ ...current, library: next }));
         setEditor(null);
         window.location.hash = "/";

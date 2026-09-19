@@ -574,7 +574,13 @@ describe("Groceries Cloud Synchronization Client", () => {
       try {
         const recipe = await cloud.loadRecipeByShareToken("tok_test_123");
         expect(recipe.artwork).toBe("https://supabase.co/storage/v1/object/sign/fresh-signed-cover.webp");
-        expect(globalThis.fetch).toHaveBeenCalledWith("/api/ai/shared-cover?token=tok_test_123");
+        expect(globalThis.fetch).toHaveBeenCalledWith("/api/ai/shared-cover", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ token: "tok_test_123" }),
+        });
       } finally {
         globalThis.fetch = originalFetch;
       }
@@ -698,81 +704,221 @@ describe("Groceries Cloud Synchronization Client", () => {
     });
   });
 
-  describe("Recipe cover storage (Issue 7)", () => {
-    it("uploads cover to private bucket and returns signed URL", async () => {
+  describe("Recipe cover storage & canonical path architecture", () => {
+    it("toCanonicalCoverPath extracts clean storage path and removes query parameters", () => {
+      expect(
+        cloud.toCanonicalCoverPath(
+          "https://supabase.co/storage/v1/object/sign/recipe-covers/user-1/recipe-1-12345.webp?token=sensitive-signature",
+        ),
+      ).toBe("/recipe-covers/user-1/recipe-1-12345.webp");
+
+      expect(
+        cloud.toCanonicalCoverPath(
+          "https://supabase.co/storage/v1/object/public/recipe-covers/user-1/recipe-1-12345.webp",
+        ),
+      ).toBe("/recipe-covers/user-1/recipe-1-12345.webp");
+
+      expect(
+        cloud.toCanonicalCoverPath("/recipe-covers/user-1/recipe-1-12345.webp"),
+      ).toBe("/recipe-covers/user-1/recipe-1-12345.webp");
+
+      expect(cloud.toCanonicalCoverPath("apple-pie")).toBe("apple-pie");
+      expect(cloud.toCanonicalCoverPath("https://images.unsplash.com/photo.jpg")).toBe(
+        "https://images.unsplash.com/photo.jpg",
+      );
+    });
+
+    it("uploadRecipeCover uploads to storage and returns canonical storage path", async () => {
       const mockUpload = vi.fn().mockResolvedValue({
         data: { path: "user-1/recipe-1-12345.webp" },
         error: null,
       });
-      const mockCreateSignedUrl = vi.fn().mockResolvedValue({
-        data: {
-          signedUrl:
-            "https://supabase.co/storage/v1/object/sign/recipe-covers/user-1/recipe-1-12345.webp?token=xyz",
-        },
-        error: null,
-      });
-      const mockGetPublicUrl = vi.fn();
 
       cloud.setSupabaseClientForTesting({
         storage: {
           from: vi.fn(() => ({
             upload: mockUpload,
-            createSignedUrl: mockCreateSignedUrl,
-            getPublicUrl: mockGetPublicUrl,
           })),
         },
       });
 
       const blob = new Blob(["fake-image-bytes"], { type: "image/webp" });
-      const url = await cloud.uploadRecipeCover(blob, "recipe-1", "user-1");
+      const path = await cloud.uploadRecipeCover(blob, "recipe-1", "user-1");
 
       expect(mockUpload).toHaveBeenCalledWith(
         expect.stringMatching(/^user-1\/recipe-1-\d+\.webp$/),
         blob,
         expect.objectContaining({ upsert: true, contentType: "image/webp" }),
       );
-      expect(mockCreateSignedUrl).toHaveBeenCalledWith(
-        "user-1/recipe-1-12345.webp",
-        31536000,
-      );
-      expect(url).toBe(
-        "https://supabase.co/storage/v1/object/sign/recipe-covers/user-1/recipe-1-12345.webp?token=xyz",
-      );
-      expect(mockGetPublicUrl).not.toHaveBeenCalled();
+      expect(path).toBe("/recipe-covers/user-1/recipe-1-12345.webp");
     });
 
-    it("falls back to getPublicUrl if createSignedUrl fails", async () => {
-      const mockUpload = vi.fn().mockResolvedValue({
-        data: { path: "user-1/recipe-1-12345.webp" },
-        error: null,
+    it("saveAccountRecipe sanitizes artwork to canonical path before upserting", async () => {
+      const mockUpsert = vi.fn().mockResolvedValue({ error: null });
+      cloud.setSupabaseClientForTesting({
+        from: vi.fn(() => ({
+          upsert: mockUpsert,
+        })),
       });
-      const mockCreateSignedUrl = vi.fn().mockResolvedValue({
-        data: null,
-        error: new Error("Signed URL not supported"),
+
+      await cloud.saveAccountRecipe("user-1", {
+        id: "recipe-1",
+        title: "Pie",
+        artwork:
+          "https://supabase.co/storage/v1/object/sign/recipe-covers/user-1/recipe-1-123.webp?token=xyz",
       });
-      const mockGetPublicUrl = vi.fn().mockReturnValue({
-        data: {
-          publicUrl:
-            "https://supabase.co/storage/v1/object/public/recipe-covers/user-1/recipe-1-12345.webp",
+
+      expect(mockUpsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: "recipe-1",
+          owner_id: "user-1",
+          payload: expect.objectContaining({
+            artwork: "/recipe-covers/user-1/recipe-1-123.webp",
+          }),
+        }),
+        { onConflict: "id" },
+      );
+    });
+
+    it("importAccountLibrary sanitizes artwork to canonical path for all recipes", async () => {
+      const mockUpsert = vi.fn().mockResolvedValue({ error: null });
+      cloud.setSupabaseClientForTesting({
+        from: vi.fn(() => ({
+          upsert: mockUpsert,
+        })),
+      });
+
+      await cloud.importAccountLibrary("user-1", {
+        recipes: [
+          {
+            id: "recipe-1",
+            title: "Pie",
+            artwork:
+              "https://supabase.co/storage/v1/object/sign/recipe-covers/user-1/recipe-1-123.webp?token=xyz",
+          },
+        ],
+        favorites: [],
+        progress: {},
+      });
+
+      expect(mockUpsert).toHaveBeenCalledWith(
+        expect.arrayContaining([
+          expect.objectContaining({
+            id: "recipe-1",
+            owner_id: "user-1",
+            payload: expect.objectContaining({
+              artwork: "/recipe-covers/user-1/recipe-1-123.webp",
+            }),
+          }),
+        ]),
+        { onConflict: "id" },
+      );
+    });
+
+    it("loadAccountLibrary batch-resolves short-lived signed URLs for owned recipes with private covers", async () => {
+      const mockRecipes = [
+        {
+          id: "recipe-1",
+          payload: {
+            title: "Pie",
+            artwork: "/recipe-covers/user-1/recipe-1-123.webp",
+          },
         },
+      ];
+      const mockCreateSignedUrls = vi.fn().mockResolvedValue({
+        data: [
+          {
+            path: "user-1/recipe-1-123.webp",
+            signedUrl: "https://supabase.co/storage/v1/object/sign/fresh-1hr-signed.webp",
+          },
+        ],
+        error: null,
       });
 
       cloud.setSupabaseClientForTesting({
+        from: vi.fn((table) => {
+          if (table === "recipes") {
+            return {
+              select: () => ({
+                eq: () => ({
+                  eq: () => ({
+                    order: vi.fn().mockResolvedValue({ data: mockRecipes, error: null }),
+                  }),
+                }),
+              }),
+            };
+          }
+          if (table === "favorites" || table === "recipe_progress") {
+            return {
+              select: () => ({
+                eq: vi.fn().mockResolvedValue({ data: [], error: null }),
+              }),
+            };
+          }
+        }),
         storage: {
           from: vi.fn(() => ({
-            upload: mockUpload,
-            createSignedUrl: mockCreateSignedUrl,
-            getPublicUrl: mockGetPublicUrl,
+            createSignedUrls: mockCreateSignedUrls,
           })),
         },
       });
 
-      const blob = new Blob(["fake-image-bytes"], { type: "image/webp" });
-      const url = await cloud.uploadRecipeCover(blob, "recipe-1", "user-1");
-
-      expect(url).toBe(
-        "https://supabase.co/storage/v1/object/public/recipe-covers/user-1/recipe-1-12345.webp",
+      const library = await cloud.loadAccountLibrary("user-1");
+      expect(library.recipes[0].artwork).toBe(
+        "https://supabase.co/storage/v1/object/sign/fresh-1hr-signed.webp",
       );
+      expect(mockCreateSignedUrls).toHaveBeenCalledWith(["user-1/recipe-1-123.webp"], 3600);
+    });
+
+    it("loadRecipeById resolves short-lived signed URL for owner", async () => {
+      const mockRecipe = {
+        id: "recipe-1",
+        payload: {
+          title: "Pie",
+          artwork: "/recipe-covers/user-1/recipe-1-123.webp",
+        },
+      };
+      const mockCreateSignedUrl = vi.fn().mockResolvedValue({
+        data: { signedUrl: "https://supabase.co/storage/v1/object/sign/single-1hr.webp" },
+        error: null,
+      });
+
+      cloud.setSupabaseClientForTesting({
+        from: vi.fn(() => ({
+          select: () => ({
+            eq: () => ({
+              maybeSingle: vi.fn().mockResolvedValue({ data: mockRecipe, error: null }),
+            }),
+          }),
+        })),
+        storage: {
+          from: vi.fn(() => ({
+            createSignedUrl: mockCreateSignedUrl,
+          })),
+        },
+      });
+
+      const recipe = await cloud.loadRecipeById("recipe-1");
+      expect(recipe.artwork).toBe("https://supabase.co/storage/v1/object/sign/single-1hr.webp");
+      expect(mockCreateSignedUrl).toHaveBeenCalledWith("user-1/recipe-1-123.webp", 3600);
+    });
+
+    it("resolveRecipeCover resolves signed URL on demand", async () => {
+      const mockCreateSignedUrl = vi.fn().mockResolvedValue({
+        data: { signedUrl: "https://supabase.co/signed/on-demand.webp" },
+        error: null,
+      });
+      cloud.setSupabaseClientForTesting({
+        storage: {
+          from: vi.fn(() => ({
+            createSignedUrl: mockCreateSignedUrl,
+          })),
+        },
+      });
+
+      const resolved = await cloud.resolveRecipeCover("/recipe-covers/user-1/cover.webp");
+      expect(resolved).toBe("https://supabase.co/signed/on-demand.webp");
+      expect(mockCreateSignedUrl).toHaveBeenCalledWith("user-1/cover.webp", 3600);
     });
 
     it("deleteRecipeCover extracts path cleanly and removes object even with signed query params", async () => {
@@ -793,4 +939,5 @@ describe("Groceries Cloud Synchronization Client", () => {
     });
   });
 });
+
 

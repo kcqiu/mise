@@ -14,11 +14,19 @@ export default async function handler(req, res) {
     req.headers["x-vercel-id"] ||
     randomUUID();
 
-  if (req.method !== "GET") {
-    res.setHeader("Allow", "GET");
+  // Enforce strict no-store caching headers to protect capability token responses
+  res.setHeader(
+    "Cache-Control",
+    "no-store, no-cache, must-revalidate, proxy-revalidate",
+  );
+  res.setHeader("Pragma", "no-cache");
+  res.setHeader("Expires", "0");
+
+  if (req.method !== "POST" && req.method !== "GET") {
+    res.setHeader("Allow", "POST, GET");
     return res
       .status(405)
-      .json({ error: "Method not allowed. Use GET.", requestId });
+      .json({ error: "Method not allowed. Use POST or GET.", requestId });
   }
 
   const clientIp = getClientIp(req);
@@ -35,8 +43,26 @@ export default async function handler(req, res) {
     });
   }
 
-  const token = req.query?.token;
-  if (!token || typeof token !== "string" || !TOKEN_REGEX.test(token.trim())) {
+  let rawToken;
+  if (req.method === "POST") {
+    let body = req.body;
+    if (typeof body === "string") {
+      try {
+        body = JSON.parse(body || "{}");
+      } catch {
+        body = {};
+      }
+    }
+    rawToken = body?.token;
+  } else {
+    rawToken = req.query?.token;
+  }
+
+  if (
+    !rawToken ||
+    typeof rawToken !== "string" ||
+    !TOKEN_REGEX.test(rawToken.trim())
+  ) {
     return res.status(400).json({
       error: "Invalid or missing share token.",
       code: "INVALID_SHARE_TOKEN",
@@ -44,7 +70,7 @@ export default async function handler(req, res) {
     });
   }
 
-  const cleanToken = token.trim();
+  const cleanToken = rawToken.trim();
   const serviceClient = getServiceRoleSupabaseClient();
   if (!serviceClient) {
     return res.status(503).json({
@@ -57,7 +83,7 @@ export default async function handler(req, res) {
     // 1. Fetch active share record
     const { data: shareData, error: shareErr } = await serviceClient
       .from("recipe_shares")
-      .select("recipe_id, created_by, revoked_at, expires_at")
+      .select("recipe_id, owner_id, revoked_at, expires_at")
       .eq("share_token", cleanToken)
       .maybeSingle();
 
@@ -67,6 +93,12 @@ export default async function handler(req, res) {
       shareData.revoked_at ||
       (shareData.expires_at && new Date(shareData.expires_at) <= new Date())
     ) {
+      if (shareErr) {
+        console.error(
+          `[Shared Cover Error][${requestId}] Failed to query share record:`,
+          shareErr,
+        );
+      }
       return res.status(404).json({
         error: "Shared recipe not found or access link has been revoked.",
         code: "RECIPE_NOT_FOUND",
@@ -82,6 +114,12 @@ export default async function handler(req, res) {
       .maybeSingle();
 
     if (recipeErr || !recipeData || !recipeData.payload) {
+      if (recipeErr) {
+        console.error(
+          `[Shared Cover Error][${requestId}] Failed to query recipe:`,
+          recipeErr,
+        );
+      }
       return res.status(404).json({
         error: "Shared recipe not found.",
         code: "RECIPE_NOT_FOUND",
@@ -127,8 +165,17 @@ export default async function handler(req, res) {
     const expectedOwnerId = recipeData.owner_id;
     const expectedRecipeId = recipeData.id;
 
+    // Invariant: Share record owner must match recipe owner
+    if (shareData.owner_id !== expectedOwnerId) {
+      return res.status(403).json({
+        error: "Share record owner mismatch.",
+        code: "OWNER_MISMATCH",
+        requestId,
+      });
+    }
+
     // Invariant: Storage folder must strictly match recipe owner ID
-    if (folder !== expectedOwnerId || (shareData.created_by && folder !== shareData.created_by)) {
+    if (folder !== expectedOwnerId) {
       return res.status(403).json({
         error: "Storage object owner mismatch.",
         code: "OWNER_MISMATCH",

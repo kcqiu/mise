@@ -101,3 +101,35 @@ where schemaname = 'public'
 select
   (select relrowsecurity from pg_class where oid = 'private.ai_rate_limits'::regclass) as ai_rate_limits_rls;
 
+-- 7. Verify revoke_recipe_share RPC is SECURITY DEFINER with execution granted to authenticated
+select
+  p.proname as function_name,
+  p.prosecdef as is_security_definer,
+  pg_catalog.has_function_privilege('authenticated', p.oid, 'EXECUTE') as auth_can_execute,
+  pg_catalog.has_function_privilege('anon', p.oid, 'EXECUTE') as anon_can_execute
+from pg_proc p
+join pg_namespace n on n.oid = p.pronamespace
+where n.nspname = 'public'
+  and p.proname = 'revoke_recipe_share';
+
+-- 8. Verify consume_ai_quota atomic functionality
+select private.consume_ai_quota('test:verify:atomic_check', 5, 60) as quota_result;
+delete from private.ai_rate_limits where key = 'test:verify:atomic_check';
+
+-- 9. Verify validate_recipe_payload_trigger definition in pg_proc
+select
+  p.proname as trigger_function,
+  p.prosecdef as is_security_definer,
+  pg_catalog.has_function_privilege('service_role', p.oid, 'EXECUTE') as service_role_can_execute
+from pg_proc p
+join pg_namespace n on n.oid = p.pronamespace
+where n.nspname = 'public'
+  and p.proname = 'validate_recipe_payload_trigger';
+
+-- 10. Verify performance index cleanup (migration 0010)
+select
+  (select count(*) from pg_indexes where tablename = 'grocery_mutation_log' and indexname = 'grocery_mutation_log_user_id_idx') as fk_index_exists,
+  (select count(*) from pg_indexes where tablename = 'recipe_shares' and indexname = 'recipe_shares_token_idx') as duplicate_token_index_exists,
+  (select count(*) from pg_indexes where tablename = 'recipe_shares' and indexname = 'recipe_shares_share_token_key') as unique_token_index_exists;
+
+

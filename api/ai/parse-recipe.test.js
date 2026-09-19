@@ -201,4 +201,32 @@ describe("parse-recipe handler - SSRF protection for mode: 'url'", () => {
     expect(res.status).toBe(400);
     expect(res.body.error).toMatch(/standard TikTok video/i);
   });
+
+  it("rejects non-canonical TikTok short URL with HTTP 400", async () => {
+    const res = await invoke({
+      mode: "social",
+      url: "https://vt.tiktok.com/",
+    });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatch(/standard TikTok video/i);
+  });
+
+  it("accepts valid vt.tiktok.com and vm.tiktok.com short URLs", async () => {
+    generateContent.mockResolvedValue({
+      text: JSON.stringify({
+        title: "TikTok Pasta",
+        category: "Dinner",
+        ingredients: [{ name: "Pasta", quantity: 200, unit: "g" }],
+        steps: [{ instruction: "Boil pasta." }],
+      }),
+    });
+
+    const res = await invoke({
+      mode: "social",
+      url: "https://vt.tiktok.com/ZS12345abc/",
+      caption: "Quick garlic pasta recipe",
+    });
+    expect(res.status).toBe(200);
+    expect(res.body.recipe.title).toBe("TikTok Pasta");
+  });
 });

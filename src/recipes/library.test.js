@@ -123,6 +123,20 @@ describe("recipe search and content", () => {
       embedUrl:
         "https://www.tiktok.com/player/v1/7276566593939787014?controls=1&description=0&music_info=0&loop=0",
     });
+    expect(
+      getRecipeVideo("https://vt.tiktok.com/ZS12345/"),
+    ).toMatchObject({
+      provider: "TikTok",
+      url: "https://vt.tiktok.com/ZS12345/",
+      embedUrl: "",
+    });
+    expect(
+      getRecipeVideo("https://vm.tiktok.com/ZM12345/"),
+    ).toMatchObject({
+      provider: "TikTok",
+      url: "https://vm.tiktok.com/ZM12345/",
+      embedUrl: "",
+    });
     expect(getRecipeVideo("https://example.com/video")).toBeNull();
   });
 

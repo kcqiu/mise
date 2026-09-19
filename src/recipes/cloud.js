@@ -99,6 +99,45 @@ export async function signOut() {
   if (error) throw error;
 }
 
+export function toCanonicalCoverPath(artwork) {
+  if (!artwork || typeof artwork !== "string" || !artwork.includes("/recipe-covers/")) {
+    return artwork;
+  }
+  const parts = artwork.split("/recipe-covers/");
+  if (parts.length !== 2) return artwork;
+  const cleanPath = decodeURIComponent(parts[1].split("?")[0].trim());
+  return `/recipe-covers/${cleanPath}`;
+}
+
+export async function resolveRecipeCover(artwork, expiresIn = 3600) {
+  if (
+    !artwork ||
+    typeof artwork !== "string" ||
+    !artwork.includes("/recipe-covers/")
+  ) {
+    return artwork;
+  }
+  if (artwork.startsWith("http://") || artwork.startsWith("https://")) {
+    return artwork;
+  }
+  const client = getClient();
+  if (!client) return artwork;
+  const parts = artwork.split("/recipe-covers/");
+  if (parts.length !== 2) return artwork;
+  const cleanPath = decodeURIComponent(parts[1].split("?")[0].trim());
+  try {
+    const { data, error } = await client.storage
+      .from("recipe-covers")
+      .createSignedUrl(cleanPath, expiresIn);
+    if (!error && data?.signedUrl) {
+      return data.signedUrl;
+    }
+  } catch {
+    // Non-fatal
+  }
+  return artwork;
+}
+
 export async function loadAccountLibrary(userId) {
   const client = getClient();
   if (!client) return { recipes: [], favorites: [], sharedRecipes: [], progress: {} };
@@ -142,8 +181,44 @@ export async function loadAccountLibrary(userId) {
     }
   }
 
+  const recipes = recipesResult.data.map(({ id, payload }) => ({ ...payload, id }));
+  const privateCoverRecipes = recipes.filter(
+    (r) => typeof r.artwork === "string" && r.artwork.includes("/recipe-covers/"),
+  );
+
+  if (privateCoverRecipes.length > 0) {
+    try {
+      const paths = privateCoverRecipes.map((r) => {
+        const parts = r.artwork.split("/recipe-covers/");
+        return decodeURIComponent(parts[1].split("?")[0].trim());
+      });
+
+      const { data: signedData, error: signError } = await client.storage
+        .from("recipe-covers")
+        .createSignedUrls(paths, 3600);
+
+      if (!signError && Array.isArray(signedData)) {
+        const urlMap = new Map();
+        for (const item of signedData) {
+          if (item?.signedUrl && item?.path) {
+            urlMap.set(item.path, item.signedUrl);
+          }
+        }
+        for (const r of privateCoverRecipes) {
+          const parts = r.artwork.split("/recipe-covers/");
+          const cleanPath = decodeURIComponent(parts[1].split("?")[0].trim());
+          if (urlMap.has(cleanPath)) {
+            r.artwork = urlMap.get(cleanPath);
+          }
+        }
+      }
+    } catch {
+      // Gracefully continue with available local data if signing fails
+    }
+  }
+
   return {
-    recipes: recipesResult.data.map(({ id, payload }) => ({ ...payload, id })),
+    recipes,
     sharedRecipes,
     favorites: favoriteIds,
     progress: Object.fromEntries(
@@ -168,7 +243,29 @@ export async function loadRecipeById(recipeId) {
     return null;
   }
   if (!result.data || !result.data.payload) return null;
-  return { ...result.data.payload, id: result.data.id };
+  const recipe = { ...result.data.payload, id: result.data.id };
+
+  if (
+    typeof recipe.artwork === "string" &&
+    recipe.artwork.includes("/recipe-covers/")
+  ) {
+    try {
+      const parts = recipe.artwork.split("/recipe-covers/");
+      if (parts.length === 2) {
+        const cleanPath = decodeURIComponent(parts[1].split("?")[0].trim());
+        const { data: signedData, error: signError } = await client.storage
+          .from("recipe-covers")
+          .createSignedUrl(cleanPath, 3600);
+        if (!signError && signedData?.signedUrl) {
+          recipe.artwork = signedData.signedUrl;
+        }
+      }
+    } catch {
+      // Fall back to original artwork string
+    }
+  }
+
+  return recipe;
 }
 
 export async function getOrCreateRecipeShare(recipeId) {
@@ -244,12 +341,16 @@ export async function revokeRecipeShare(recipeId) {
 export async function saveAccountRecipe(userId, recipe) {
   const client = getClient();
   if (!client) return;
+  const payload = {
+    ...recipe,
+    artwork: toCanonicalCoverPath(recipe.artwork),
+  };
   const result = await client.from("recipes").upsert(
     {
       id: recipe.id,
       owner_id: userId,
       is_system: false,
-      payload: recipe,
+      payload,
     },
     { onConflict: "id" },
   );
@@ -283,9 +384,13 @@ export async function favoriteSharedRecipe(token) {
 export async function getSharedCoverUrl(token) {
   if (!token) return null;
   try {
-    const res = await fetch(
-      `/api/ai/shared-cover?token=${encodeURIComponent(token)}`,
-    );
+    const res = await fetch("/api/ai/shared-cover", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ token }),
+    });
     if (res.ok) {
       const data = await res.json();
       return data.signedUrl || null;
@@ -352,7 +457,10 @@ export async function importAccountLibrary(userId, library) {
         id: recipe.id,
         owner_id: userId,
         is_system: false,
-        payload: recipe,
+        payload: {
+          ...recipe,
+          artwork: toCanonicalCoverPath(recipe.artwork),
+        },
       })),
       { onConflict: "id" },
     );
@@ -402,23 +510,7 @@ export async function uploadRecipeCover(fileOrBlob, recipeId, userId) {
     });
   if (error) throw error;
 
-  // Private bucket: generate 1-year signed URL for owner and share recipients
-  try {
-    const { data: signedData, error: signError } = await client.storage
-      .from("recipe-covers")
-      .createSignedUrl(data.path, 31536000); // 1 year in seconds
-
-    if (signedData?.signedUrl && !signError) {
-      return signedData.signedUrl;
-    }
-  } catch {
-    // Fallback if createSignedUrl fails
-  }
-
-  const { data: publicData } = client.storage
-    .from("recipe-covers")
-    .getPublicUrl(data.path);
-  return publicData?.publicUrl || null;
+  return `/recipe-covers/${data.path}`;
 }
 
 export async function deleteRecipeCover(coverUrl) {

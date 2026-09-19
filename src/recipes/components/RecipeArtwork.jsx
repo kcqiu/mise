@@ -1,24 +1,42 @@
 import { useEffect, useState } from "react";
 import { Sprout } from "lucide-react";
 import { ARTWORKS, RECIPE_IMAGES } from "../library";
+import { resolveRecipeCover } from "../cloud";
 import { cn } from "@/lib/utils";
 
 export default function RecipeArtwork({ artwork, title, className = "" }) {
   const [hasError, setHasError] = useState(false);
-  const index = ARTWORKS.indexOf(artwork);
-  const isCustomImage = Boolean(
-    artwork &&
-      !hasError &&
-      (artwork.startsWith("http://") ||
-        artwork.startsWith("https://") ||
-        artwork.startsWith("data:image/") ||
-        artwork.startsWith("/")),
-  );
-  const image = RECIPE_IMAGES[artwork] || (isCustomImage ? artwork : null);
+  const [resolvedCover, setResolvedCover] = useState(null);
 
   useEffect(() => {
     setHasError(false);
+    let active = true;
+    if (typeof artwork === "string" && artwork.startsWith("/recipe-covers/")) {
+      resolveRecipeCover(artwork).then((url) => {
+        if (active && url && url !== artwork) {
+          setResolvedCover(url);
+        }
+      });
+    } else {
+      setResolvedCover(null);
+    }
+    return () => {
+      active = false;
+    };
   }, [artwork]);
+
+  const effectiveArtwork = resolvedCover || artwork;
+  const index = ARTWORKS.indexOf(effectiveArtwork);
+  const isCustomImage = Boolean(
+    effectiveArtwork &&
+      !hasError &&
+      (effectiveArtwork.startsWith("http://") ||
+        effectiveArtwork.startsWith("https://") ||
+        effectiveArtwork.startsWith("data:image/") ||
+        (effectiveArtwork.startsWith("/") && !effectiveArtwork.startsWith("/recipe-covers/"))),
+  );
+  const image = RECIPE_IMAGES[effectiveArtwork] || (isCustomImage ? effectiveArtwork : null);
+
 
   return (
     <div
