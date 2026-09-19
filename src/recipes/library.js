@@ -35,6 +35,8 @@ export const RECIPE_IMAGES = {
 const VIDEO_HOSTS = new Set([
   "instagram.com",
   "tiktok.com",
+  "vt.tiktok.com",
+  "vm.tiktok.com",
   "youtube.com",
   "youtu.be",
 ]);
@@ -68,7 +70,7 @@ export function getRecipeVideo(sourceVideo) {
       };
     }
 
-    if (host === "tiktok.com") {
+    if (host === "tiktok.com" || host === "vt.tiktok.com" || host === "vm.tiktok.com") {
       const id = segments.at(-1) === "video" ? "" : segments.at(-1);
       const match = url.pathname.match(/^\/@([^/]+)\/video\/(\d+)\/?$/);
       if (!match) {

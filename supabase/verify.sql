@@ -126,4 +126,10 @@ join pg_namespace n on n.oid = p.pronamespace
 where n.nspname = 'public'
   and p.proname = 'validate_recipe_payload_trigger';
 
+-- 10. Verify performance index cleanup (migration 0010)
+select
+  (select count(*) from pg_indexes where tablename = 'grocery_mutation_log' and indexname = 'grocery_mutation_log_user_id_idx') as fk_index_exists,
+  (select count(*) from pg_indexes where tablename = 'recipe_shares' and indexname = 'recipe_shares_token_idx') as duplicate_token_index_exists,
+  (select count(*) from pg_indexes where tablename = 'recipe_shares' and indexname = 'recipe_shares_share_token_key') as unique_token_index_exists;
+
 
