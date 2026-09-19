@@ -85,7 +85,7 @@ describe("/api/ai/shared-cover strict authorization invariant", () => {
   it("returns 404 if recipe has no private cover artwork", async () => {
     const shareRecord = {
       recipe_id: validRecipeId,
-      created_by: validOwnerId,
+      owner_id: validOwnerId,
       revoked_at: null,
       expires_at: null,
     };
@@ -95,6 +95,52 @@ describe("/api/ai/shared-cover strict authorization invariant", () => {
       payload: {
         title: "Apple Pie",
         artwork: "apple-pie", // Preset atlas artwork, not /recipe-covers/
+      },
+    };
+
+    mockServiceClient.from = vi.fn((table) => {
+      if (table === "recipe_shares") {
+        return {
+          select: (fields) => {
+            expect(fields).toContain("owner_id");
+            return {
+              eq: () => ({
+                maybeSingle: vi.fn().mockResolvedValue({ data: shareRecord, error: null }),
+              }),
+            };
+          },
+        };
+      }
+      if (table === "recipes") {
+        return {
+          select: () => ({
+            eq: () => ({
+              maybeSingle: vi.fn().mockResolvedValue({ data: recipeRecord, error: null }),
+            }),
+          }),
+        };
+      }
+    });
+
+    const res = createMockRes();
+    await handler({ method: "GET", headers: {}, query: { token: validToken } }, res);
+    expect(res.statusCode).toBe(404);
+    expect(res.body.code).toBe("NO_COVER");
+  });
+
+  it("rejects with 403 OWNER_MISMATCH if share record owner does not match recipe owner", async () => {
+    const shareRecord = {
+      recipe_id: validRecipeId,
+      owner_id: "different-owner-uuid-4444",
+      revoked_at: null,
+      expires_at: null,
+    };
+    const recipeRecord = {
+      id: validRecipeId,
+      owner_id: validOwnerId,
+      payload: {
+        title: "Apple Pie",
+        artwork: `https://supabase.co/storage/v1/object/public/recipe-covers/${validOwnerId}/${validRecipeId}-123.webp`,
       },
     };
 
@@ -121,15 +167,16 @@ describe("/api/ai/shared-cover strict authorization invariant", () => {
 
     const res = createMockRes();
     await handler({ method: "GET", headers: {}, query: { token: validToken } }, res);
-    expect(res.statusCode).toBe(404);
-    expect(res.body.code).toBe("NO_COVER");
+    expect(res.statusCode).toBe(403);
+    expect(res.body.code).toBe("OWNER_MISMATCH");
+    expect(res.body.error).toBe("Share record owner mismatch.");
   });
 
   it("rejects with 403 OWNER_MISMATCH if storage path folder does not equal recipe owner", async () => {
     const victimOwnerId = "22222222-2222-2222-2222-222222222222";
     const shareRecord = {
       recipe_id: validRecipeId,
-      created_by: validOwnerId,
+      owner_id: validOwnerId,
       revoked_at: null,
       expires_at: null,
     };
@@ -168,13 +215,14 @@ describe("/api/ai/shared-cover strict authorization invariant", () => {
     await handler({ method: "GET", headers: {}, query: { token: validToken } }, res);
     expect(res.statusCode).toBe(403);
     expect(res.body.code).toBe("OWNER_MISMATCH");
+    expect(res.body.error).toBe("Storage object owner mismatch.");
   });
 
   it("rejects with 403 RECIPE_MISMATCH if storage path basename does not belong to recipe ID", async () => {
     const victimRecipeId = "secret-recipe-999";
     const shareRecord = {
       recipe_id: validRecipeId,
-      created_by: validOwnerId,
+      owner_id: validOwnerId,
       revoked_at: null,
       expires_at: null,
     };
@@ -218,7 +266,7 @@ describe("/api/ai/shared-cover strict authorization invariant", () => {
   it("rejects path traversal or malformed path structure with 400", async () => {
     const shareRecord = {
       recipe_id: validRecipeId,
-      created_by: validOwnerId,
+      owner_id: validOwnerId,
       revoked_at: null,
       expires_at: null,
     };
@@ -262,7 +310,7 @@ describe("/api/ai/shared-cover strict authorization invariant", () => {
     const timestamp = 1710000000000;
     const shareRecord = {
       recipe_id: validRecipeId,
-      created_by: validOwnerId,
+      owner_id: validOwnerId,
       revoked_at: null,
       expires_at: null,
     };

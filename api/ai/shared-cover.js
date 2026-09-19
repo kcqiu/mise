@@ -57,7 +57,7 @@ export default async function handler(req, res) {
     // 1. Fetch active share record
     const { data: shareData, error: shareErr } = await serviceClient
       .from("recipe_shares")
-      .select("recipe_id, created_by, revoked_at, expires_at")
+      .select("recipe_id, owner_id, revoked_at, expires_at")
       .eq("share_token", cleanToken)
       .maybeSingle();
 
@@ -67,6 +67,12 @@ export default async function handler(req, res) {
       shareData.revoked_at ||
       (shareData.expires_at && new Date(shareData.expires_at) <= new Date())
     ) {
+      if (shareErr) {
+        console.error(
+          `[Shared Cover Error][${requestId}] Failed to query share record:`,
+          shareErr,
+        );
+      }
       return res.status(404).json({
         error: "Shared recipe not found or access link has been revoked.",
         code: "RECIPE_NOT_FOUND",
@@ -82,6 +88,12 @@ export default async function handler(req, res) {
       .maybeSingle();
 
     if (recipeErr || !recipeData || !recipeData.payload) {
+      if (recipeErr) {
+        console.error(
+          `[Shared Cover Error][${requestId}] Failed to query recipe:`,
+          recipeErr,
+        );
+      }
       return res.status(404).json({
         error: "Shared recipe not found.",
         code: "RECIPE_NOT_FOUND",
@@ -127,8 +139,17 @@ export default async function handler(req, res) {
     const expectedOwnerId = recipeData.owner_id;
     const expectedRecipeId = recipeData.id;
 
+    // Invariant: Share record owner must match recipe owner
+    if (shareData.owner_id !== expectedOwnerId) {
+      return res.status(403).json({
+        error: "Share record owner mismatch.",
+        code: "OWNER_MISMATCH",
+        requestId,
+      });
+    }
+
     // Invariant: Storage folder must strictly match recipe owner ID
-    if (folder !== expectedOwnerId || (shareData.created_by && folder !== shareData.created_by)) {
+    if (folder !== expectedOwnerId) {
       return res.status(403).json({
         error: "Storage object owner mismatch.",
         code: "OWNER_MISMATCH",
